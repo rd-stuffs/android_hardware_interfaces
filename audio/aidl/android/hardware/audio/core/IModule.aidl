@@ -21,19 +21,22 @@ import android.hardware.audio.common.SourceMetadata;
 import android.hardware.audio.core.AudioMode;
 import android.hardware.audio.core.AudioPatch;
 import android.hardware.audio.core.AudioRoute;
-import android.hardware.audio.core.ISoundDose;
+import android.hardware.audio.core.IBluetooth;
 import android.hardware.audio.core.IStreamCallback;
 import android.hardware.audio.core.IStreamIn;
 import android.hardware.audio.core.IStreamOut;
+import android.hardware.audio.core.IStreamOutEventCallback;
 import android.hardware.audio.core.ITelephony;
 import android.hardware.audio.core.MicrophoneInfo;
 import android.hardware.audio.core.ModuleDebug;
 import android.hardware.audio.core.StreamDescriptor;
 import android.hardware.audio.core.VendorParameter;
+import android.hardware.audio.core.sounddose.ISoundDose;
 import android.hardware.audio.effect.IEffect;
 import android.media.audio.common.AudioOffloadInfo;
 import android.media.audio.common.AudioPort;
 import android.media.audio.common.AudioPortConfig;
+import android.media.audio.common.Float;
 
 /**
  * Each instance of IModule corresponds to a separate audio module. The system
@@ -82,6 +85,20 @@ interface IModule {
      * @throws EX_ILLEGAL_STATE If there was an error creating an instance.
      */
     @nullable ITelephony getTelephony();
+
+    /**
+     * Retrieve the interface to control Bluetooth SCO and HFP.
+     *
+     * If the HAL module supports either the SCO Link or Hands-Free Profile
+     * functionality (or both) for Bluetooth, it must return an instance of the
+     * IBluetooth interface. The same instance must be returned during the
+     * lifetime of the HAL module. If the HAL module does not support BT SCO and
+     * HFP, a null must be returned, without throwing any errors.
+     *
+     * @return An instance of the IBluetooth interface implementation.
+     * @throws EX_ILLEGAL_STATE If there was an error creating an instance.
+     */
+    @nullable IBluetooth getBluetooth();
 
     /**
      * Set a device port of an external device into connected state.
@@ -389,6 +406,8 @@ interface IModule {
         long bufferSizeFrames;
         /** Client callback interface for the non-blocking output mode. */
         @nullable IStreamCallback callback;
+        /** Optional callback to notify client about stream events. */
+        @nullable IStreamOutEventCallback eventCallback;
     }
     @VintfStability
     parcelable OpenOutputStreamReturn {
@@ -396,6 +415,33 @@ interface IModule {
         StreamDescriptor desc;
     }
     OpenOutputStreamReturn openOutputStream(in OpenOutputStreamArguments args);
+
+    /**
+     * Get supported ranges of playback rate factors.
+     *
+     * See 'PlaybackRate' for the information on the playback rate parameters.
+     * This method provides supported ranges (inclusive) for the speed factor
+     * and the pitch factor.
+     *
+     * If the HAL module supports setting the playback rate, it is recommended
+     * to support speed and pitch factor values at least in the range from 0.5f
+     * to 2.0f.
+     *
+     * @throws EX_UNSUPPORTED_OPERATION If setting of playback rate parameters
+     *                                  is not supported by the module.
+     */
+    @VintfStability
+    parcelable SupportedPlaybackRateFactors {
+        /** The minimum allowed speed factor. */
+        float minSpeed;
+        /** The maximum allowed speed factor. */
+        float maxSpeed;
+        /** The minimum allowed pitch factor. */
+        float minPitch;
+        /** The maximum allowed pitch factor. */
+        float maxPitch;
+    }
+    SupportedPlaybackRateFactors getSupportedPlaybackRateFactors();
 
     /**
      * Set an audio patch.

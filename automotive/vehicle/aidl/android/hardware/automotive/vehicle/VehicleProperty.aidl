@@ -1760,7 +1760,11 @@ enum VehicleProperty {
     SEAT_LUMBAR_SIDE_SUPPORT_MOVE = 0x0B94 + 0x10000000 + 0x05000000
             + 0x00400000, // VehiclePropertyGroup:SYSTEM,VehicleArea:SEAT,VehiclePropertyType:INT32
     /**
-     * Headrest height position
+     * (Deprecated) Headrest height position
+     *
+     * This property is deprecated because it is defined as type VehicleArea:GLOBAL, which means all
+     * seats use the same value. Use SEAT_HEADREST_HEIGHT_POS_V2 instead which fixes this issue by
+     * being defined as type VehicleArea:SEAT.
      *
      * Sets the headrest height.
      * Max value indicates tallest setting.
@@ -1771,6 +1775,25 @@ enum VehicleProperty {
      */
     SEAT_HEADREST_HEIGHT_POS = 0x0B95 + 0x10000000 + 0x01000000
             + 0x00400000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT32
+
+    /**
+     * Headrest height position
+     *
+     * Sets the headrest height for supported seats. VehiclePropConfig.areaConfigs specifies which
+     * seats are supported.
+     *
+     * The maxInt32Value and minInt32Value in VehicleAreaConfig must be defined. All values between
+     * minInt32Value and maxInt32Value must be supported. The maxInt32Value indicates the tallest
+     * setting and the minInt32Value indicates the shortest setting.
+     *
+     * This value is not in any particular unit but in a specified range of steps.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ_WRITE
+     */
+    SEAT_HEADREST_HEIGHT_POS_V2 =
+            0x0BA4 + VehiclePropertyGroup.SYSTEM + VehicleArea.SEAT + VehiclePropertyType.INT32,
+
     /**
      * Headrest height move
      *
@@ -2413,6 +2436,48 @@ enum VehicleProperty {
      */
     READING_LIGHTS_SWITCH = 0x0F04 + 0x10000000 + 0x05000000
             + 0x00400000, // VehiclePropertyGroup:SYSTEM,VehicleArea:SEAT,VehiclePropertyType:INT32
+    /**
+     * Steering wheel lights state
+     *
+     * Represents the current state of the steering wheel lights. This is different from
+     * STEERING_WHEEL_LIGHTS_SWITCH which represents the position of the switch controlling
+     * the lights. Therefore, STEERING_WHEEL_LIGHTS_STATE may not match the value of
+     * STEERING_WHEEL_LIGHTS_SWITCH (e.g. STEERING_WHEEL_LIGHTS_SWITCH=AUTOMATIC and
+     * STEERING_WHEEL_LIGHTS_STATE=ON).
+     *
+     * This property should only be implemented if STEERING_WHEEL_LIGHTS_STATE's value may be
+     * different from that of CABIN_LIGHTS_STATE.
+     *
+     * For the global area ID (0), the VehicleAreaConfig#supportedEnumValues must be defined unless
+     * all enum values of VehicleLightState are supported.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ
+     * @data_enum VehicleLightState
+     */
+    STEERING_WHEEL_LIGHTS_STATE =
+            0x0F0C + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.INT32,
+    /**
+     * Steering wheel lights switch
+     *
+     * Represents the position of the switch controlling the steering wheel lights. This is
+     * different from STEERING_WHEEL_LIGHTS_STATE which represents the current state of the steering
+     * wheel lights. Therefore, STEERING_WHEEL_LIGHTS_SWITCH may not match the value of
+     * STEERING_WHEEL_LIGHTS_STATE (e.g. STEERING_WHEEL_LIGHTS_SWITCH=AUTOMATIC and
+     * STEERING_WHEEL_LIGHTS_STATE=ON).
+     *
+     * This property should only be implemented if STEERING_WHEEL_LIGHTS_SWITCH's value may be
+     * different from that of CABIN_LIGHTS_SWITCH.
+     *
+     * For the global area ID (0), the VehicleAreaConfig#supportedEnumValues must be defined unless
+     * all enum values of VehicleLightSwitch are supported.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ_WRITE
+     * @data_enum VehicleLightSwitch
+     */
+    STEERING_WHEEL_LIGHTS_SWITCH =
+            0x0F0D + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.INT32,
     /**
      * Support customize permissions for vendor properties
      *
@@ -3296,4 +3361,28 @@ enum VehicleProperty {
      */
     SHUTDOWN_REQUEST =
             0x0F49 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.INT32,
+
+    /***************************************************************************
+     * Start of ADAS Properties
+     * Allocate IDs in range of 0x1000 (inclusive) to 0x1100 (exclusive) for ADAS properties
+     **************************************************************************/
+
+    /**
+     * Enable or disable automatic emergency braking (AEB).
+     *
+     * Set true to enable AEB and false to disable AEB. When AEB is enabled, the ADAS system in the
+     * vehicle should be turned on and monitoring to avoid potential collisions.
+     *
+     * This property is defined as read_write, but OEMs have the option to implement it as read
+     * only.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ_WRITE
+     */
+    AUTOMATIC_EMERGENCY_BRAKING_ENABLED =
+            0x1000 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.BOOLEAN,
+
+    /***************************************************************************
+     * End of ADAS Properties
+     **************************************************************************/
 }

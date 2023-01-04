@@ -155,6 +155,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::SEAT_LUMBAR_SIDE_SUPPORT_POS, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_LUMBAR_SIDE_SUPPORT_MOVE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_HEADREST_HEIGHT_POS, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::SEAT_HEADREST_HEIGHT_POS_V2, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_HEADREST_HEIGHT_MOVE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_HEADREST_ANGLE_POS, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_HEADREST_ANGLE_MOVE, VehiclePropertyChangeMode::ON_CHANGE},
@@ -195,6 +196,8 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::CABIN_LIGHTS_SWITCH, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::READING_LIGHTS_STATE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::READING_LIGHTS_SWITCH, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::STEERING_WHEEL_LIGHTS_STATE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::STEERING_WHEEL_LIGHTS_SWITCH, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SUPPORT_CUSTOMIZE_VENDOR_PERMISSION, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::DISABLED_OPTIONAL_FEATURES, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::INITIAL_USER_INFO, VehiclePropertyChangeMode::ON_CHANGE},
@@ -231,6 +234,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::GENERAL_SAFETY_REGULATION_COMPLIANCE_REQUIREMENT, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::SUPPORTED_PROPERTY_IDS, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::SHUTDOWN_REQUEST, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
 };
 
 }  // namespace vehicle

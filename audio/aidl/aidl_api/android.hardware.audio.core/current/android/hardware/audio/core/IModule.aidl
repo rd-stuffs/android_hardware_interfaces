@@ -36,6 +36,7 @@ package android.hardware.audio.core;
 interface IModule {
   void setModuleDebug(in android.hardware.audio.core.ModuleDebug debug);
   @nullable android.hardware.audio.core.ITelephony getTelephony();
+  @nullable android.hardware.audio.core.IBluetooth getBluetooth();
   android.media.audio.common.AudioPort connectExternalDevice(in android.media.audio.common.AudioPort templateIdAndAdditionalData);
   void disconnectExternalDevice(int portId);
   android.hardware.audio.core.AudioPatch[] getAudioPatches();
@@ -46,6 +47,7 @@ interface IModule {
   android.hardware.audio.core.AudioRoute[] getAudioRoutesForAudioPort(int portId);
   android.hardware.audio.core.IModule.OpenInputStreamReturn openInputStream(in android.hardware.audio.core.IModule.OpenInputStreamArguments args);
   android.hardware.audio.core.IModule.OpenOutputStreamReturn openOutputStream(in android.hardware.audio.core.IModule.OpenOutputStreamArguments args);
+  android.hardware.audio.core.IModule.SupportedPlaybackRateFactors getSupportedPlaybackRateFactors();
   android.hardware.audio.core.AudioPatch setAudioPatch(in android.hardware.audio.core.AudioPatch requested);
   boolean setAudioPortConfig(in android.media.audio.common.AudioPortConfig requested, out android.media.audio.common.AudioPortConfig suggested);
   void resetAudioPatch(int patchId);
@@ -60,7 +62,7 @@ interface IModule {
   void updateAudioMode(android.hardware.audio.core.AudioMode mode);
   void updateScreenRotation(android.hardware.audio.core.IModule.ScreenRotation rotation);
   void updateScreenState(boolean isTurnedOn);
-  @nullable android.hardware.audio.core.ISoundDose getSoundDose();
+  @nullable android.hardware.audio.core.sounddose.ISoundDose getSoundDose();
   int generateHwAvSyncId();
   android.hardware.audio.core.VendorParameter[] getVendorParameters(in @utf8InCpp String[] ids);
   void setVendorParameters(in android.hardware.audio.core.VendorParameter[] parameters, boolean async);
@@ -84,11 +86,19 @@ interface IModule {
     @nullable android.media.audio.common.AudioOffloadInfo offloadInfo;
     long bufferSizeFrames;
     @nullable android.hardware.audio.core.IStreamCallback callback;
+    @nullable android.hardware.audio.core.IStreamOutEventCallback eventCallback;
   }
   @VintfStability
   parcelable OpenOutputStreamReturn {
     android.hardware.audio.core.IStreamOut stream;
     android.hardware.audio.core.StreamDescriptor desc;
+  }
+  @VintfStability
+  parcelable SupportedPlaybackRateFactors {
+    float minSpeed;
+    float maxSpeed;
+    float minPitch;
+    float maxPitch;
   }
   @Backing(type="int") @VintfStability
   enum ScreenRotation {

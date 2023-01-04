@@ -547,6 +547,18 @@ TEST_P(VtsHalAutomotiveVehicleTargetTest, verifySteeringWheelEasyAccessEnabledCo
                    VehiclePropertyGroup::SYSTEM, VehicleArea::GLOBAL, VehiclePropertyType::BOOLEAN);
 }
 
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifySteeringWheelLightsStateConfig) {
+    verifyProperty(VehicleProperty::STEERING_WHEEL_LIGHTS_STATE, VehiclePropertyAccess::READ,
+                   VehiclePropertyChangeMode::ON_CHANGE, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::GLOBAL, VehiclePropertyType::INT32);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifySteeringWheelLightsSwitchConfig) {
+    verifyProperty(VehicleProperty::STEERING_WHEEL_LIGHTS_SWITCH, VehiclePropertyAccess::READ_WRITE,
+                   VehiclePropertyChangeMode::ON_CHANGE, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::GLOBAL, VehiclePropertyType::INT32);
+}
+
 TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyMirrorAutoFoldEnabledConfig) {
     verifyProperty(VehicleProperty::MIRROR_AUTO_FOLD_ENABLED, VehiclePropertyAccess::READ_WRITE,
                    VehiclePropertyChangeMode::ON_CHANGE, VehiclePropertyGroup::SYSTEM,
@@ -557,6 +569,12 @@ TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyMirrorAutoTiltEnabledConfig) {
     verifyProperty(VehicleProperty::MIRROR_AUTO_TILT_ENABLED, VehiclePropertyAccess::READ_WRITE,
                    VehiclePropertyChangeMode::ON_CHANGE, VehiclePropertyGroup::SYSTEM,
                    VehicleArea::MIRROR, VehiclePropertyType::BOOLEAN);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifySeatHeadrestHeightPosV2Config) {
+    verifyProperty(VehicleProperty::SEAT_HEADREST_HEIGHT_POS_V2, VehiclePropertyAccess::READ_WRITE,
+                   VehiclePropertyChangeMode::ON_CHANGE, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::SEAT, VehiclePropertyType::INT32);
 }
 
 TEST_P(VtsHalAutomotiveVehicleTargetTest, verifySeatWalkInPosConfig) {
@@ -599,6 +617,12 @@ TEST_P(VtsHalAutomotiveVehicleTargetTest, verifySeatLumbarVerticalMoveConfig) {
     verifyProperty(VehicleProperty::SEAT_LUMBAR_VERTICAL_MOVE, VehiclePropertyAccess::READ_WRITE,
                    VehiclePropertyChangeMode::ON_CHANGE, VehiclePropertyGroup::SYSTEM,
                    VehicleArea::SEAT, VehiclePropertyType::INT32);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyAutomaticEmergencyBrakingEnabledConfig) {
+    verifyProperty(VehicleProperty::AUTOMATIC_EMERGENCY_BRAKING_ENABLED,
+                   VehiclePropertyAccess::READ_WRITE, VehiclePropertyChangeMode::ON_CHANGE,
+                   VehiclePropertyGroup::SYSTEM, VehicleArea::GLOBAL, VehiclePropertyType::BOOLEAN);
 }
 
 std::vector<ServiceDescriptor> getDescriptors() {

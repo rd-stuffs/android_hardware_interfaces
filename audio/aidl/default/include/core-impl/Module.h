@@ -39,6 +39,7 @@ class Module : public BnModule {
     ndk::ScopedAStatus setModuleDebug(
             const ::aidl::android::hardware::audio::core::ModuleDebug& in_debug) override;
     ndk::ScopedAStatus getTelephony(std::shared_ptr<ITelephony>* _aidl_return) override;
+    ndk::ScopedAStatus getBluetooth(std::shared_ptr<IBluetooth>* _aidl_return) override;
     ndk::ScopedAStatus connectExternalDevice(
             const ::aidl::android::media::audio::common::AudioPort& in_templateIdAndAdditionalData,
             ::aidl::android::media::audio::common::AudioPort* _aidl_return) override;
@@ -66,6 +67,8 @@ class Module : public BnModule {
                     in_args,
             ::aidl::android::hardware::audio::core::IModule::OpenOutputStreamReturn* _aidl_return)
             override;
+    ndk::ScopedAStatus getSupportedPlaybackRateFactors(
+            SupportedPlaybackRateFactors* _aidl_return) override;
     ndk::ScopedAStatus setAudioPatch(const AudioPatch& in_requested,
                                      AudioPatch* _aidl_return) override;
     ndk::ScopedAStatus setAudioPortConfig(
@@ -86,7 +89,7 @@ class Module : public BnModule {
     ndk::ScopedAStatus updateScreenRotation(
             ::aidl::android::hardware::audio::core::IModule::ScreenRotation in_rotation) override;
     ndk::ScopedAStatus updateScreenState(bool in_isTurnedOn) override;
-    ndk::ScopedAStatus getSoundDose(std::shared_ptr<ISoundDose>* _aidl_return) override;
+    ndk::ScopedAStatus getSoundDose(std::shared_ptr<sounddose::ISoundDose>* _aidl_return) override;
     ndk::ScopedAStatus generateHwAvSyncId(int32_t* _aidl_return) override;
     ndk::ScopedAStatus getVendorParameters(const std::vector<std::string>& in_ids,
                                            std::vector<VendorParameter>* _aidl_return) override;
@@ -125,10 +128,12 @@ class Module : public BnModule {
     const Type mType;
     std::unique_ptr<internal::Configuration> mConfig;
     ModuleDebug mDebug;
-    // Since it is required to return the same instance of the ITelephony, even
-    // if the client has released it on its side, we need to hold it via a strong pointer.
+    // For the interfaces requiring to return the same instance, we need to hold them
+    // via a strong pointer. The binder token is retained for a call to 'setMinSchedulerPolicy'.
     std::shared_ptr<ITelephony> mTelephony;
     ndk::SpAIBinder mTelephonyBinder;
+    std::shared_ptr<IBluetooth> mBluetooth;
+    ndk::SpAIBinder mBluetoothBinder;
     // ids of ports created at runtime via 'connectExternalDevice'.
     std::set<int32_t> mConnectedDevicePorts;
     Streams mStreams;
@@ -138,7 +143,7 @@ class Module : public BnModule {
     bool mMasterMute = false;
     float mMasterVolume = 1.0f;
     bool mMicMute = false;
-    std::shared_ptr<ISoundDose> mSoundDose;
+    std::shared_ptr<sounddose::ISoundDose> mSoundDose;
     ndk::SpAIBinder mSoundDoseBinder;
 };
 

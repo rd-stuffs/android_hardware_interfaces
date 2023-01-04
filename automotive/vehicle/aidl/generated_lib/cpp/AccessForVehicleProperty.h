@@ -155,6 +155,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyAccess> AccessForVehiclePrope
         {VehicleProperty::SEAT_LUMBAR_SIDE_SUPPORT_POS, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_LUMBAR_SIDE_SUPPORT_MOVE, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_HEADREST_HEIGHT_POS, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::SEAT_HEADREST_HEIGHT_POS_V2, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_HEADREST_HEIGHT_MOVE, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_HEADREST_ANGLE_POS, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_HEADREST_ANGLE_MOVE, VehiclePropertyAccess::READ_WRITE},
@@ -195,6 +196,8 @@ std::unordered_map<VehicleProperty, VehiclePropertyAccess> AccessForVehiclePrope
         {VehicleProperty::CABIN_LIGHTS_SWITCH, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::READING_LIGHTS_STATE, VehiclePropertyAccess::READ},
         {VehicleProperty::READING_LIGHTS_SWITCH, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::STEERING_WHEEL_LIGHTS_STATE, VehiclePropertyAccess::READ},
+        {VehicleProperty::STEERING_WHEEL_LIGHTS_SWITCH, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SUPPORT_CUSTOMIZE_VENDOR_PERMISSION, VehiclePropertyAccess::READ},
         {VehicleProperty::DISABLED_OPTIONAL_FEATURES, VehiclePropertyAccess::READ},
         {VehicleProperty::INITIAL_USER_INFO, VehiclePropertyAccess::READ_WRITE},
@@ -231,6 +234,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyAccess> AccessForVehiclePrope
         {VehicleProperty::GENERAL_SAFETY_REGULATION_COMPLIANCE_REQUIREMENT, VehiclePropertyAccess::READ},
         {VehicleProperty::SUPPORTED_PROPERTY_IDS, VehiclePropertyAccess::READ},
         {VehicleProperty::SHUTDOWN_REQUEST, VehiclePropertyAccess::WRITE},
+        {VehicleProperty::AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyAccess::READ_WRITE},
 };
 
 }  // namespace vehicle

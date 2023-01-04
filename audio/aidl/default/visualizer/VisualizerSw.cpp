@@ -56,9 +56,12 @@ namespace aidl::android::hardware::audio::effect {
 
 const std::string VisualizerSw::kEffectName = "VisualizerSw";
 /* capabilities */
-const Visualizer::CaptureSizeRange mCaptureSizeRange = {MIN_CAPTURE_SIZE, MAX_CAPTURE_SIZE};
-const Visualizer::Capability VisualizerSw::kCapability = {.maxLatencyMs = MAX_LATENCY,
-                                                          .captureSizeRange = mCaptureSizeRange};
+const Visualizer::CaptureSamplesRange VisualizerSwContext::kCaptureSamplesRange = {
+        VisualizerSwContext::kMinCaptureSize, VisualizerSwContext::kMaxCaptureSize};
+const Visualizer::Capability VisualizerSw::kCapability = {
+        .maxLatencyMs = VisualizerSwContext::kMaxLatencyMs,
+        .captureSampleRange = VisualizerSwContext::kCaptureSamplesRange};
+
 const Descriptor VisualizerSw::kDescriptor = {
         .common = {.id = {.type = kVisualizerTypeUUID,
                           .uuid = kVisualizerSwImplUUID,
@@ -84,8 +87,8 @@ ndk::ScopedAStatus VisualizerSw::setParameterSpecific(const Parameter::Specific&
     auto tag = vsParam.getTag();
 
     switch (tag) {
-        case Visualizer::captureSizeBytes: {
-            RETURN_IF(mContext->setVsCaptureSize(vsParam.get<Visualizer::captureSizeBytes>()) !=
+        case Visualizer::captureSamples: {
+            RETURN_IF(mContext->setVsCaptureSize(vsParam.get<Visualizer::captureSamples>()) !=
                               RetCode::SUCCESS,
                       EX_ILLEGAL_ARGUMENT, "captureSizeNotSupported");
             return ndk::ScopedAStatus::ok();
@@ -159,8 +162,8 @@ ndk::ScopedAStatus VisualizerSw::getParameterVisualizer(const Visualizer::Tag& t
 
     Visualizer vsParam;
     switch (tag) {
-        case Visualizer::captureSizeBytes: {
-            vsParam.set<Visualizer::captureSizeBytes>(mContext->getVsCaptureSize());
+        case Visualizer::captureSamples: {
+            vsParam.set<Visualizer::captureSamples>(mContext->getVsCaptureSize());
             break;
         }
         case Visualizer::scalingMode: {
@@ -190,9 +193,9 @@ ndk::ScopedAStatus VisualizerSw::getGetOnlyParameterVisualizer(
                     mContext->getVsMeasurement());
             break;
         }
-        case Visualizer::GetOnlyParameters::captureBytes: {
-            getOnlyParam.set<Visualizer::GetOnlyParameters::captureBytes>(
-                    mContext->getVsCaptureBytes());
+        case Visualizer::GetOnlyParameters::captureSampleBuffer: {
+            getOnlyParam.set<Visualizer::GetOnlyParameters::captureSampleBuffer>(
+                    mContext->getVsCaptureSampleBuffer());
             break;
         }
         default: {
@@ -236,6 +239,39 @@ IEffect::Status VisualizerSw::effectProcessImpl(float* in, float* out, int sampl
         *out++ = *in++;
     }
     return {STATUS_OK, samples, samples};
+}
+
+RetCode VisualizerSwContext::setVsCaptureSize(int captureSize) {
+    if (captureSize < VisualizerSw::kCapability.captureSampleRange.min ||
+        captureSize > VisualizerSw::kCapability.captureSampleRange.max) {
+        LOG(ERROR) << __func__ << " invalid captureSize " << captureSize;
+        return RetCode::ERROR_ILLEGAL_PARAMETER;
+    }
+    // TODO : Add implementation to apply new captureSize
+    mCaptureSize = captureSize;
+    return RetCode::SUCCESS;
+}
+
+RetCode VisualizerSwContext::setVsScalingMode(Visualizer::ScalingMode scalingMode) {
+    // TODO : Add implementation to apply new scalingMode
+    mScalingMode = scalingMode;
+    return RetCode::SUCCESS;
+}
+
+RetCode VisualizerSwContext::setVsMeasurementMode(Visualizer::MeasurementMode measurementMode) {
+    // TODO : Add implementation to apply new measurementMode
+    mMeasurementMode = measurementMode;
+    return RetCode::SUCCESS;
+}
+
+RetCode VisualizerSwContext::setVsLatency(int latency) {
+    if (latency < 0 || latency > VisualizerSw::kCapability.maxLatencyMs) {
+        LOG(ERROR) << __func__ << " invalid latency " << latency;
+        return RetCode::ERROR_ILLEGAL_PARAMETER;
+    }
+    // TODO : Add implementation to modify latency
+    mLatency = latency;
+    return RetCode::SUCCESS;
 }
 
 }  // namespace aidl::android::hardware::audio::effect

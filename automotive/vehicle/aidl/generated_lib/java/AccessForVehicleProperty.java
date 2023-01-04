@@ -147,6 +147,7 @@ public final class AccessForVehicleProperty {
         Map.entry(VehicleProperty.SEAT_LUMBAR_SIDE_SUPPORT_POS, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.SEAT_LUMBAR_SIDE_SUPPORT_MOVE, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.SEAT_HEADREST_HEIGHT_POS, VehiclePropertyAccess.READ_WRITE),
+        Map.entry(VehicleProperty.SEAT_HEADREST_HEIGHT_POS_V2, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.SEAT_HEADREST_HEIGHT_MOVE, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.SEAT_HEADREST_ANGLE_POS, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.SEAT_HEADREST_ANGLE_MOVE, VehiclePropertyAccess.READ_WRITE),
@@ -187,6 +188,8 @@ public final class AccessForVehicleProperty {
         Map.entry(VehicleProperty.CABIN_LIGHTS_SWITCH, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.READING_LIGHTS_STATE, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.READING_LIGHTS_SWITCH, VehiclePropertyAccess.READ_WRITE),
+        Map.entry(VehicleProperty.STEERING_WHEEL_LIGHTS_STATE, VehiclePropertyAccess.READ),
+        Map.entry(VehicleProperty.STEERING_WHEEL_LIGHTS_SWITCH, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.SUPPORT_CUSTOMIZE_VENDOR_PERMISSION, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.DISABLED_OPTIONAL_FEATURES, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.INITIAL_USER_INFO, VehiclePropertyAccess.READ_WRITE),
@@ -222,7 +225,8 @@ public final class AccessForVehicleProperty {
         Map.entry(VehicleProperty.VEHICLE_CURB_WEIGHT, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.GENERAL_SAFETY_REGULATION_COMPLIANCE_REQUIREMENT, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.SUPPORTED_PROPERTY_IDS, VehiclePropertyAccess.READ),
-        Map.entry(VehicleProperty.SHUTDOWN_REQUEST, VehiclePropertyAccess.WRITE)
+        Map.entry(VehicleProperty.SHUTDOWN_REQUEST, VehiclePropertyAccess.WRITE),
+        Map.entry(VehicleProperty.AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyAccess.READ_WRITE)
     );
 
 }

@@ -36,8 +36,8 @@
 #include <aidl/Vintf.h>
 #include <aidl/android/hardware/audio/core/BnStreamCallback.h>
 #include <aidl/android/hardware/audio/core/IModule.h>
-#include <aidl/android/hardware/audio/core/ISoundDose.h>
 #include <aidl/android/hardware/audio/core/ITelephony.h>
+#include <aidl/android/hardware/audio/core/sounddose/ISoundDose.h>
 #include <aidl/android/media/audio/common/AudioIoFlags.h>
 #include <aidl/android/media/audio/common/AudioOutputFlags.h>
 #include <android-base/chrono_utils.h>
@@ -56,8 +56,8 @@ using aidl::android::hardware::audio::common::SourceMetadata;
 using aidl::android::hardware::audio::core::AudioMode;
 using aidl::android::hardware::audio::core::AudioPatch;
 using aidl::android::hardware::audio::core::AudioRoute;
+using aidl::android::hardware::audio::core::IBluetooth;
 using aidl::android::hardware::audio::core::IModule;
-using aidl::android::hardware::audio::core::ISoundDose;
 using aidl::android::hardware::audio::core::IStreamCommon;
 using aidl::android::hardware::audio::core::IStreamIn;
 using aidl::android::hardware::audio::core::IStreamOut;
@@ -67,20 +67,26 @@ using aidl::android::hardware::audio::core::MicrophoneInfo;
 using aidl::android::hardware::audio::core::ModuleDebug;
 using aidl::android::hardware::audio::core::StreamDescriptor;
 using aidl::android::hardware::audio::core::VendorParameter;
+using aidl::android::hardware::audio::core::sounddose::ISoundDose;
 using aidl::android::hardware::common::fmq::SynchronizedReadWrite;
 using aidl::android::media::audio::common::AudioContentType;
 using aidl::android::media::audio::common::AudioDevice;
 using aidl::android::media::audio::common::AudioDeviceAddress;
 using aidl::android::media::audio::common::AudioDeviceType;
+using aidl::android::media::audio::common::AudioDualMonoMode;
 using aidl::android::media::audio::common::AudioFormatType;
 using aidl::android::media::audio::common::AudioIoFlags;
+using aidl::android::media::audio::common::AudioLatencyMode;
 using aidl::android::media::audio::common::AudioOutputFlags;
+using aidl::android::media::audio::common::AudioPlaybackRate;
 using aidl::android::media::audio::common::AudioPort;
 using aidl::android::media::audio::common::AudioPortConfig;
 using aidl::android::media::audio::common::AudioPortDeviceExt;
 using aidl::android::media::audio::common::AudioPortExt;
 using aidl::android::media::audio::common::AudioSource;
 using aidl::android::media::audio::common::AudioUsage;
+using aidl::android::media::audio::common::Float;
+using aidl::android::media::audio::common::Int;
 using aidl::android::media::audio::common::Void;
 using android::hardware::audio::common::getChannelCount;
 using android::hardware::audio::common::isBitPositionFlagSet;
@@ -1752,13 +1758,12 @@ TEST_P(AudioCoreModule, SetVendorParameters) {
 TEST_P(AudioCoreModule, AddRemoveEffectInvalidArguments) {
     ndk::ScopedAStatus addEffectStatus = module->addDeviceEffect(-1, nullptr);
     ndk::ScopedAStatus removeEffectStatus = module->removeDeviceEffect(-1, nullptr);
-    const bool isSupported = addEffectStatus.getExceptionCode() != EX_UNSUPPORTED_OPERATION;
-    if (isSupported) {
+    if (addEffectStatus.getExceptionCode() != EX_UNSUPPORTED_OPERATION) {
         EXPECT_EQ(EX_ILLEGAL_ARGUMENT, addEffectStatus.getExceptionCode());
         EXPECT_EQ(EX_ILLEGAL_ARGUMENT, removeEffectStatus.getExceptionCode());
-    } else if (EX_UNSUPPORTED_OPERATION != removeEffectStatus.getExceptionCode()) {
-        GTEST_FAIL() << "addEffect and removeEffect must be either supported or not supported "
-                     << "together";
+    } else if (removeEffectStatus.getExceptionCode() != EX_UNSUPPORTED_OPERATION) {
+        GTEST_FAIL() << "addDeviceEffect and removeDeviceEffect must be either supported or "
+                     << "not supported together";
     } else {
         GTEST_SKIP() << "Offloaded effects not supported";
     }
@@ -1773,6 +1778,89 @@ TEST_P(AudioCoreModule, AddRemoveEffectInvalidArguments) {
     }
 }
 
+class AudioCoreBluetooth : public AudioCoreModuleBase, public testing::TestWithParam<std::string> {
+  public:
+    void SetUp() override {
+        ASSERT_NO_FATAL_FAILURE(SetUpImpl(GetParam()));
+        ASSERT_IS_OK(module->getBluetooth(&bluetooth));
+    }
+
+    void TearDown() override { ASSERT_NO_FATAL_FAILURE(TearDownImpl()); }
+
+    std::shared_ptr<IBluetooth> bluetooth;
+};
+
+TEST_P(AudioCoreBluetooth, SameInstance) {
+    if (bluetooth == nullptr) {
+        GTEST_SKIP() << "Bluetooth is not supported";
+    }
+    std::shared_ptr<IBluetooth> bluetooth2;
+    EXPECT_IS_OK(module->getBluetooth(&bluetooth2));
+    ASSERT_NE(nullptr, bluetooth2.get());
+    EXPECT_EQ(bluetooth->asBinder(), bluetooth2->asBinder())
+            << "getBluetooth must return the same interface instance across invocations";
+}
+
+TEST_P(AudioCoreBluetooth, ScoConfig) {
+    static const auto kStatuses = {EX_NONE, EX_UNSUPPORTED_OPERATION};
+    if (bluetooth == nullptr) {
+        GTEST_SKIP() << "Bluetooth is not supported";
+    }
+    ndk::ScopedAStatus status;
+    IBluetooth::ScoConfig scoConfig;
+    ASSERT_STATUS(kStatuses, status = bluetooth->setScoConfig({}, &scoConfig));
+    if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "BT SCO is not supported";
+    }
+    EXPECT_TRUE(scoConfig.isEnabled.has_value());
+    EXPECT_TRUE(scoConfig.isNrecEnabled.has_value());
+    EXPECT_NE(IBluetooth::ScoConfig::Mode::UNSPECIFIED, scoConfig.mode);
+    IBluetooth::ScoConfig scoConfig2;
+    ASSERT_IS_OK(bluetooth->setScoConfig(scoConfig, &scoConfig2));
+    EXPECT_EQ(scoConfig, scoConfig2);
+}
+
+TEST_P(AudioCoreBluetooth, HfpConfig) {
+    static const auto kStatuses = {EX_NONE, EX_UNSUPPORTED_OPERATION};
+    if (bluetooth == nullptr) {
+        GTEST_SKIP() << "Bluetooth is not supported";
+    }
+    ndk::ScopedAStatus status;
+    IBluetooth::HfpConfig hfpConfig;
+    ASSERT_STATUS(kStatuses, status = bluetooth->setHfpConfig({}, &hfpConfig));
+    if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "BT HFP is not supported";
+    }
+    EXPECT_TRUE(hfpConfig.isEnabled.has_value());
+    EXPECT_TRUE(hfpConfig.sampleRate.has_value());
+    EXPECT_TRUE(hfpConfig.volume.has_value());
+    IBluetooth::HfpConfig hfpConfig2;
+    ASSERT_IS_OK(bluetooth->setHfpConfig(hfpConfig, &hfpConfig2));
+    EXPECT_EQ(hfpConfig, hfpConfig2);
+}
+
+TEST_P(AudioCoreBluetooth, HfpConfigInvalid) {
+    static const auto kStatuses = {EX_NONE, EX_UNSUPPORTED_OPERATION};
+    if (bluetooth == nullptr) {
+        GTEST_SKIP() << "Bluetooth is not supported";
+    }
+    ndk::ScopedAStatus status;
+    IBluetooth::HfpConfig hfpConfig;
+    ASSERT_STATUS(kStatuses, status = bluetooth->setHfpConfig({}, &hfpConfig));
+    if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "BT HFP is not supported";
+    }
+    EXPECT_STATUS(EX_ILLEGAL_ARGUMENT,
+                  bluetooth->setHfpConfig({.sampleRate = Int{-1}}, &hfpConfig));
+    EXPECT_STATUS(EX_ILLEGAL_ARGUMENT, bluetooth->setHfpConfig({.sampleRate = Int{0}}, &hfpConfig));
+    EXPECT_STATUS(EX_ILLEGAL_ARGUMENT,
+                  bluetooth->setHfpConfig({.volume = Float{IBluetooth::HfpConfig::VOLUME_MIN - 1}},
+                                          &hfpConfig));
+    EXPECT_STATUS(EX_ILLEGAL_ARGUMENT,
+                  bluetooth->setHfpConfig({.volume = Float{IBluetooth::HfpConfig::VOLUME_MAX + 1}},
+                                          &hfpConfig));
+}
+
 class AudioCoreTelephony : public AudioCoreModuleBase, public testing::TestWithParam<std::string> {
   public:
     void SetUp() override {
@@ -1784,6 +1872,17 @@ class AudioCoreTelephony : public AudioCoreModuleBase, public testing::TestWithP
 
     std::shared_ptr<ITelephony> telephony;
 };
+
+TEST_P(AudioCoreTelephony, SameInstance) {
+    if (telephony == nullptr) {
+        GTEST_SKIP() << "Telephony is not supported";
+    }
+    std::shared_ptr<ITelephony> telephony2;
+    EXPECT_IS_OK(module->getTelephony(&telephony2));
+    ASSERT_NE(nullptr, telephony2.get());
+    EXPECT_EQ(telephony->asBinder(), telephony2->asBinder())
+            << "getTelephony must return the same interface instance across invocations";
+}
 
 TEST_P(AudioCoreTelephony, GetSupportedAudioModes) {
     if (telephony == nullptr) {
@@ -1824,6 +1923,46 @@ TEST_P(AudioCoreTelephony, SwitchAudioMode) {
     for (const auto mode : unsupportedModes) {
         EXPECT_STATUS(EX_UNSUPPORTED_OPERATION, telephony->switchAudioMode(mode)) << toString(mode);
     }
+}
+
+TEST_P(AudioCoreTelephony, TelecomConfig) {
+    static const auto kStatuses = {EX_NONE, EX_UNSUPPORTED_OPERATION};
+    if (telephony == nullptr) {
+        GTEST_SKIP() << "Telephony is not supported";
+    }
+    ndk::ScopedAStatus status;
+    ITelephony::TelecomConfig telecomConfig;
+    ASSERT_STATUS(kStatuses, status = telephony->setTelecomConfig({}, &telecomConfig));
+    if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "Telecom is not supported";
+    }
+    EXPECT_TRUE(telecomConfig.voiceVolume.has_value());
+    EXPECT_NE(ITelephony::TelecomConfig::TtyMode::UNSPECIFIED, telecomConfig.ttyMode);
+    EXPECT_TRUE(telecomConfig.isHacEnabled.has_value());
+    ITelephony::TelecomConfig telecomConfig2;
+    ASSERT_IS_OK(telephony->setTelecomConfig(telecomConfig, &telecomConfig2));
+    EXPECT_EQ(telecomConfig, telecomConfig2);
+}
+
+TEST_P(AudioCoreTelephony, TelecomConfigInvalid) {
+    static const auto kStatuses = {EX_NONE, EX_UNSUPPORTED_OPERATION};
+    if (telephony == nullptr) {
+        GTEST_SKIP() << "Telephony is not supported";
+    }
+    ndk::ScopedAStatus status;
+    ITelephony::TelecomConfig telecomConfig;
+    ASSERT_STATUS(kStatuses, status = telephony->setTelecomConfig({}, &telecomConfig));
+    if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "Telecom is not supported";
+    }
+    EXPECT_STATUS(EX_ILLEGAL_ARGUMENT,
+                  telephony->setTelecomConfig(
+                          {.voiceVolume = Float{ITelephony::TelecomConfig::VOICE_VOLUME_MIN - 1}},
+                          &telecomConfig));
+    EXPECT_STATUS(EX_ILLEGAL_ARGUMENT,
+                  telephony->setTelecomConfig(
+                          {.voiceVolume = Float{ITelephony::TelecomConfig::VOICE_VOLUME_MAX + 1}},
+                          &telecomConfig));
 }
 
 using CommandSequence = std::vector<StreamDescriptor::Command>;
@@ -2125,15 +2264,13 @@ class AudioStream : public AudioCoreModule {
             ASSERT_NE(nullptr, streamCommon);
             ndk::ScopedAStatus addEffectStatus = streamCommon->addEffect(nullptr);
             ndk::ScopedAStatus removeEffectStatus = streamCommon->removeEffect(nullptr);
-            const bool isSupported = addEffectStatus.getExceptionCode() != EX_UNSUPPORTED_OPERATION;
-            if (isSupported) {
+            if (addEffectStatus.getExceptionCode() != EX_UNSUPPORTED_OPERATION) {
                 EXPECT_EQ(EX_ILLEGAL_ARGUMENT, addEffectStatus.getExceptionCode());
                 EXPECT_EQ(EX_ILLEGAL_ARGUMENT, removeEffectStatus.getExceptionCode());
                 atLeastOneSupports = true;
-            } else if (EX_UNSUPPORTED_OPERATION != removeEffectStatus.getExceptionCode()) {
-                ADD_FAILURE()
-                        << "addEffect and removeEffect must be either supported or not supported "
-                        << "together";
+            } else if (removeEffectStatus.getExceptionCode() != EX_UNSUPPORTED_OPERATION) {
+                ADD_FAILURE() << "addEffect and removeEffect must be either supported or "
+                              << "not supported together";
                 atLeastOneSupports = true;
             }
         }
@@ -2390,6 +2527,191 @@ TEST_P(AudioStreamOut, RequireAsyncCallback) {
     aidl::android::hardware::audio::core::IModule::OpenOutputStreamReturn ret;
     EXPECT_STATUS(EX_ILLEGAL_ARGUMENT, module->openOutputStream(args, &ret))
             << "when no async callback is provided for a non-blocking mix port";
+}
+
+TEST_P(AudioStreamOut, AudioDescriptionMixLevel) {
+    const auto ports = moduleConfig->getOutputMixPorts(false /*attachedOnly*/);
+    if (ports.empty()) {
+        GTEST_SKIP() << "No output mix ports";
+    }
+    bool atLeastOneSupports = false;
+    for (const auto& port : ports) {
+        const auto portConfig = moduleConfig->getSingleConfigForMixPort(false, port);
+        ASSERT_TRUE(portConfig.has_value()) << "No profiles specified for output mix port";
+        WithStream<IStreamOut> stream(portConfig.value());
+        ASSERT_NO_FATAL_FAILURE(stream.SetUp(module.get(), kDefaultBufferSizeFrames));
+        bool isSupported = false;
+        EXPECT_NO_FATAL_FAILURE(
+                TestAccessors<float>(stream.get(), &IStreamOut::getAudioDescriptionMixLevel,
+                                     &IStreamOut::setAudioDescriptionMixLevel,
+                                     {IStreamOut::AUDIO_DESCRIPTION_MIX_LEVEL_MAX,
+                                      IStreamOut::AUDIO_DESCRIPTION_MIX_LEVEL_MAX - 1, 0,
+                                      -INFINITY /*IStreamOut::AUDIO_DESCRIPTION_MIX_LEVEL_MIN*/},
+                                     {IStreamOut::AUDIO_DESCRIPTION_MIX_LEVEL_MAX * 2,
+                                      IStreamOut::AUDIO_DESCRIPTION_MIX_LEVEL_MAX * 1.1f},
+                                     &isSupported));
+        if (isSupported) atLeastOneSupports = true;
+    }
+    if (!atLeastOneSupports) {
+        GTEST_SKIP() << "Audio description mix level is not supported";
+    }
+}
+
+TEST_P(AudioStreamOut, DualMonoMode) {
+    const auto ports = moduleConfig->getOutputMixPorts(false /*attachedOnly*/);
+    if (ports.empty()) {
+        GTEST_SKIP() << "No output mix ports";
+    }
+    bool atLeastOneSupports = false;
+    for (const auto& port : ports) {
+        const auto portConfig = moduleConfig->getSingleConfigForMixPort(false, port);
+        ASSERT_TRUE(portConfig.has_value()) << "No profiles specified for output mix port";
+        WithStream<IStreamOut> stream(portConfig.value());
+        ASSERT_NO_FATAL_FAILURE(stream.SetUp(module.get(), kDefaultBufferSizeFrames));
+        bool isSupported = false;
+        EXPECT_NO_FATAL_FAILURE(TestAccessors<AudioDualMonoMode>(
+                stream.get(), &IStreamOut::getDualMonoMode, &IStreamOut::setDualMonoMode,
+                std::vector<AudioDualMonoMode>(enum_range<AudioDualMonoMode>().begin(),
+                                               enum_range<AudioDualMonoMode>().end()),
+                {}, &isSupported));
+        if (isSupported) atLeastOneSupports = true;
+    }
+    if (!atLeastOneSupports) {
+        GTEST_SKIP() << "Audio dual mono mode is not supported";
+    }
+}
+
+TEST_P(AudioStreamOut, LatencyMode) {
+    const auto ports = moduleConfig->getOutputMixPorts(false /*attachedOnly*/);
+    if (ports.empty()) {
+        GTEST_SKIP() << "No output mix ports";
+    }
+    bool atLeastOneSupports = false;
+    for (const auto& port : ports) {
+        const auto portConfig = moduleConfig->getSingleConfigForMixPort(false, port);
+        ASSERT_TRUE(portConfig.has_value()) << "No profiles specified for output mix port";
+        WithStream<IStreamOut> stream(portConfig.value());
+        ASSERT_NO_FATAL_FAILURE(stream.SetUp(module.get(), kDefaultBufferSizeFrames));
+        std::vector<AudioLatencyMode> supportedModes;
+        ndk::ScopedAStatus status = stream.get()->getRecommendedLatencyModes(&supportedModes);
+        if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) continue;
+        atLeastOneSupports = true;
+        if (!status.isOk()) {
+            ADD_FAILURE() << "When latency modes are supported, getRecommendedLatencyModes "
+                          << "must succeed on a non-closed stream, but it failed with " << status;
+            continue;
+        }
+        std::set<AudioLatencyMode> unsupportedModes(enum_range<AudioLatencyMode>().begin(),
+                                                    enum_range<AudioLatencyMode>().end());
+        for (const auto mode : supportedModes) {
+            unsupportedModes.erase(mode);
+            ndk::ScopedAStatus status = stream.get()->setLatencyMode(mode);
+            if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+                ADD_FAILURE() << "When latency modes are supported, both getRecommendedLatencyModes"
+                              << " and setLatencyMode must be supported";
+            }
+            EXPECT_IS_OK(status) << "Setting of supported latency mode must succeed";
+        }
+        for (const auto mode : unsupportedModes) {
+            EXPECT_STATUS(EX_ILLEGAL_ARGUMENT, stream.get()->setLatencyMode(mode));
+        }
+    }
+    if (!atLeastOneSupports) {
+        GTEST_SKIP() << "Audio latency modes are not supported";
+    }
+}
+
+TEST_P(AudioStreamOut, PlaybackRate) {
+    static const auto kStatuses = {EX_NONE, EX_UNSUPPORTED_OPERATION};
+    const auto offloadMixPorts =
+            moduleConfig->getOffloadMixPorts(true /*attachedOnly*/, false /*singlePort*/);
+    if (offloadMixPorts.empty()) {
+        GTEST_SKIP()
+                << "No mix port for compressed offload that could be routed to attached devices";
+    }
+    ndk::ScopedAStatus status;
+    IModule::SupportedPlaybackRateFactors factors;
+    EXPECT_STATUS(kStatuses, status = module.get()->getSupportedPlaybackRateFactors(&factors));
+    if (status.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "Audio playback rate configuration is not supported";
+    }
+    EXPECT_LE(factors.minSpeed, factors.maxSpeed);
+    EXPECT_LE(factors.minPitch, factors.maxPitch);
+    EXPECT_LE(factors.minSpeed, 1.0f);
+    EXPECT_GE(factors.maxSpeed, 1.0f);
+    EXPECT_LE(factors.minPitch, 1.0f);
+    EXPECT_GE(factors.maxPitch, 1.0f);
+    constexpr auto tsDefault = AudioPlaybackRate::TimestretchMode::DEFAULT;
+    constexpr auto tsVoice = AudioPlaybackRate::TimestretchMode::VOICE;
+    constexpr auto fbFail = AudioPlaybackRate::TimestretchFallbackMode::FAIL;
+    constexpr auto fbMute = AudioPlaybackRate::TimestretchFallbackMode::MUTE;
+    const std::vector<AudioPlaybackRate> validValues = {
+            AudioPlaybackRate{1.0f, 1.0f, tsDefault, fbFail},
+            AudioPlaybackRate{1.0f, 1.0f, tsDefault, fbMute},
+            AudioPlaybackRate{factors.maxSpeed, factors.maxPitch, tsDefault, fbMute},
+            AudioPlaybackRate{factors.minSpeed, factors.minPitch, tsDefault, fbMute},
+            AudioPlaybackRate{1.0f, 1.0f, tsVoice, fbMute},
+            AudioPlaybackRate{1.0f, 1.0f, tsVoice, fbFail},
+            AudioPlaybackRate{factors.maxSpeed, factors.maxPitch, tsVoice, fbMute},
+            AudioPlaybackRate{factors.minSpeed, factors.minPitch, tsVoice, fbMute},
+            // Out of range speed / pitch values must not be rejected if the fallback mode is "mute"
+            AudioPlaybackRate{factors.maxSpeed * 2, factors.maxPitch * 2, tsDefault, fbMute},
+            AudioPlaybackRate{factors.minSpeed / 2, factors.minPitch / 2, tsDefault, fbMute},
+            AudioPlaybackRate{factors.maxSpeed * 2, factors.maxPitch * 2, tsVoice, fbMute},
+            AudioPlaybackRate{factors.minSpeed / 2, factors.minPitch / 2, tsVoice, fbMute},
+    };
+    const std::vector<AudioPlaybackRate> invalidValues = {
+            AudioPlaybackRate{factors.maxSpeed, factors.maxPitch * 2, tsDefault, fbFail},
+            AudioPlaybackRate{factors.maxSpeed * 2, factors.maxPitch, tsDefault, fbFail},
+            AudioPlaybackRate{factors.minSpeed, factors.minPitch / 2, tsDefault, fbFail},
+            AudioPlaybackRate{factors.minSpeed / 2, factors.minPitch, tsDefault, fbFail},
+            AudioPlaybackRate{factors.maxSpeed, factors.maxPitch * 2, tsVoice, fbFail},
+            AudioPlaybackRate{factors.maxSpeed * 2, factors.maxPitch, tsVoice, fbFail},
+            AudioPlaybackRate{factors.minSpeed, factors.minPitch / 2, tsVoice, fbFail},
+            AudioPlaybackRate{factors.minSpeed / 2, factors.minPitch, tsVoice, fbFail},
+            AudioPlaybackRate{1.0f, 1.0f, tsDefault,
+                              AudioPlaybackRate::TimestretchFallbackMode::SYS_RESERVED_CUT_REPEAT},
+            AudioPlaybackRate{1.0f, 1.0f, tsDefault,
+                              AudioPlaybackRate::TimestretchFallbackMode::SYS_RESERVED_DEFAULT},
+    };
+    bool atLeastOneSupports = false;
+    for (const auto& port : offloadMixPorts) {
+        const auto portConfig = moduleConfig->getSingleConfigForMixPort(false, port);
+        ASSERT_TRUE(portConfig.has_value()) << "No profiles specified for output mix port";
+        WithStream<IStreamOut> stream(portConfig.value());
+        ASSERT_NO_FATAL_FAILURE(stream.SetUp(module.get(), kDefaultBufferSizeFrames));
+        bool isSupported = false;
+        EXPECT_NO_FATAL_FAILURE(TestAccessors<AudioPlaybackRate>(
+                stream.get(), &IStreamOut::getPlaybackRateParameters,
+                &IStreamOut::setPlaybackRateParameters, validValues, invalidValues, &isSupported));
+        if (isSupported) atLeastOneSupports = true;
+    }
+    if (!atLeastOneSupports) {
+        GTEST_SKIP() << "Audio playback rate configuration is not supported";
+    }
+}
+
+TEST_P(AudioStreamOut, SelectPresentation) {
+    static const auto kStatuses = {EX_ILLEGAL_ARGUMENT, EX_UNSUPPORTED_OPERATION};
+    const auto offloadMixPorts =
+            moduleConfig->getOffloadMixPorts(true /*attachedOnly*/, false /*singlePort*/);
+    if (offloadMixPorts.empty()) {
+        GTEST_SKIP()
+                << "No mix port for compressed offload that could be routed to attached devices";
+    }
+    bool atLeastOneSupports = false;
+    for (const auto& port : offloadMixPorts) {
+        const auto portConfig = moduleConfig->getSingleConfigForMixPort(false, port);
+        ASSERT_TRUE(portConfig.has_value()) << "No profiles specified for output mix port";
+        WithStream<IStreamOut> stream(portConfig.value());
+        ASSERT_NO_FATAL_FAILURE(stream.SetUp(module.get(), kDefaultBufferSizeFrames));
+        ndk::ScopedAStatus status;
+        EXPECT_STATUS(kStatuses, status = stream.get()->selectPresentation(0, 0));
+        if (status.getExceptionCode() != EX_UNSUPPORTED_OPERATION) atLeastOneSupports = true;
+    }
+    if (!atLeastOneSupports) {
+        GTEST_SKIP() << "Presentation selection is not supported";
+    }
 }
 
 class StreamLogicDefaultDriver : public StreamLogicDriver {
@@ -2813,6 +3135,17 @@ ndk::ScopedAStatus AudioCoreSoundDose::NoOpHalSoundDoseCallback::onNewMelValues(
     return ndk::ScopedAStatus::ok();
 }
 
+TEST_P(AudioCoreSoundDose, SameInstance) {
+    if (soundDose == nullptr) {
+        GTEST_SKIP() << "SoundDose is not supported";
+    }
+    std::shared_ptr<ISoundDose> soundDose2;
+    EXPECT_IS_OK(module->getSoundDose(&soundDose2));
+    ASSERT_NE(nullptr, soundDose2.get());
+    EXPECT_EQ(soundDose->asBinder(), soundDose2->asBinder())
+            << "getSoundDose must return the same interface instance across invocations";
+}
+
 TEST_P(AudioCoreSoundDose, GetSetOutputRs2) {
     if (soundDose == nullptr) {
         GTEST_SKIP() << "SoundDose is not supported";
@@ -2859,6 +3192,10 @@ INSTANTIATE_TEST_SUITE_P(AudioCoreModuleTest, AudioCoreModule,
                          testing::ValuesIn(android::getAidlHalInstanceNames(IModule::descriptor)),
                          android::PrintInstanceNameToString);
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(AudioCoreModule);
+INSTANTIATE_TEST_SUITE_P(AudioCoreBluetoothTest, AudioCoreBluetooth,
+                         testing::ValuesIn(android::getAidlHalInstanceNames(IModule::descriptor)),
+                         android::PrintInstanceNameToString);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(AudioCoreBluetooth);
 INSTANTIATE_TEST_SUITE_P(AudioCoreTelephonyTest, AudioCoreTelephony,
                          testing::ValuesIn(android::getAidlHalInstanceNames(IModule::descriptor)),
                          android::PrintInstanceNameToString);
