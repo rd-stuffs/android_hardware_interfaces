@@ -80,6 +80,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyAccess> AccessForVehiclePrope
         {VehicleProperty::IGNITION_STATE, VehiclePropertyAccess::READ},
         {VehicleProperty::ABS_ACTIVE, VehiclePropertyAccess::READ},
         {VehicleProperty::TRACTION_CONTROL_ACTIVE, VehiclePropertyAccess::READ},
+        {VehicleProperty::EV_STOPPING_MODE, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::HVAC_FAN_SPEED, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::HVAC_FAN_DIRECTION, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::HVAC_TEMPERATURE_CURRENT, VehiclePropertyAccess::READ},
@@ -161,6 +162,8 @@ std::unordered_map<VehicleProperty, VehiclePropertyAccess> AccessForVehiclePrope
         {VehicleProperty::SEAT_HEADREST_ANGLE_MOVE, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_HEADREST_FORE_AFT_POS, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_HEADREST_FORE_AFT_MOVE, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::SEAT_FOOTWELL_LIGHTS_STATE, VehiclePropertyAccess::READ},
+        {VehicleProperty::SEAT_FOOTWELL_LIGHTS_SWITCH, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_EASY_ACCESS_ENABLED, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_AIRBAG_ENABLED, VehiclePropertyAccess::READ_WRITE},
         {VehicleProperty::SEAT_CUSHION_SIDE_SUPPORT_POS, VehiclePropertyAccess::READ_WRITE},
@@ -235,6 +238,13 @@ std::unordered_map<VehicleProperty, VehiclePropertyAccess> AccessForVehiclePrope
         {VehicleProperty::SUPPORTED_PROPERTY_IDS, VehiclePropertyAccess::READ},
         {VehicleProperty::SHUTDOWN_REQUEST, VehiclePropertyAccess::WRITE},
         {VehicleProperty::AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::FORWARD_COLLISION_WARNING_ENABLED, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::BLIND_SPOT_WARNING_ENABLED, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::LANE_DEPARTURE_WARNING_ENABLED, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::LANE_CENTERING_ASSIST_ENABLED, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::EMERGENCY_LANE_KEEP_ASSIST_ENABLED, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::ADAPTIVE_CRUISE_CONTROL_ENABLED, VehiclePropertyAccess::READ_WRITE},
+        {VehicleProperty::HANDS_ON_DETECTION_ENABLED, VehiclePropertyAccess::READ_WRITE},
 };
 
 }  // namespace vehicle

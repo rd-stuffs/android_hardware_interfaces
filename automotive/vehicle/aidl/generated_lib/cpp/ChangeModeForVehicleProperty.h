@@ -80,6 +80,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::IGNITION_STATE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::ABS_ACTIVE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::TRACTION_CONTROL_ACTIVE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::EV_STOPPING_MODE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_FAN_SPEED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_FAN_DIRECTION, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_TEMPERATURE_CURRENT, VehiclePropertyChangeMode::ON_CHANGE},
@@ -161,6 +162,8 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::SEAT_HEADREST_ANGLE_MOVE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_HEADREST_FORE_AFT_POS, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_HEADREST_FORE_AFT_MOVE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::SEAT_FOOTWELL_LIGHTS_STATE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::SEAT_FOOTWELL_LIGHTS_SWITCH, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_EASY_ACCESS_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_AIRBAG_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::SEAT_CUSHION_SIDE_SUPPORT_POS, VehiclePropertyChangeMode::ON_CHANGE},
@@ -235,6 +238,13 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::SUPPORTED_PROPERTY_IDS, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::SHUTDOWN_REQUEST, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::FORWARD_COLLISION_WARNING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::BLIND_SPOT_WARNING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::LANE_DEPARTURE_WARNING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::LANE_CENTERING_ASSIST_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::EMERGENCY_LANE_KEEP_ASSIST_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::ADAPTIVE_CRUISE_CONTROL_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::HANDS_ON_DETECTION_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
 };
 
 }  // namespace vehicle
