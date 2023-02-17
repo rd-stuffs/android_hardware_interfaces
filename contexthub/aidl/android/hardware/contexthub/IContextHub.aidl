@@ -204,6 +204,35 @@ interface IContextHub {
     long[] getPreloadedNanoappIds();
 
     /**
+     * Invoked when the state of the NAN session requested through handleNanSessionRequest()
+     * changes. This function may be invoked without a corresponding handleNanSessionRequest to
+     * indicate if a NAN session was terminated without a request due to resource limitations.
+     *
+     * If the state becomes disabled without an explicit request from the HAL, the HAL MUST
+     * explicitly invoke handleNanSessionRequest() at a later point in time to attempt to
+     * re-enable NAN.
+     *
+     * @param state True if the NAN session is currently enabled.
+     */
+    void onNanSessionStateChanged(in boolean state);
+
+    /**
+     * Puts the context hub in and out of test mode. Test mode is a clean state
+     * where tests can be executed in the same environment. If enable is true,
+     * this will enable test mode by unloading all nanoapps. If enable is false,
+     * this will disable test mode and reverse the actions of enabling test mode
+     * by loading all preloaded nanoapps. This puts CHRE in a normal state.
+     *
+     * This should only be used for a test environment, either through a
+     * @TestApi or development tools. This should not be used in a production
+     * environment.
+     *
+     * @param enable If true, put the context hub in test mode. If false, disable
+     *               test mode.
+     */
+    void setTestMode(in boolean enable);
+
+    /**
      * Error codes that are used as service specific errors with the AIDL return
      * value EX_SERVICE_SPECIFIC.
      */

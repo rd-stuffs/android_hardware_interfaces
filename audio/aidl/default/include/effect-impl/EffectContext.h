@@ -37,7 +37,6 @@ class EffectContext {
             DataMQ;
 
     EffectContext(size_t statusDepth, const Parameter::Common& common) {
-        mSessionId = common.session;
         auto& input = common.input;
         auto& output = common.output;
 
@@ -63,6 +62,7 @@ class EffectContext {
             LOG(ERROR) << __func__ << " created invalid FMQ";
         }
         mWorkBuffer.reserve(std::max(inBufferSizeInFloat, outBufferSizeInFloat));
+        mCommon = common;
     }
     virtual ~EffectContext() {}
 
@@ -88,14 +88,18 @@ class EffectContext {
     }
     size_t getInputFrameSize() { return mInputFrameSize; }
     size_t getOutputFrameSize() { return mOutputFrameSize; }
-    int getSessionId() { return mSessionId; }
+    int getSessionId() { return mCommon.session; }
+    int getIoHandle() { return mCommon.ioHandle; }
 
     virtual RetCode setOutputDevice(
-            const aidl::android::media::audio::common::AudioDeviceDescription& device) {
+            const std::vector<aidl::android::media::audio::common::AudioDeviceDescription>&
+                    device) {
         mOutputDevice = device;
         return RetCode::SUCCESS;
     }
-    virtual aidl::android::media::audio::common::AudioDeviceDescription getOutputDevice() {
+
+    virtual std::vector<aidl::android::media::audio::common::AudioDeviceDescription>
+    getOutputDevice() {
         return mOutputDevice;
     }
 
@@ -119,21 +123,20 @@ class EffectContext {
 
     virtual RetCode setCommon(const Parameter::Common& common) {
         mCommon = common;
-        LOG(ERROR) << __func__ << mCommon.toString();
+        LOG(INFO) << __func__ << mCommon.toString();
         return RetCode::SUCCESS;
     }
     virtual Parameter::Common getCommon() {
-        LOG(ERROR) << __func__ << mCommon.toString();
+        LOG(INFO) << __func__ << mCommon.toString();
         return mCommon;
     }
 
   protected:
     // common parameters
-    int mSessionId = INVALID_AUDIO_SESSION_ID;
     size_t mInputFrameSize;
     size_t mOutputFrameSize;
     Parameter::Common mCommon;
-    aidl::android::media::audio::common::AudioDeviceDescription mOutputDevice;
+    std::vector<aidl::android::media::audio::common::AudioDeviceDescription> mOutputDevice;
     aidl::android::media::audio::common::AudioMode mMode;
     aidl::android::media::audio::common::AudioSource mSource;
     Parameter::VolumeStereo mVolumeStereo;

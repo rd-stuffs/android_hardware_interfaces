@@ -47,6 +47,10 @@ using aidl::android::hardware::audio::effect::IEffect;
 using aidl::android::hardware::audio::effect::IFactory;
 using aidl::android::hardware::audio::effect::Parameter;
 using aidl::android::hardware::audio::effect::State;
+using aidl::android::media::audio::common::AudioDeviceDescription;
+using aidl::android::media::audio::common::AudioDeviceType;
+using aidl::android::media::audio::common::AudioMode;
+using aidl::android::media::audio::common::AudioSource;
 
 enum ParamName { PARAM_INSTANCE_NAME };
 using EffectTestParam = std::tuple<std::pair<std::shared_ptr<IFactory>, Descriptor>>;
@@ -73,6 +77,13 @@ class AudioEffectTest : public testing::TestWithParam<EffectTestParam>, public E
     std::shared_ptr<IFactory> mFactory;
     std::shared_ptr<IEffect> mEffect;
     Descriptor mDescriptor;
+
+    void setAndGetParameter(Parameter::Id id, const Parameter& set) {
+        Parameter get;
+        EXPECT_IS_OK(mEffect->setParameter(set));
+        EXPECT_IS_OK(mEffect->getParameter(id, &get));
+        EXPECT_EQ(set, get) << set.toString() << " vs " << get.toString();
+    }
 };
 
 TEST_P(AudioEffectTest, SetupAndTearDown) {
@@ -392,14 +403,8 @@ TEST_P(AudioEffectTest, SetAndGetCommonParameter) {
 
     Parameter::Common common = EffectHelper::createParamCommon(
             0 /* session */, 1 /* ioHandle */, 44100 /* iSampleRate */, 44100 /* oSampleRate */);
-    Parameter get = Parameter(), set = Parameter();
-    set.set<Parameter::common>(common);
-    EXPECT_IS_OK(mEffect->setParameter(set));
-
-    Parameter::Id id;
-    id.set<Parameter::Id::commonTag>(Parameter::common);
-    EXPECT_IS_OK(mEffect->getParameter(id, &get));
-    EXPECT_EQ(set, get) << set.toString() << " vs " << get.toString();
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::common);
+    ASSERT_NO_FATAL_FAILURE(setAndGetParameter(id, Parameter::make<Parameter::common>(common)));
 
     ASSERT_NO_FATAL_FAILURE(close(mEffect));
     ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
@@ -414,14 +419,8 @@ TEST_P(AudioEffectTest, SetAndGetParameterInProcessing) {
 
     Parameter::Common common = EffectHelper::createParamCommon(
             0 /* session */, 1 /* ioHandle */, 44100 /* iSampleRate */, 44100 /* oSampleRate */);
-    Parameter get = Parameter(), set = Parameter();
-    set.set<Parameter::common>(common);
-    EXPECT_IS_OK(mEffect->setParameter(set));
-
-    Parameter::Id id;
-    id.set<Parameter::Id::commonTag>(Parameter::common);
-    EXPECT_IS_OK(mEffect->getParameter(id, &get));
-    EXPECT_EQ(set, get) << set.toString() << " vs " << get.toString();
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::common);
+    ASSERT_NO_FATAL_FAILURE(setAndGetParameter(id, Parameter::make<Parameter::common>(common)));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(close(mEffect));
@@ -439,14 +438,8 @@ TEST_P(AudioEffectTest, SetAndGetParameterInIdle) {
 
     Parameter::Common common = EffectHelper::createParamCommon(
             0 /* session */, 1 /* ioHandle */, 44100 /* iSampleRate */, 44100 /* oSampleRate */);
-    Parameter get = Parameter(), set = Parameter();
-    set.set<Parameter::common>(common);
-    EXPECT_IS_OK(mEffect->setParameter(set));
-
-    Parameter::Id id;
-    id.set<Parameter::Id::commonTag>(Parameter::common);
-    EXPECT_IS_OK(mEffect->getParameter(id, &get));
-    EXPECT_EQ(set, get) << set.toString() << " vs " << get.toString();
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::common);
+    ASSERT_NO_FATAL_FAILURE(setAndGetParameter(id, Parameter::make<Parameter::common>(common)));
 
     ASSERT_NO_FATAL_FAILURE(close(mEffect));
     ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
@@ -461,18 +454,11 @@ TEST_P(AudioEffectTest, SetAndGetParameterAfterStop) {
 
     Parameter::Common common = EffectHelper::createParamCommon(
             0 /* session */, 1 /* ioHandle */, 44100 /* iSampleRate */, 44100 /* oSampleRate */);
-    Parameter get = Parameter(), set = Parameter();
-    set.set<Parameter::common>(common);
-    EXPECT_IS_OK(mEffect->setParameter(set));
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::common);
+    ASSERT_NO_FATAL_FAILURE(setAndGetParameter(id, Parameter::make<Parameter::common>(common)));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
-
-    Parameter::Id id;
-    id.set<Parameter::Id::commonTag>(Parameter::common);
-    EXPECT_IS_OK(mEffect->getParameter(id, &get));
-    EXPECT_EQ(set, get) << set.toString() << " vs " << get.toString();
-
     ASSERT_NO_FATAL_FAILURE(close(mEffect));
     ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
 }
@@ -487,21 +473,102 @@ TEST_P(AudioEffectTest, SetAndGetParameterAfterReset) {
 
     Parameter::Common common = EffectHelper::createParamCommon(
             0 /* session */, 1 /* ioHandle */, 44100 /* iSampleRate */, 44100 /* oSampleRate */);
-    Parameter get = Parameter(), set = Parameter();
-    set.set<Parameter::common>(common);
-    EXPECT_IS_OK(mEffect->setParameter(set));
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::common);
+    ASSERT_NO_FATAL_FAILURE(setAndGetParameter(id, Parameter::make<Parameter::common>(common)));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::RESET));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
 
-    Parameter::Id id;
-    id.set<Parameter::Id::commonTag>(Parameter::common);
-    EXPECT_IS_OK(mEffect->getParameter(id, &get));
-    EXPECT_EQ(set, get) << set.toString() << " vs " << get.toString();
+    ASSERT_NO_FATAL_FAILURE(setAndGetParameter(id, Parameter::make<Parameter::common>(common)));
 
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
     ASSERT_NO_FATAL_FAILURE(close(mEffect));
     ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
 }
+
+// Set and get AudioDeviceDescription in Parameter
+TEST_P(AudioEffectTest, SetAndGetParameterDeviceDescription) {
+    ASSERT_NO_FATAL_FAILURE(create(mFactory, mEffect, mDescriptor));
+    ASSERT_NO_FATAL_FAILURE(open(mEffect));
+
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
+
+    std::vector<AudioDeviceDescription> deviceDescs = {
+            {.type = AudioDeviceType::IN_DEFAULT,
+             .connection = AudioDeviceDescription::CONNECTION_ANALOG},
+            {.type = AudioDeviceType::IN_DEVICE,
+             .connection = AudioDeviceDescription::CONNECTION_BT_A2DP}};
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::deviceDescription);
+    ASSERT_NO_FATAL_FAILURE(
+            setAndGetParameter(id, Parameter::make<Parameter::deviceDescription>(deviceDescs)));
+
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
+    ASSERT_NO_FATAL_FAILURE(close(mEffect));
+    ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
+}
+
+// Set and get AudioMode in Parameter
+TEST_P(AudioEffectTest, SetAndGetParameterAudioMode) {
+    ASSERT_NO_FATAL_FAILURE(create(mFactory, mEffect, mDescriptor));
+    ASSERT_NO_FATAL_FAILURE(open(mEffect));
+
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
+
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::mode);
+    ASSERT_NO_FATAL_FAILURE(
+            setAndGetParameter(id, Parameter::make<Parameter::mode>(AudioMode::NORMAL)));
+    ASSERT_NO_FATAL_FAILURE(
+            setAndGetParameter(id, Parameter::make<Parameter::mode>(AudioMode::IN_COMMUNICATION)));
+
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
+    ASSERT_NO_FATAL_FAILURE(close(mEffect));
+    ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
+}
+
+// Set and get AudioSource in Parameter
+TEST_P(AudioEffectTest, SetAndGetParameterAudioSource) {
+    ASSERT_NO_FATAL_FAILURE(create(mFactory, mEffect, mDescriptor));
+    ASSERT_NO_FATAL_FAILURE(open(mEffect));
+
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
+
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::source);
+    ASSERT_NO_FATAL_FAILURE(
+            setAndGetParameter(id, Parameter::make<Parameter::source>(AudioSource::DEFAULT)));
+    ASSERT_NO_FATAL_FAILURE(setAndGetParameter(
+            id, Parameter::make<Parameter::source>(AudioSource::VOICE_RECOGNITION)));
+
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
+    ASSERT_NO_FATAL_FAILURE(close(mEffect));
+    ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
+}
+
+// Set and get VolumeStereo in Parameter
+TEST_P(AudioEffectTest, SetAndGetParameterVolume) {
+    ASSERT_NO_FATAL_FAILURE(create(mFactory, mEffect, mDescriptor));
+    ASSERT_NO_FATAL_FAILURE(open(mEffect));
+
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
+
+    Parameter::Id id = Parameter::Id::make<Parameter::Id::commonTag>(Parameter::volumeStereo);
+    Parameter::VolumeStereo volume = {.left = 10.0, .right = 10.0};
+    ASSERT_NO_FATAL_FAILURE(
+            setAndGetParameter(id, Parameter::make<Parameter::volumeStereo>(volume)));
+
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
+    ASSERT_NO_FATAL_FAILURE(close(mEffect));
+    ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
+}
+
 /// Data processing test
 // Send data to effects and expect it to be consumed by checking statusMQ.
 TEST_P(AudioEffectTest, ConsumeDataInProcessingState) {
@@ -523,12 +590,14 @@ TEST_P(AudioEffectTest, ConsumeDataInProcessingState) {
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
 
     std::vector<float> buffer;
-    EffectHelper::allocateInputData(common, inputMQ, buffer);
-    EffectHelper::writeToFmq(inputMQ, buffer);
-    EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer);
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::allocateInputData(common, inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer));
 
     ASSERT_NO_FATAL_FAILURE(close(mEffect));
     ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
@@ -550,20 +619,24 @@ TEST_P(AudioEffectTest, ConsumeDataAfterRestart) {
     auto outputMQ = std::make_unique<EffectHelper::DataMQ>(ret.outputDataMQ);
     ASSERT_TRUE(outputMQ->isValid());
 
-    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
-    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
-    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
-    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
-    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
-    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
-
     std::vector<float> buffer;
-    EffectHelper::allocateInputData(common, inputMQ, buffer);
-    EffectHelper::writeToFmq(inputMQ, buffer);
-    EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer);
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ, 0, outputMQ, buffer.size(), buffer));
+    ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
+    ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
+
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::allocateInputData(common, inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer));
 
     ASSERT_NO_FATAL_FAILURE(close(mEffect));
     ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
@@ -586,14 +659,14 @@ TEST_P(AudioEffectTest, SendDataAtIdleAndConsumeDataInProcessing) {
     ASSERT_TRUE(outputMQ->isValid());
 
     std::vector<float> buffer;
-    EffectHelper::allocateInputData(common, inputMQ, buffer);
-    EffectHelper::writeToFmq(inputMQ, buffer);
-    EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer);
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::allocateInputData(common, inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ, buffer));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
 
-    EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer);
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
@@ -619,31 +692,30 @@ TEST_P(AudioEffectTest, ProcessDataMultipleTimes) {
     ASSERT_TRUE(outputMQ->isValid());
 
     std::vector<float> buffer;
-    EffectHelper::allocateInputData(common, inputMQ, buffer);
-    EffectHelper::writeToFmq(inputMQ, buffer);
-    EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer);
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::allocateInputData(common, inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
 
-    EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer);
-    // expect no status and data after consume
-    EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer);
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer));
 
-    EffectHelper::writeToFmq(inputMQ, buffer);
-    EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer);
-    // expect no status and data after consume
-    EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer);
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer));
 
     ASSERT_NO_FATAL_FAILURE(close(mEffect));
     ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
 }
 
-// Send data to IDLE state effects and expect it not be consumed.
-TEST_P(AudioEffectTest, NotConsumeDataInIdleState) {
+// Send data to processing state effects, stop, and restart.
+TEST_P(AudioEffectTest, ConsumeDataAndRestart) {
     ASSERT_NO_FATAL_FAILURE(create(mFactory, mEffect, mDescriptor));
 
     Parameter::Common common = EffectHelper::createParamCommon(
@@ -660,17 +732,21 @@ TEST_P(AudioEffectTest, NotConsumeDataInIdleState) {
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
+    std::vector<float> buffer;
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::allocateInputData(common, inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer));
+
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
-
-    std::vector<float> buffer;
-    EffectHelper::allocateInputData(common, inputMQ, buffer);
-    EffectHelper::writeToFmq(inputMQ, buffer);
-    EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer);
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
-    EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer);
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ, 1, outputMQ, buffer.size(), buffer));
 
     ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
@@ -698,9 +774,9 @@ TEST_P(AudioEffectTest, NotConsumeDataByClosedEffect) {
     ASSERT_TRUE(outputMQ->isValid());
 
     std::vector<float> buffer;
-    EffectHelper::allocateInputData(common, inputMQ, buffer);
-    EffectHelper::writeToFmq(inputMQ, buffer);
-    EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer);
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::allocateInputData(common, inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ, buffer));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::readFromFmq(statusMQ, 0, outputMQ, 0, buffer));
 
     ASSERT_NO_FATAL_FAILURE(destroy(mFactory, mEffect));
 }
@@ -733,9 +809,10 @@ TEST_P(AudioEffectTest, ConsumeDataMultipleEffects) {
     ASSERT_TRUE(outputMQ1->isValid());
 
     std::vector<float> buffer1, buffer2;
-    EffectHelper::allocateInputData(common1, inputMQ1, buffer1);
-    EffectHelper::writeToFmq(inputMQ1, buffer1);
-    EffectHelper::readFromFmq(statusMQ1, 1, outputMQ1, buffer1.size(), buffer1);
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::allocateInputData(common1, inputMQ1, buffer1));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ1, buffer1));
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ1, 1, outputMQ1, buffer1.size(), buffer1));
 
     auto statusMQ2 = std::make_unique<EffectHelper::StatusMQ>(ret2.statusMQ);
     ASSERT_TRUE(statusMQ2->isValid());
@@ -743,9 +820,10 @@ TEST_P(AudioEffectTest, ConsumeDataMultipleEffects) {
     ASSERT_TRUE(inputMQ2->isValid());
     auto outputMQ2 = std::make_unique<EffectHelper::DataMQ>(ret2.outputDataMQ);
     ASSERT_TRUE(outputMQ2->isValid());
-    EffectHelper::allocateInputData(common2, inputMQ2, buffer2);
-    EffectHelper::writeToFmq(inputMQ2, buffer2);
-    EffectHelper::readFromFmq(statusMQ2, 1, outputMQ2, buffer2.size(), buffer2);
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::allocateInputData(common2, inputMQ2, buffer2));
+    EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(inputMQ2, buffer2));
+    EXPECT_NO_FATAL_FAILURE(
+            EffectHelper::readFromFmq(statusMQ2, 1, outputMQ2, buffer2.size(), buffer2));
 
     ASSERT_NO_FATAL_FAILURE(command(effect1, CommandId::STOP));
     ASSERT_NO_FATAL_FAILURE(expectState(effect1, State::IDLE));

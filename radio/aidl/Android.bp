@@ -163,7 +163,12 @@ aidl_interface {
             enabled: true,
         },
         java: {
+            apex_available: [
+                "//apex_available:platform",
+                "com.android.btservices",
+            ],
             sdk_version: "module_current",
+            min_sdk_version: "Tiramisu",
         },
     },
 
@@ -246,6 +251,22 @@ aidl_interface {
     name: "android.hardware.radio.ims",
     vendor_available: true,
     srcs: ["android/hardware/radio/ims/*.aidl"],
+    stability: "vintf",
+    imports: ["android.hardware.radio-V2"],
+    backend: {
+        cpp: {
+            enabled: false,
+        },
+        java: {
+            sdk_version: "module_current",
+        },
+    },
+}
+
+aidl_interface {
+    name: "android.hardware.radio.satellite",
+    vendor_available: true,
+    srcs: ["android/hardware/radio/satellite/*.aidl"],
     stability: "vintf",
     imports: ["android.hardware.radio-V2"],
     backend: {

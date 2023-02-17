@@ -1744,6 +1744,77 @@
             }
         },
         {
+            "property": "VehicleProperty::HW_KEY_INPUT_V2",
+            "defaultValue": {
+                "int32Values": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "int64Values": [
+                    0
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "Constants::SEAT_1_LEFT"
+                },
+                {
+                    "areaId": "Constants::SEAT_1_RIGHT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_LEFT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_RIGHT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_CENTER"
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::HW_MOTION_INPUT",
+            "defaultValue": {
+                "int32Values": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0
+                ],
+                "floatValues": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "int64Values": [
+                    0
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "Constants::SEAT_1_LEFT"
+                },
+                {
+                    "areaId": "Constants::SEAT_1_RIGHT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_LEFT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_RIGHT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_CENTER"
+                }
+            ]
+        },
+        {
             "property": "VehicleProperty::HW_ROTARY_INPUT",
             "defaultValue": {
                 "int32Values": [
@@ -2578,6 +2649,92 @@
             ]
         },
         {
+            "property": "VehicleProperty::WINDSHIELD_WIPERS_PERIOD",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "VehicleAreaWindow::FRONT_WINDSHIELD",
+                    "minInt32Value": 0,
+                    "maxInt32Value": 3000
+                },
+                {
+                    "areaId": "VehicleAreaWindow::REAR_WINDSHIELD",
+                    "minInt32Value": 0,
+                    "maxInt32Value": 3000
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::WINDSHIELD_WIPERS_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "WindshieldWipersState::OFF"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "VehicleAreaWindow::FRONT_WINDSHIELD",
+                    "supportedEnumValues": [
+                        "WindshieldWipersState::OFF",
+                        "WindshieldWipersState::ON",
+                        "WindshieldWipersState::SERVICE"
+                    ]
+                },
+                {
+                    "areaId": "VehicleAreaWindow::REAR_WINDSHIELD",
+                    "supportedEnumValues": [
+                        "WindshieldWipersState::OFF",
+                        "WindshieldWipersState::ON"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::WINDSHIELD_WIPERS_SWITCH",
+            "defaultValue": {
+                "int32Values": [
+                    "WindshieldWipersSwitch::OFF"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "VehicleAreaWindow::FRONT_WINDSHIELD",
+                    "supportedEnumValues": [
+                        "WindshieldWipersSwitch::OFF",
+                        "WindshieldWipersSwitch::MIST",
+                        "WindshieldWipersSwitch::INTERMITTENT_LEVEL_1",
+                        "WindshieldWipersSwitch::INTERMITTENT_LEVEL_2",
+                        "WindshieldWipersSwitch::INTERMITTENT_LEVEL_3",
+                        "WindshieldWipersSwitch::INTERMITTENT_LEVEL_4",
+                        "WindshieldWipersSwitch::INTERMITTENT_LEVEL_5",
+                        "WindshieldWipersSwitch::CONTINUOUS_LEVEL_1",
+                        "WindshieldWipersSwitch::CONTINUOUS_LEVEL_2",
+                        "WindshieldWipersSwitch::CONTINUOUS_LEVEL_3",
+                        "WindshieldWipersSwitch::CONTINUOUS_LEVEL_4",
+                        "WindshieldWipersSwitch::CONTINUOUS_LEVEL_5",
+                        "WindshieldWipersSwitch::AUTO",
+                        "WindshieldWipersSwitch::SERVICE"
+                    ]
+                },
+                {
+                    "areaId": "VehicleAreaWindow::REAR_WINDSHIELD",
+                    "supportedEnumValues": [
+                        "WindshieldWipersSwitch::OFF",
+                        "WindshieldWipersSwitch::INTERMITTENT_LEVEL_1",
+                        "WindshieldWipersSwitch::INTERMITTENT_LEVEL_2",
+                        "WindshieldWipersSwitch::CONTINUOUS_LEVEL_1",
+                        "WindshieldWipersSwitch::CONTINUOUS_LEVEL_2",
+                        "WindshieldWipersSwitch::AUTO",
+                        "WindshieldWipersSwitch::SERVICE"
+                    ]
+                }
+            ]
+        },
+        {
             "property": "VehicleProperty::STEERING_WHEEL_DEPTH_POS",
             "defaultValue": {
                 "int32Values": [
@@ -2660,6 +2817,34 @@
                     0
                 ]
             }
+        },
+        {
+            "property": "VehicleProperty::GLOVE_BOX_DOOR_POS",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "Constants::SEAT_1_RIGHT",
+                    "minInt32Value": 0,
+                    "maxInt32Value": 10
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::GLOVE_BOX_LOCKED",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "Constants::SEAT_1_RIGHT"
+                }
+            ]
         },
         {
             "property": "VehicleProperty::WHEEL_TICK",
@@ -2969,12 +3154,99 @@
             }
         },
         {
-            "property": "VehicleProperty::ADAPTIVE_CRUISE_CONTROL_ENABLED",
+            "property": "VehicleProperty::EMERGENCY_LANE_KEEP_ASSIST_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "EmergencyLaneKeepAssistState::ENABLED"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "EmergencyLaneKeepAssistState::ENABLED",
+                        "EmergencyLaneKeepAssistState::WARNING_LEFT",
+                        "EmergencyLaneKeepAssistState::WARNING_RIGHT",
+                        "EmergencyLaneKeepAssistState::ACTIVATED_STEER_LEFT",
+                        "EmergencyLaneKeepAssistState::ACTIVATED_STEER_RIGHT",
+                        "EmergencyLaneKeepAssistState::USER_OVERRIDE"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::CRUISE_CONTROL_ENABLED",
             "defaultValue": {
                 "int32Values": [
                     1
                 ]
             }
+        },
+        {
+            "property": "VehicleProperty::CRUISE_CONTROL_TYPE",
+            "defaultValue": {
+                "int32Values": [
+                    "CruiseControlType::STANDARD"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "CruiseControlType::STANDARD",
+                        "CruiseControlType::ADAPTIVE",
+                        "CruiseControlType::PREDICTIVE"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::CRUISE_CONTROL_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "CruiseControlState::ENABLED"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "CruiseControlState::ENABLED",
+                        "CruiseControlState::ACTIVATED",
+                        "CruiseControlState::USER_OVERRIDE",
+                        "CruiseControlState::SUSPENDED",
+                        "CruiseControlState::FORCED_DEACTIVATION_WARNING"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::CRUISE_CONTROL_COMMAND",
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "CruiseControlCommand::ACTIVATE",
+                        "CruiseControlCommand::SUSPEND",
+                        "CruiseControlCommand::INCREASE_TARGET_SPEED",
+                        "CruiseControlCommand::DECREASE_TARGET_SPEED",
+                        "CruiseControlCommand::INCREASE_TARGET_TIME_GAP",
+                        "CruiseControlCommand::DECREASE_TARGET_TIME_GAP"
+                    ]
+                }
+            ]
         },
         {
             "property": "VehicleProperty::HANDS_ON_DETECTION_ENABLED",
@@ -2983,6 +3255,86 @@
                     1
                 ]
             }
+        },
+        {
+            "property": "VehicleProperty::HANDS_ON_DETECTION_DRIVER_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "HandsOnDetectionDriverState::HANDS_ON"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "HandsOnDetectionDriverState::HANDS_ON",
+                        "HandsOnDetectionDriverState::HANDS_OFF"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::HANDS_ON_DETECTION_WARNING",
+            "defaultValue": {
+                "int32Values": [
+                    "HandsOnDetectionWarning::NO_WARNING"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "HandsOnDetectionWarning::NO_WARNING",
+                        "HandsOnDetectionWarning::WARNING"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::DRIVER_ATTENTION_MONITORING_ENABLED",
+            "defaultValue": {
+                "int32Values": [
+                    1
+                ]
+            }
+        },
+        {
+            "property": "VehicleProperty::DRIVER_ATTENTION_MONITORING_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "DriverAttentionMonitoringState::NOT_DISTRACTED"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "DriverAttentionMonitoringState::DISTRACTED",
+                        "DriverAttentionMonitoringState::NOT_DISTRACTED"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::DRIVER_ATTENTION_MONITORING_WARNING",
+            "defaultValue": {
+                "int32Values": [
+                    "DriverAttentionMonitoringWarning::NO_WARNING"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "DriverAttentionMonitoringWarning::NO_WARNING",
+                        "DriverAttentionMonitoringWarning::WARNING"
+                    ]
+                }
+            ]
         },
         {
             "property": "VehicleProperty::INITIAL_USER_INFO"
@@ -3084,36 +3436,183 @@
             }
         },
         {
+            "property": "VehicleProperty::AUTOMATIC_EMERGENCY_BRAKING_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "ErrorState::NOT_AVAILABLE_DISABLED"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_POOR_VISIBILITY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "AutomaticEmergencyBrakingState::ENABLED",
+                        "AutomaticEmergencyBrakingState::ACTIVATED",
+                        "AutomaticEmergencyBrakingState::USER_OVERRIDE"
+                    ]
+                }
+            ]
+        },
+        {
             "property": "VehicleProperty::FORWARD_COLLISION_WARNING_ENABLED",
             "defaultValue": {
                 "int32Values": [
-                    0
+                    1
                 ]
             }
+        },
+        {
+            "property": "VehicleProperty::FORWARD_COLLISION_WARNING_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "ForwardCollisionWarningState::NO_WARNING"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_POOR_VISIBILITY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "ForwardCollisionWarningState::NO_WARNING",
+                        "ForwardCollisionWarningState::WARNING"
+                    ]
+                }
+            ]
         },
         {
             "property": "VehicleProperty::BLIND_SPOT_WARNING_ENABLED",
             "defaultValue": {
                 "int32Values": [
-                    0
+                    1
                 ]
             }
+        },
+        {
+            "property": "VehicleProperty::BLIND_SPOT_WARNING_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "BlindSpotWarningState::NO_WARNING"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "Constants::MIRROR_DRIVER_LEFT_RIGHT",
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_POOR_VISIBILITY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "BlindSpotWarningState::NO_WARNING",
+                        "BlindSpotWarningState::WARNING"
+                    ]
+                }
+            ]
         },
         {
             "property": "VehicleProperty::LANE_DEPARTURE_WARNING_ENABLED",
             "defaultValue": {
                 "int32Values": [
-                    0
+                    1
                 ]
             }
+        },
+        {
+            "property": "VehicleProperty::LANE_DEPARTURE_WARNING_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "LaneDepartureWarningState::NO_WARNING"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "LaneDepartureWarningState::NO_WARNING",
+                        "LaneDepartureWarningState::WARNING_LEFT",
+                        "LaneDepartureWarningState::WARNING_RIGHT"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::LANE_KEEP_ASSIST_ENABLED",
+            "defaultValue": {
+                "int32Values": [
+                    1
+                ]
+            }
+        },
+        {
+            "property": "VehicleProperty::LANE_KEEP_ASSIST_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "LaneKeepAssistState::ENABLED"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "LaneKeepAssistState::ENABLED",
+                        "LaneKeepAssistState::ACTIVATED_STEER_LEFT",
+                        "LaneKeepAssistState::ACTIVATED_STEER_RIGHT",
+                        "LaneKeepAssistState::USER_OVERRIDE"
+                    ]
+                }
+            ]
         },
         {
             "property": "VehicleProperty::LANE_CENTERING_ASSIST_ENABLED",
             "defaultValue": {
                 "int32Values": [
-                    0
+                    1
                 ]
             }
+        },
+        {
+            "property": "VehicleProperty::LANE_CENTERING_ASSIST_COMMAND"
+        },
+        {
+            "property": "VehicleProperty::LANE_CENTERING_ASSIST_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "LaneCenteringAssistState::ENABLED"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_SPEED_LOW",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "LaneCenteringAssistState::ENABLED",
+                        "LaneCenteringAssistState::ACTIVATION_REQUESTED",
+                        "LaneCenteringAssistState::ACTIVATED",
+                        "LaneCenteringAssistState::USER_OVERRIDE",
+                        "LaneCenteringAssistState::FORCED_DEACTIVATION_WARNING"
+                    ]
+                }
+            ]
         }
     ]
 }

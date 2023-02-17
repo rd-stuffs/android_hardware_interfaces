@@ -101,8 +101,8 @@ class Factory : public BnFactory {
 
     ndk::ScopedAStatus destroyEffectImpl(const std::shared_ptr<IEffect>& in_handle);
     void cleanupEffectMap();
-    void openEffectLibrary(const ::aidl::android::media::audio::common::AudioUuid& impl,
-                           const std::string& libName);
+    bool openEffectLibrary(const ::aidl::android::media::audio::common::AudioUuid& impl,
+                           const std::string& path);
     void createIdentityWithConfig(
             const EffectConfig::LibraryUuid& configLib,
             const ::aidl::android::media::audio::common::AudioUuid& typeUuid,

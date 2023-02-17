@@ -35,25 +35,21 @@ package android.hardware.audio.effect;
 @VintfStability
 union PresetReverb {
   android.hardware.audio.effect.VendorExtension vendor;
+  android.hardware.audio.effect.PresetReverb.Presets[] supportedPresets;
   android.hardware.audio.effect.PresetReverb.Presets preset;
   @Backing(type="int") @VintfStability
   enum Presets {
-    NONE = 0,
-    SMALLROOM = 1,
-    MEDIUMROOM = 2,
-    LARGEROOM = 3,
-    MEDIUMHALL = 4,
-    LARGEHALL = 5,
-    PLATE = 6,
+    NONE,
+    SMALLROOM,
+    MEDIUMROOM,
+    LARGEROOM,
+    MEDIUMHALL,
+    LARGEHALL,
+    PLATE,
   }
   @VintfStability
   union Id {
     int vendorExtensionTag;
     android.hardware.audio.effect.PresetReverb.Tag commonTag;
-  }
-  @VintfStability
-  parcelable Capability {
-    android.hardware.audio.effect.VendorExtension extension;
-    android.hardware.audio.effect.PresetReverb.Presets[] supportedPresets;
   }
 }

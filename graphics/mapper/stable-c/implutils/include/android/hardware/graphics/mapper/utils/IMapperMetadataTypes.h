@@ -563,8 +563,11 @@ DEFINE_TYPE(SMPTE2086, std::optional<Smpte2086>);
 DEFINE_TYPE(CTA861_3, std::optional<Cta861_3>);
 DEFINE_TYPE(SMPTE2094_10, std::optional<std::vector<uint8_t>>);
 DEFINE_TYPE(SMPTE2094_40, std::optional<std::vector<uint8_t>>);
+DEFINE_TYPE(STRIDE, uint32_t);
 
 #undef DEFINE_TYPE
+
+#if defined(__cplusplus) && __cplusplus >= 202002L
 
 template <typename F, std::size_t... I>
 void invokeWithStandardMetadata(F&& f, StandardMetadataType type, std::index_sequence<I...>) {
@@ -619,5 +622,7 @@ AIMapper_Error applyStandardMetadata(StandardMetadataType type, const void* _Non
             type, StandardMetadataSequence{});
     return retVal;
 }
+
+#endif
 
 }  // namespace android::hardware::graphics::mapper

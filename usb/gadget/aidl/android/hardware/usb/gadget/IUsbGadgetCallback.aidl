@@ -16,12 +16,25 @@
 
 package android.hardware.usb.gadget;
 
-import android.hardware.usb.gadget.GadgetFunction;
 import android.hardware.usb.gadget.Status;
 import android.hardware.usb.gadget.UsbSpeed;
 
 @VintfStability
 oneway interface IUsbGadgetCallback {
+    /**
+     * Callback function used to propagate the status of configuration
+     * switch to the caller.
+     *
+     * @param functions list of functions defined by GadgetFunction
+     *                  included in the current USB gadget composition.
+     * @param status SUCCESS when the functions are applied.
+     *               FUNCTIONS_NOT_SUPPORTED when the configuration is
+     *                                       not supported.
+     *               ERROR otherwise.
+     * @param transactionId ID to be used when invoking the callback.
+     */
+    void setCurrentUsbFunctionsCb(in long functions, in Status status, long transactionId);
+
     /**
      * Callback function used to propagate the current USB gadget
      * configuration.
@@ -48,16 +61,10 @@ oneway interface IUsbGadgetCallback {
     void getUsbSpeedCb(in UsbSpeed speed, long transactionId);
 
     /**
-     * Callback function used to propagate the status of configuration
-     * switch to the caller.
-     *
-     * @param functions list of functions defined by GadgetFunction
-     *                  included in the current USB gadget composition.
-     * @param status SUCCESS when the functions are applied.
-     *               FUNCTIONS_NOT_SUPPORTED when the configuration is
-     *                                       not supported.
-     *               ERROR otherwise.
-     * @param transactionId ID to be used when invoking the callback.
+     * Callback function used to propagate the result of requesting
+     * resetUsbGadget.
+     * @param status SUCCESS if current request succeeded. FAILURE otherwise.
+     * @param transactionId current transactionId sent during reset request.
      */
-    void setCurrentUsbFunctionsCb(in long functions, in Status status, long transactionId);
+    void resetCb(in Status status, long transactionId);
 }

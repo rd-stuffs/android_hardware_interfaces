@@ -16,15 +16,13 @@
 
 package android.hardware.usb.gadget;
 
-import android.hardware.usb.gadget.GadgetFunction;
 import android.hardware.usb.gadget.IUsbGadgetCallback;
 
 @VintfStability
 oneway interface IUsbGadget {
     /**
      * This function is used to set the current USB gadget configuration.
-     * Usb gadget needs to teared down if an USB configuration is already
-     * active.
+     * Usb gadget needs to be reset if an USB configuration is already.
      *
      * @param functions The GadgetFunction bitmap. See GadgetFunction for
      *                  the value of each bit.
@@ -36,7 +34,7 @@ oneway interface IUsbGadget {
      *
      */
     void setCurrentUsbFunctions(in long functions, in IUsbGadgetCallback callback,
-        in long timeoutMs, long transactionId);
+            in long timeoutMs, long transactionId);
 
     /**
      * This function is used to query the USB functions included in the
@@ -61,6 +59,10 @@ oneway interface IUsbGadget {
      * This function is used to reset USB gadget driver.
      * Performs USB data connection reset. The connection will disconnect and
      * reconnect.
+     *
+     * @param callback IUsbGadgetCallback::resetCb used to propagate
+     *                 the result of requesting resetUsbGadget.
+     * @param transactionId ID to be used when invoking the callback.
      */
-    void reset();
+    void reset(in IUsbGadgetCallback callback, long transactionId);
 }

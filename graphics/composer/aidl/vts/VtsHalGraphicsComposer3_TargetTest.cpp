@@ -621,6 +621,68 @@ TEST_P(GraphicsComposerAidlTest, BootDisplayConfig_Unsupported) {
     }
 }
 
+TEST_P(GraphicsComposerAidlTest, GetHdrConversionCapabilities) {
+    if (!hasCapability(Capability::HDR_OUTPUT_CONVERSION_CONFIG)) {
+        GTEST_SUCCEED() << "HDR output conversion not supported";
+        return;
+    }
+    const auto& [status, conversionCapabilities] = mComposerClient->getHdrConversionCapabilities();
+    EXPECT_TRUE(status.isOk());
+}
+
+TEST_P(GraphicsComposerAidlTest, SetHdrConversionStrategy_Passthrough) {
+    if (!hasCapability(Capability::HDR_OUTPUT_CONVERSION_CONFIG)) {
+        GTEST_SUCCEED() << "HDR output conversion not supported";
+        return;
+    }
+    common::HdrConversionStrategy hdrConversionStrategy;
+    hdrConversionStrategy.set<common::HdrConversionStrategy::Tag::passthrough>(true);
+    const auto& [status, preferredHdrOutputType] =
+            mComposerClient->setHdrConversionStrategy(hdrConversionStrategy);
+    EXPECT_TRUE(status.isOk());
+    EXPECT_EQ(common::Hdr::INVALID, preferredHdrOutputType);
+}
+
+TEST_P(GraphicsComposerAidlTest, SetHdrConversionStrategy_Force) {
+    if (!hasCapability(Capability::HDR_OUTPUT_CONVERSION_CONFIG)) {
+        GTEST_SUCCEED() << "HDR output conversion not supported";
+        return;
+    }
+    const auto& [status, conversionCapabilities] = mComposerClient->getHdrConversionCapabilities();
+    for (auto conversionCapability : conversionCapabilities) {
+        if (conversionCapability.outputType) {
+            common::HdrConversionStrategy hdrConversionStrategy;
+            hdrConversionStrategy.set<common::HdrConversionStrategy::Tag::forceHdrConversion>(
+                    conversionCapability.outputType->hdr);
+            const auto& [statusSet, preferredHdrOutputType] =
+                    mComposerClient->setHdrConversionStrategy(hdrConversionStrategy);
+            EXPECT_TRUE(statusSet.isOk());
+            EXPECT_EQ(common::Hdr::INVALID, preferredHdrOutputType);
+        }
+    }
+}
+
+TEST_P(GraphicsComposerAidlTest, SetHdrConversionStrategy_Auto) {
+    if (!hasCapability(Capability::HDR_OUTPUT_CONVERSION_CONFIG)) {
+        GTEST_SUCCEED() << "HDR output conversion not supported";
+        return;
+    }
+    const auto& [status, conversionCapabilities] = mComposerClient->getHdrConversionCapabilities();
+    std::vector<aidl::android::hardware::graphics::common::Hdr> autoHdrTypes;
+    for (auto conversionCapability : conversionCapabilities) {
+        if (conversionCapability.outputType) {
+            autoHdrTypes.push_back(conversionCapability.outputType->hdr);
+        }
+    }
+    common::HdrConversionStrategy hdrConversionStrategy;
+    hdrConversionStrategy.set<common::HdrConversionStrategy::Tag::autoAllowedHdrTypes>(
+            autoHdrTypes);
+    const auto& [statusSet, preferredHdrOutputType] =
+            mComposerClient->setHdrConversionStrategy(hdrConversionStrategy);
+    EXPECT_TRUE(statusSet.isOk());
+    EXPECT_NE(common::Hdr::INVALID, preferredHdrOutputType);
+}
+
 TEST_P(GraphicsComposerAidlTest, SetAutoLowLatencyMode_BadDisplay) {
     auto status = mComposerClient->setAutoLowLatencyMode(getInvalidDisplayId(), /*isEnabled*/ true);
     EXPECT_FALSE(status.isOk());
@@ -812,7 +874,7 @@ TEST_P(GraphicsComposerAidlTest, GetDisplayName) {
 }
 
 TEST_P(GraphicsComposerAidlTest, GetOverlaySupport) {
-    const auto& [status, _] = mComposerClient->getOverlaySupport();
+    const auto& [status, properties] = mComposerClient->getOverlaySupport();
     if (!status.isOk() && status.getExceptionCode() == EX_SERVICE_SPECIFIC &&
         status.getServiceSpecificError() == IComposerClient::EX_UNSUPPORTED) {
         GTEST_SUCCEED() << "getOverlaySupport is not supported";
@@ -820,6 +882,23 @@ TEST_P(GraphicsComposerAidlTest, GetOverlaySupport) {
     }
 
     ASSERT_TRUE(status.isOk());
+    for (const auto& i : properties.combinations) {
+        for (const auto standard : i.standards) {
+            const auto val = static_cast<int32_t>(standard) &
+                             static_cast<int32_t>(common::Dataspace::STANDARD_MASK);
+            ASSERT_TRUE(val == static_cast<int32_t>(standard));
+        }
+        for (const auto transfer : i.transfers) {
+            const auto val = static_cast<int32_t>(transfer) &
+                             static_cast<int32_t>(common::Dataspace::TRANSFER_MASK);
+            ASSERT_TRUE(val == static_cast<int32_t>(transfer));
+        }
+        for (const auto range : i.ranges) {
+            const auto val = static_cast<int32_t>(range) &
+                             static_cast<int32_t>(common::Dataspace::RANGE_MASK);
+            ASSERT_TRUE(val == static_cast<int32_t>(range));
+        }
+    }
 }
 
 TEST_P(GraphicsComposerAidlTest, GetDisplayPhysicalOrientation_BadDisplay) {
@@ -1131,19 +1210,15 @@ class GraphicsComposerAidlCommandTest : public GraphicsComposerAidlTest {
         }
     }
 
-    sp<GraphicBuffer> allocate(uint32_t width, uint32_t height,
-                               ::android::PixelFormat pixelFormat) {
-        return sp<GraphicBuffer>::make(
-                width, height, pixelFormat, /*layerCount*/ 1U,
-                static_cast<uint64_t>(common::BufferUsage::CPU_WRITE_OFTEN) |
-                        static_cast<uint64_t>(common::BufferUsage::CPU_READ_OFTEN) |
-                        static_cast<uint64_t>(common::BufferUsage::COMPOSER_OVERLAY),
-                "VtsHalGraphicsComposer3_TargetTest");
-    }
-
     sp<GraphicBuffer> allocate(::android::PixelFormat pixelFormat) {
-        return allocate(static_cast<uint32_t>(getPrimaryDisplay().getDisplayWidth()),
-                        static_cast<uint32_t>(getPrimaryDisplay().getDisplayHeight()), pixelFormat);
+        return sp<GraphicBuffer>::make(
+                static_cast<uint32_t>(getPrimaryDisplay().getDisplayWidth()),
+                static_cast<uint32_t>(getPrimaryDisplay().getDisplayHeight()), pixelFormat,
+                /*layerCount*/ 1U,
+                (static_cast<uint64_t>(common::BufferUsage::CPU_WRITE_OFTEN) |
+                 static_cast<uint64_t>(common::BufferUsage::CPU_READ_OFTEN) |
+                 static_cast<uint64_t>(common::BufferUsage::COMPOSER_OVERLAY)),
+                "VtsHalGraphicsComposer3_TargetTest");
     }
 
     void sendRefreshFrame(const VtsDisplay& display, const VsyncPeriodChangeTimeline* timeline) {
@@ -1644,90 +1719,6 @@ TEST_P(GraphicsComposerAidlCommandTest, SetLayerBuffer) {
     auto& writer = getWriter(getPrimaryDisplayId());
     writer.setLayerBuffer(getPrimaryDisplayId(), layer, /*slot*/ 0, handle, /*acquireFence*/ -1);
     execute();
-}
-
-TEST_P(GraphicsComposerAidlCommandTest, SetLayerBufferWithSlotsToClear) {
-    const auto& [versionStatus, version] = mComposerClient->getInterfaceVersion();
-    ASSERT_TRUE(versionStatus.isOk());
-    if (version == 1) {
-        GTEST_SUCCEED() << "Device does not support the new API for clearing buffer slots";
-        return;
-    }
-
-    const auto& [layerStatus, layer] =
-            mComposerClient->createLayer(getPrimaryDisplayId(), kBufferSlotCount);
-    EXPECT_TRUE(layerStatus.isOk());
-
-    auto& writer = getWriter(getPrimaryDisplayId());
-
-    const auto buffer1 = allocate(::android::PIXEL_FORMAT_RGBA_8888);
-    ASSERT_NE(nullptr, buffer1);
-    const auto handle1 = buffer1->handle;
-    writer.setLayerBuffer(getPrimaryDisplayId(), layer, /*slot*/ 0, handle1, /*acquireFence*/ -1);
-    execute();
-    ASSERT_TRUE(mReader.takeErrors().empty());
-
-    const auto buffer2 = allocate(::android::PIXEL_FORMAT_RGBA_8888);
-    ASSERT_NE(nullptr, buffer2);
-    const auto handle2 = buffer2->handle;
-    writer.setLayerBuffer(getPrimaryDisplayId(), layer, /*slot*/ 1, handle2, /*acquireFence*/ -1);
-    execute();
-    ASSERT_TRUE(mReader.takeErrors().empty());
-
-    // Ensure we can clear the buffer slots and then set the active slot with a new buffer
-    const auto buffer3 = allocate(::android::PIXEL_FORMAT_RGBA_8888);
-    ASSERT_NE(nullptr, buffer3);
-    const auto handle3 = buffer3->handle;
-    writer.setLayerBufferSlotsToClear(getPrimaryDisplayId(), layer, /*slotsToClear*/ {0, 1});
-    writer.setLayerBuffer(getPrimaryDisplayId(), layer, /*slot*/ 1, handle3, /*acquireFence*/ -1);
-    execute();
-    ASSERT_TRUE(mReader.takeErrors().empty());
-}
-
-TEST_P(GraphicsComposerAidlCommandTest, SetLayerBufferWithSlotsToClear_backwardsCompatible) {
-    const auto& [versionStatus, version] = mComposerClient->getInterfaceVersion();
-    ASSERT_TRUE(versionStatus.isOk());
-    if (version > 1) {
-        GTEST_SUCCEED() << "Device does not need a backwards compatible way to clear buffer slots";
-        return;
-    }
-
-    auto clearSlotBuffer = allocate(1u, 1u, ::android::PIXEL_FORMAT_RGB_888);
-    ASSERT_NE(nullptr, clearSlotBuffer);
-    auto clearSlotBufferHandle = clearSlotBuffer->handle;
-
-    const auto& [layerStatus, layer] =
-            mComposerClient->createLayer(getPrimaryDisplayId(), kBufferSlotCount);
-    EXPECT_TRUE(layerStatus.isOk());
-
-    auto& writer = getWriter(getPrimaryDisplayId());
-
-    const auto buffer1 = allocate(::android::PIXEL_FORMAT_RGBA_8888);
-    ASSERT_NE(nullptr, buffer1);
-    const auto handle1 = buffer1->handle;
-    writer.setLayerBuffer(getPrimaryDisplayId(), layer, /*slot*/ 0, handle1, /*acquireFence*/ -1);
-    execute();
-    ASSERT_TRUE(mReader.takeErrors().empty());
-
-    const auto buffer2 = allocate(::android::PIXEL_FORMAT_RGBA_8888);
-    ASSERT_NE(nullptr, buffer2);
-    const auto handle2 = buffer2->handle;
-    EXPECT_TRUE(layerStatus.isOk());
-    writer.setLayerBuffer(getPrimaryDisplayId(), layer, /*slot*/ 1, handle2, /*acquireFence*/ -1);
-    execute();
-    ASSERT_TRUE(mReader.takeErrors().empty());
-
-    // Ensure we can clear a buffer slot and then set that same slot with a new buffer
-    const auto buffer3 = allocate(::android::PIXEL_FORMAT_RGBA_8888);
-    ASSERT_NE(nullptr, buffer3);
-    const auto handle3 = buffer2->handle;
-    // SurfaceFlinger will never clear the active buffer, instead it will clear non-active buffers
-    // and then re-use the active buffer's slot for the new buffer
-    writer.setLayerBufferWithNewCommand(getPrimaryDisplayId(), layer, /*slot*/ 0,
-                                        clearSlotBufferHandle, /*acquireFence*/ -1);
-    writer.setLayerBuffer(getPrimaryDisplayId(), layer, /*slot*/ 1, handle3, /*acquireFence*/ -1);
-    execute();
-    ASSERT_TRUE(mReader.takeErrors().empty());
 }
 
 TEST_P(GraphicsComposerAidlCommandTest, SetLayerSurfaceDamage) {
@@ -2317,6 +2308,22 @@ TEST_P(GraphicsComposerAidlCommandTest, MultiThreadedPresent) {
         return;
     }
     // TODO(b/251842321): Try to present on multiple threads.
+}
+
+/**
+ * Test Capability::SKIP_VALIDATE
+ *
+ * Capability::SKIP_VALIDATE has been deprecated and should not be enabled.
+ */
+TEST_P(GraphicsComposerAidlCommandTest, SkipValidateDeprecatedTest) {
+    const auto& [versionStatus, version] = mComposerClient->getInterfaceVersion();
+    ASSERT_TRUE(versionStatus.isOk());
+    if (version <= 1) {
+        GTEST_SUCCEED() << "HAL at version 1 or lower can contain Capability::SKIP_VALIDATE.";
+        return;
+    }
+    ASSERT_FALSE(hasCapability(Capability::SKIP_VALIDATE))
+            << "Found Capability::SKIP_VALIDATE capability.";
 }
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GraphicsComposerAidlCommandTest);

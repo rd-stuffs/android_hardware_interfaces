@@ -224,6 +224,14 @@ void WifiNanIface::registerCallbackHandlers() {
                 }
                 break;
             }
+            case legacy_hal::NAN_PAIRING_END: {
+                for (const auto& callback : shared_ptr_this->getEventCallbacks()) {
+                    if (!callback->notifyTerminatePairingResponse(id, nanStatus).isOk()) {
+                        LOG(ERROR) << "Failed to invoke the callback";
+                    }
+                }
+                break;
+            }
             case legacy_hal::NAN_BOOTSTRAPPING_INITIATOR_RESPONSE: {
                 for (const auto& callback : shared_ptr_this->getEventCallbacks()) {
                     if (!callback->notifyInitiateBootstrappingResponse(
@@ -240,6 +248,22 @@ void WifiNanIface::registerCallbackHandlers() {
                 for (const auto& callback : shared_ptr_this->getEventCallbacks()) {
                     if (!callback->notifyRespondToBootstrappingIndicationResponse(id, nanStatus)
                                  .isOk()) {
+                        LOG(ERROR) << "Failed to invoke the callback";
+                    }
+                }
+                break;
+            }
+            case legacy_hal::NAN_SUSPEND_REQUEST_RESPONSE: {
+                for (const auto& callback : shared_ptr_this->getEventCallbacks()) {
+                    if (!callback->notifySuspendResponse(id, nanStatus).isOk()) {
+                        LOG(ERROR) << "Failed to invoke the callback";
+                    }
+                }
+                break;
+            }
+            case legacy_hal::NAN_RESUME_REQUEST_RESPONSE: {
+                for (const auto& callback : shared_ptr_this->getEventCallbacks()) {
+                    if (!callback->notifyResumeResponse(id, nanStatus).isOk()) {
                         LOG(ERROR) << "Failed to invoke the callback";
                     }
                 }
@@ -573,6 +597,22 @@ void WifiNanIface::registerCallbackHandlers() {
                     }
                 }
             };
+    callback_handlers.on_event_suspension_mode_change =
+            [weak_ptr_this](const legacy_hal::NanSuspensionModeChangeInd& msg) {
+                const auto shared_ptr_this = weak_ptr_this.lock();
+                if (!shared_ptr_this.get() || !shared_ptr_this->isValid()) {
+                    LOG(ERROR) << "Callback invoked on an invalid object";
+                    return;
+                }
+                NanSuspensionModeChangeInd aidl_struct;
+                aidl_struct.isSuspended = msg.is_suspended;
+
+                for (const auto& callback : shared_ptr_this->getEventCallbacks()) {
+                    if (!callback->eventSuspensionModeChanged(aidl_struct).isOk()) {
+                        LOG(ERROR) << "Failed to invoke the callback";
+                    }
+                }
+            };
 
     legacy_hal::wifi_error legacy_status =
             legacy_hal_.lock()->nanRegisterCallbackHandlers(ifname_, callback_handlers);
@@ -743,6 +783,13 @@ ndk::ScopedAStatus WifiNanIface::respondToPairingIndicationRequest(
                            in_msg);
 }
 
+ndk::ScopedAStatus WifiNanIface::terminatePairingRequest(char16_t in_cmdId,
+                                                         int32_t in_ndpInstanceId) {
+    return validateAndCall(this, WifiStatusCode::ERROR_WIFI_IFACE_INVALID,
+                           &WifiNanIface::terminatePairingRequestInternal, in_cmdId,
+                           in_ndpInstanceId);
+}
+
 ndk::ScopedAStatus WifiNanIface::initiateBootstrappingRequest(
         char16_t in_cmdId, const NanBootstrappingRequest& in_msg) {
     return validateAndCall(this, WifiStatusCode::ERROR_WIFI_IFACE_INVALID,
@@ -754,6 +801,16 @@ ndk::ScopedAStatus WifiNanIface::respondToBootstrappingIndicationRequest(
     return validateAndCall(this, WifiStatusCode::ERROR_WIFI_IFACE_INVALID,
                            &WifiNanIface::respondToBootstrappingIndicationRequestInternal, in_cmdId,
                            in_msg);
+}
+
+ndk::ScopedAStatus WifiNanIface::suspendRequest(char16_t in_cmdId, int8_t in_sessionId) {
+    return validateAndCall(this, WifiStatusCode::ERROR_WIFI_IFACE_INVALID,
+                           &WifiNanIface::suspendRequestInternal, in_cmdId, in_sessionId);
+}
+
+ndk::ScopedAStatus WifiNanIface::resumeRequest(char16_t in_cmdId, int8_t in_sessionId) {
+    return validateAndCall(this, WifiStatusCode::ERROR_WIFI_IFACE_INVALID,
+                           &WifiNanIface::resumeRequestInternal, in_cmdId, in_sessionId);
 }
 
 std::pair<std::string, ndk::ScopedAStatus> WifiNanIface::getNameInternal() {
@@ -909,6 +966,12 @@ ndk::ScopedAStatus WifiNanIface::respondToPairingIndicationRequestInternal(
             legacy_hal_.lock()->nanPairingIndicationResponse(ifname_, cmd_id, legacy_msg);
     return createWifiStatusFromLegacyError(legacy_status);
 }
+ndk::ScopedAStatus WifiNanIface::terminatePairingRequestInternal(char16_t cmd_id,
+                                                                 int32_t ndpInstanceId) {
+    legacy_hal::wifi_error legacy_status =
+            legacy_hal_.lock()->nanPairingEnd(ifname_, cmd_id, ndpInstanceId);
+    return createWifiStatusFromLegacyError(legacy_status);
+}
 ndk::ScopedAStatus WifiNanIface::initiateBootstrappingRequestInternal(
         char16_t cmd_id, const NanBootstrappingRequest& msg) {
     legacy_hal::NanBootstrappingRequest legacy_msg;
@@ -930,7 +993,20 @@ ndk::ScopedAStatus WifiNanIface::respondToBootstrappingIndicationRequestInternal
             legacy_hal_.lock()->nanBootstrappingIndicationResponse(ifname_, cmd_id, legacy_msg);
     return createWifiStatusFromLegacyError(legacy_status);
 }
-
+ndk::ScopedAStatus WifiNanIface::suspendRequestInternal(char16_t cmd_id, int8_t sessionId) {
+    legacy_hal::NanSuspendRequest legacy_msg;
+    legacy_msg.publish_subscribe_id = sessionId;
+    legacy_hal::wifi_error legacy_status =
+            legacy_hal_.lock()->nanSuspendRequest(ifname_, cmd_id, legacy_msg);
+    return createWifiStatusFromLegacyError(legacy_status);
+}
+ndk::ScopedAStatus WifiNanIface::resumeRequestInternal(char16_t cmd_id, int8_t sessionId) {
+    legacy_hal::NanResumeRequest legacy_msg;
+    legacy_msg.publish_subscribe_id = sessionId;
+    legacy_hal::wifi_error legacy_status =
+            legacy_hal_.lock()->nanResumeRequest(ifname_, cmd_id, legacy_msg);
+    return createWifiStatusFromLegacyError(legacy_status);
+}
 }  // namespace wifi
 }  // namespace hardware
 }  // namespace android

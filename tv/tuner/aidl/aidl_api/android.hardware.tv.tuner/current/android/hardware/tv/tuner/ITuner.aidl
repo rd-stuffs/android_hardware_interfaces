@@ -48,4 +48,7 @@ interface ITuner {
   void setMaxNumberOfFrontends(in android.hardware.tv.tuner.FrontendType frontendType, in int maxNumber);
   int getMaxNumberOfFrontends(in android.hardware.tv.tuner.FrontendType frontendType);
   boolean isLnaSupported();
+  int[] getDemuxIds();
+  android.hardware.tv.tuner.IDemux openDemuxById(in int demuxId);
+  android.hardware.tv.tuner.DemuxInfo getDemuxInfo(in int demuxId);
 }

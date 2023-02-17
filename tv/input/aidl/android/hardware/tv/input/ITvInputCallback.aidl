@@ -17,6 +17,7 @@
 package android.hardware.tv.input;
 
 import android.hardware.tv.input.TvInputEvent;
+import android.hardware.tv.input.TvMessageEvent;
 
 @VintfStability
 interface ITvInputCallback {
@@ -27,4 +28,11 @@ interface ITvInputCallback {
      * @param event Event passed to the client.
      */
     void notify(in TvInputEvent event);
+    /**
+     * Notifies the client that an TV message event has occurred. For possible event types,
+     * check TvMessageEventType.
+     *
+     * @param event Event passed to the client.
+     */
+    void notifyTvMessageEvent(in TvMessageEvent event);
 }

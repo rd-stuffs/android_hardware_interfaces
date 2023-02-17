@@ -295,7 +295,7 @@ VhalResult<void> FakeVehicleHardware::setApPowerStateReport(const VehiclePropVal
     return {};
 }
 
-bool FakeVehicleHardware::isHvacPropAndHvacNotAvailable(int32_t propId) {
+bool FakeVehicleHardware::isHvacPropAndHvacNotAvailable(int32_t propId) const {
     std::unordered_set<int32_t> powerProps(std::begin(HVAC_POWER_PROPERTIES),
                                            std::end(HVAC_POWER_PROPERTIES));
     if (powerProps.count(propId)) {
@@ -366,6 +366,11 @@ FakeVehicleHardware::ValueResultType FakeVehicleHardware::maybeGetSpecialValue(
         return getUserHalProp(value);
     }
 
+    if (isHvacPropAndHvacNotAvailable(propId)) {
+        *isSpecialValue = true;
+        return StatusError(StatusCode::NOT_AVAILABLE) << "hvac not available";
+    }
+
     switch (propId) {
         case OBD2_FREEZE_FRAME:
             *isSpecialValue = true;
@@ -408,6 +413,27 @@ FakeVehicleHardware::ValueResultType FakeVehicleHardware::getEchoReverseBytes(
     return std::move(gotValue);
 }
 
+void FakeVehicleHardware::sendHvacPropertiesCurrentValues() {
+    for (size_t i = 0; i < sizeof(HVAC_POWER_PROPERTIES) / sizeof(int32_t); i++) {
+        int powerPropId = HVAC_POWER_PROPERTIES[i];
+        auto powerPropResults = mServerSidePropStore->readValuesForProperty(powerPropId);
+        if (!powerPropResults.ok()) {
+            ALOGW("failed to get power prop 0x%x, error: %s", powerPropId,
+                  getErrorMsg(powerPropResults).c_str());
+            continue;
+        }
+        auto& powerPropValues = powerPropResults.value();
+        for (size_t j = 0; j < powerPropValues.size(); j++) {
+            auto powerPropValue = std::move(powerPropValues[j]);
+            powerPropValue->status = VehiclePropertyStatus::AVAILABLE;
+            powerPropValue->timestamp = elapsedRealtimeNano();
+            // This will trigger a property change event for the current hvac property value.
+            mServerSidePropStore->writeValue(std::move(powerPropValue), /*updateStatus=*/true,
+                                             VehiclePropertyStore::EventMode::ALWAYS);
+        }
+    }
+}
+
 VhalResult<void> FakeVehicleHardware::maybeSetSpecialValue(const VehiclePropValue& value,
                                                            bool* isSpecialValue) {
     *isSpecialValue = false;
@@ -417,6 +443,13 @@ VhalResult<void> FakeVehicleHardware::maybeSetSpecialValue(const VehiclePropValu
     if (mFakeUserHal->isSupported(propId)) {
         *isSpecialValue = true;
         return setUserHalProp(value);
+    }
+
+    if (propId == toInt(VehicleProperty::HVAC_POWER_ON) && value.value.int32Values.size() == 1 &&
+        value.value.int32Values[0] == 1) {
+        // If we are turning HVAC power on, send current hvac property values through on change
+        // event.
+        sendHvacPropertiesCurrentValues();
     }
 
     if (isHvacPropAndHvacNotAvailable(propId)) {
@@ -672,6 +705,14 @@ provided, it would iterate indefinitely.
 
 --genfakedata --keypress [keyCode(int32)] [display[int32]]: Generate key press.
 
+--genfakedata --keyinputv2 [area(int32)] [display(int32)] [keyCode[int32]] [action[int32]]
+  [repeatCount(int32)]
+
+--genfakedata --motioninput [area(int32)] [display(int32)] [inputType[int32]] [action[int32]]
+  [buttonState(int32)] --pointer [pointerId(int32)] [toolType(int32)] [xData(float)] [yData(float)]
+  [pressure(float)] [size(float)]
+  Generate a motion input event. --pointer option can be specified multiple times.
+
 )";
 }
 
@@ -802,6 +843,135 @@ std::string FakeVehicleHardware::genFakeDataCommand(const std::vector<std::strin
         onValueChangeCallback(
                 createHwInputKeyProp(VehicleHwKeyInputAction::ACTION_UP, keyCode, display));
         return "keypress event generated successfully";
+    } else if (command == "--keyinputv2") {
+        int32_t area;
+        int32_t display;
+        int32_t keyCode;
+        int32_t action;
+        int32_t repeatCount;
+        // --genfakedata --keyinputv2 [area(int32)] [display(int32)] [keyCode[int32]]
+        // [action[int32]] [repeatCount(int32)]
+        if (options.size() != 7) {
+            return "incorrect argument count, need 7 arguments for --genfakedata --keyinputv2\n";
+        }
+        if (!android::base::ParseInt(options[2], &area)) {
+            return parseErrMsg("area", options[2], "int");
+        }
+        if (!android::base::ParseInt(options[3], &display)) {
+            return parseErrMsg("display", options[3], "int");
+        }
+        if (!android::base::ParseInt(options[4], &keyCode)) {
+            return parseErrMsg("keyCode", options[4], "int");
+        }
+        if (!android::base::ParseInt(options[5], &action)) {
+            return parseErrMsg("action", options[5], "int");
+        }
+        if (!android::base::ParseInt(options[6], &repeatCount)) {
+            return parseErrMsg("repeatCount", options[6], "int");
+        }
+        // Send back to HAL
+        onValueChangeCallback(createHwKeyInputV2Prop(area, display, keyCode, action, repeatCount));
+        return StringPrintf(
+                "keyinputv2 event generated successfully with area:%d, display:%d,"
+                " keyCode:%d, action:%d, repeatCount:%d",
+                area, display, keyCode, action, repeatCount);
+
+    } else if (command == "--motioninput") {
+        int32_t area;
+        int32_t display;
+        int32_t inputType;
+        int32_t action;
+        int32_t buttonState;
+        int32_t pointerCount;
+
+        // --genfakedata --motioninput [area(int32)] [display(int32)] [inputType[int32]]
+        // [action[int32]] [buttonState(int32)] [pointerCount(int32)]
+        // --pointer [pointerId(int32)] [toolType(int32)] [xData(float)] [yData(float)]
+        // [pressure(float)] [size(float)]
+        int optionsSize = (int)options.size();
+        if (optionsSize / 7 < 2) {
+            return "incorrect argument count, need at least 14 arguments for --genfakedata "
+                   "--motioninput including at least 1 --pointer\n";
+        }
+
+        if (optionsSize % 7 != 0) {
+            return "incorrect argument count, need 6 arguments for every --pointer\n";
+        }
+        pointerCount = (int)optionsSize / 7 - 1;
+
+        if (!android::base::ParseInt(options[2], &area)) {
+            return parseErrMsg("area", options[2], "int");
+        }
+        if (!android::base::ParseInt(options[3], &display)) {
+            return parseErrMsg("display", options[3], "int");
+        }
+        if (!android::base::ParseInt(options[4], &inputType)) {
+            return parseErrMsg("inputType", options[4], "int");
+        }
+        if (!android::base::ParseInt(options[5], &action)) {
+            return parseErrMsg("action", options[5], "int");
+        }
+        if (!android::base::ParseInt(options[6], &buttonState)) {
+            return parseErrMsg("buttonState", options[6], "int");
+        }
+
+        int32_t pointerId[pointerCount];
+        int32_t toolType[pointerCount];
+        float xData[pointerCount];
+        float yData[pointerCount];
+        float pressure[pointerCount];
+        float size[pointerCount];
+
+        for (int i = 7, pc = 0; i < optionsSize; i += 7, pc += 1) {
+            int offset = i;
+            if (options[offset] != "--pointer") {
+                return "--pointer is needed for the motion input\n";
+            }
+            offset += 1;
+            if (!android::base::ParseInt(options[offset], &pointerId[pc])) {
+                return parseErrMsg("pointerId", options[offset], "int");
+            }
+            offset += 1;
+            if (!android::base::ParseInt(options[offset], &toolType[pc])) {
+                return parseErrMsg("toolType", options[offset], "int");
+            }
+            offset += 1;
+            if (!android::base::ParseFloat(options[offset], &xData[pc])) {
+                return parseErrMsg("xData", options[offset], "float");
+            }
+            offset += 1;
+            if (!android::base::ParseFloat(options[offset], &yData[pc])) {
+                return parseErrMsg("yData", options[offset], "float");
+            }
+            offset += 1;
+            if (!android::base::ParseFloat(options[offset], &pressure[pc])) {
+                return parseErrMsg("pressure", options[offset], "float");
+            }
+            offset += 1;
+            if (!android::base::ParseFloat(options[offset], &size[pc])) {
+                return parseErrMsg("size", options[offset], "float");
+            }
+        }
+
+        // Send back to HAL
+        onValueChangeCallback(createHwMotionInputProp(area, display, inputType, action, buttonState,
+                                                      pointerCount, pointerId, toolType, xData,
+                                                      yData, pressure, size));
+
+        std::string successMessage = StringPrintf(
+                "motion event generated successfully with area:%d, display:%d,"
+                " inputType:%d, action:%d, buttonState:%d, pointerCount:%d\n",
+                area, display, inputType, action, buttonState, pointerCount);
+        for (int i = 0; i < pointerCount; i++) {
+            successMessage += StringPrintf(
+                    "Pointer #%d {\n"
+                    " id:%d , tooltype:%d \n"
+                    " x:%f , y:%f\n"
+                    " pressure: %f, data: %f\n"
+                    "}\n",
+                    i, pointerId[i], toolType[i], xData[i], yData[i], pressure[i], size[i]);
+        }
+        return successMessage;
     }
 
     return StringPrintf("Unknown command: \"%s\"\n%s", command.c_str(), genFakeDataHelp().c_str());
@@ -816,6 +986,59 @@ VehiclePropValue FakeVehicleHardware::createHwInputKeyProp(VehicleHwKeyInputActi
             .status = VehiclePropertyStatus::AVAILABLE,
             .value.int32Values = {toInt(action), keyCode, targetDisplay},
     };
+    return value;
+}
+
+VehiclePropValue FakeVehicleHardware::createHwKeyInputV2Prop(int32_t area, int32_t targetDisplay,
+                                                             int32_t keyCode, int32_t action,
+                                                             int32_t repeatCount) {
+    VehiclePropValue value = {.prop = toInt(VehicleProperty::HW_KEY_INPUT_V2),
+                              .areaId = area,
+                              .timestamp = elapsedRealtimeNano(),
+                              .status = VehiclePropertyStatus::AVAILABLE,
+                              .value.int32Values = {targetDisplay, keyCode, action, repeatCount},
+                              .value.int64Values = {elapsedRealtimeNano()}};
+    return value;
+}
+
+VehiclePropValue FakeVehicleHardware::createHwMotionInputProp(
+        int32_t area, int32_t display, int32_t inputType, int32_t action, int32_t buttonState,
+        int32_t pointerCount, int32_t pointerId[], int32_t toolType[], float xData[], float yData[],
+        float pressure[], float size[]) {
+    std::vector<int> intValues;
+    intValues.push_back(display);
+    intValues.push_back(inputType);
+    intValues.push_back(action);
+    intValues.push_back(buttonState);
+    intValues.push_back(pointerCount);
+    for (int i = 0; i < pointerCount; i++) {
+        intValues.push_back(pointerId[i]);
+    }
+    for (int i = 0; i < pointerCount; i++) {
+        intValues.push_back(toolType[i]);
+    }
+
+    std::vector<float> floatValues;
+    for (int i = 0; i < pointerCount; i++) {
+        floatValues.push_back(xData[i]);
+    }
+    for (int i = 0; i < pointerCount; i++) {
+        floatValues.push_back(yData[i]);
+    }
+    for (int i = 0; i < pointerCount; i++) {
+        floatValues.push_back(pressure[i]);
+    }
+    for (int i = 0; i < pointerCount; i++) {
+        floatValues.push_back(size[i]);
+    }
+
+    VehiclePropValue value = {.prop = toInt(VehicleProperty::HW_MOTION_INPUT),
+                              .areaId = area,
+                              .timestamp = elapsedRealtimeNano(),
+                              .status = VehiclePropertyStatus::AVAILABLE,
+                              .value.int32Values = intValues,
+                              .value.floatValues = floatValues,
+                              .value.int64Values = {elapsedRealtimeNano()}};
     return value;
 }
 

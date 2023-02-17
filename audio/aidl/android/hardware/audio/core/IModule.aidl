@@ -18,7 +18,6 @@ package android.hardware.audio.core;
 
 import android.hardware.audio.common.SinkMetadata;
 import android.hardware.audio.common.SourceMetadata;
-import android.hardware.audio.core.AudioMode;
 import android.hardware.audio.core.AudioPatch;
 import android.hardware.audio.core.AudioRoute;
 import android.hardware.audio.core.IBluetooth;
@@ -27,16 +26,19 @@ import android.hardware.audio.core.IStreamIn;
 import android.hardware.audio.core.IStreamOut;
 import android.hardware.audio.core.IStreamOutEventCallback;
 import android.hardware.audio.core.ITelephony;
-import android.hardware.audio.core.MicrophoneInfo;
 import android.hardware.audio.core.ModuleDebug;
 import android.hardware.audio.core.StreamDescriptor;
 import android.hardware.audio.core.VendorParameter;
 import android.hardware.audio.core.sounddose.ISoundDose;
 import android.hardware.audio.effect.IEffect;
+import android.media.audio.common.AudioMMapPolicyInfo;
+import android.media.audio.common.AudioMMapPolicyType;
+import android.media.audio.common.AudioMode;
 import android.media.audio.common.AudioOffloadInfo;
 import android.media.audio.common.AudioPort;
 import android.media.audio.common.AudioPortConfig;
 import android.media.audio.common.Float;
+import android.media.audio.common.MicrophoneInfo;
 
 /**
  * Each instance of IModule corresponds to a separate audio module. The system
@@ -684,6 +686,7 @@ interface IModule {
      * method.
      *
      * @param mode The current mode.
+     * @throws EX_ILLEGAL_ARGUMENT If the mode is out of range of valid values.
      */
     void updateAudioMode(AudioMode mode);
 
@@ -806,4 +809,55 @@ interface IModule {
      * @throws EX_UNSUPPORTED_OPERATION If the module does not support device port effects.
      */
     void removeDeviceEffect(int portConfigId, in IEffect effect);
+
+    /**
+     * Provide information describing how aaudio MMAP is supported per queried aaudio
+     * MMAP policy type.
+     *
+     * If there are no devices that support aaudio MMAP for the queried aaudio MMAP policy
+     * type in the HAL module, it must return an empty vector. Otherwise, return a vector
+     * describing how the devices support aaudio MMAP.
+     *
+     * @param mmapPolicyType the aaudio mmap policy type to query.
+     * @return The vector with mmap policy information.
+     */
+    AudioMMapPolicyInfo[] getMmapPolicyInfos(AudioMMapPolicyType mmapPolicyType);
+
+    /**
+     * Indicates if this module supports variable latency control for instance
+     * over Bluetooth A2DP or LE Audio links.
+     *
+     * If supported, all instances of IStreamOut interface returned by this module must
+     * implement getRecommendedLatencyModes() and setLatencyMode() APIs.
+     *
+     * @return Whether the module supports variable latency control.
+     */
+    boolean supportsVariableLatency();
+
+    /**
+     * Default value for number of bursts per aaudio mixer cycle. This is a suggested value
+     * to return for the HAL module, unless it is known that a better option exists.
+     */
+    const int DEFAULT_AAUDIO_MIXER_BURST_COUNT = 2;
+    /**
+     * Get the number of bursts per aaudio mixer cycle.
+     *
+     * @return The number of burst per aaudio mixer cycle.
+     * @throw EX_UNSUPPORTED_OPERATION If the module does not support aaudio MMAP.
+     */
+    int getAAudioMixerBurstCount();
+
+    /**
+     * Default value for minimum duration in microseconds for a MMAP hardware burst. This
+     * is a suggested value to return for the HAL module, unless it is known that a better
+     * option exists.
+     */
+    const int DEFAULT_AAUDIO_HARDWARE_BURST_MIN_DURATION_US = 1000;
+    /**
+     * Get the minimum duration in microseconds for a MMAP hardware burst.
+     *
+     * @return The minimum number of microseconds for a MMAP hardware burst.
+     * @throw EX_UNSUPPORTED_OPERATION If the module does not support aaudio MMAP.
+     */
+    int getAAudioHardwareBurstMinUsec();
 }

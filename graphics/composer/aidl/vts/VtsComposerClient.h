@@ -163,6 +163,12 @@ class VtsComposerClient {
 
     std::pair<ScopedAStatus, int32_t> getPreferredBootDisplayConfig(int64_t display);
 
+    std::pair<ScopedAStatus, std::vector<common::HdrConversionCapability>>
+    getHdrConversionCapabilities();
+
+    std::pair<ScopedAStatus, common::Hdr> setHdrConversionStrategy(
+            const common::HdrConversionStrategy& conversionStrategy);
+
     std::pair<ScopedAStatus, common::Transform> getDisplayPhysicalOrientation(int64_t display);
 
     ScopedAStatus setIdleTimerEnabled(int64_t display, int32_t timeoutMs);
@@ -178,6 +184,7 @@ class VtsComposerClient {
     std::pair<ScopedAStatus, OverlayProperties> getOverlaySupport();
 
   private:
+    ScopedAStatus addDisplayConfig(VtsDisplay* vtsDisplay, int32_t config);
     ScopedAStatus updateDisplayProperties(VtsDisplay* vtsDisplay, int32_t config);
 
     ScopedAStatus addDisplayToDisplayResources(int64_t display, bool isVirtual);
@@ -189,6 +196,9 @@ class VtsComposerClient {
     bool destroyAllLayers();
 
     bool verifyComposerCallbackParams();
+
+    ndk::ScopedAStatus setRefreshRateChangedCallbackDebugEnabled(int64_t /* display */,
+                                                                 bool /* enabled */);
 
     // Keep track of displays and layers. When a test fails/ends,
     // the VtsComposerClient::tearDown should be called from the

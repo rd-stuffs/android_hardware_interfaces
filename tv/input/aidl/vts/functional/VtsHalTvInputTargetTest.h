@@ -25,15 +25,19 @@
 #include <aidl/android/hardware/tv/input/ITvInput.h>
 #include <aidl/android/hardware/tv/input/TvInputDeviceInfo.h>
 #include <aidl/android/hardware/tv/input/TvInputEvent.h>
+#include <aidl/android/hardware/tv/input/TvMessageEvent.h>
+#include <aidl/android/hardware/tv/input/TvMessageEventType.h>
 #include <aidl/android/hardware/tv/input/TvStreamConfig.h>
+#include <fmq/AidlMessageQueue.h>
 
 #include <log/log.h>
 #include <utils/KeyedVector.h>
 
 using namespace aidl::android::hardware::tv::input;
 using namespace std;
-
 using ::aidl::android::hardware::common::NativeHandle;
+using ::aidl::android::hardware::common::fmq::MQDescriptor;
+using ::android::AidlMessageQueue;
 
 #define WAIT_FOR_EVENT_TIMEOUT 5
 #define DEFAULT_ID INT32_MIN
@@ -46,6 +50,7 @@ class TvInputAidlTest : public testing::TestWithParam<string> {
       public:
         TvInputCallback(shared_ptr<TvInputAidlTest> parent);
         ::ndk::ScopedAStatus notify(const TvInputEvent& in_event) override;
+        ::ndk::ScopedAStatus notifyTvMessageEvent(const TvMessageEvent& in_event) override;
 
       private:
         shared_ptr<TvInputAidlTest> parent_;
@@ -84,7 +89,6 @@ class TvInputAidlTest : public testing::TestWithParam<string> {
     android::KeyedVector<int32_t, TvInputDeviceInfo> device_info_;
     android::KeyedVector<int32_t, vector<TvStreamConfig>> stream_config_;
     mutex mutex_;
-    NativeHandle handle_;
 };
 
 }  // namespace VtsHalTvInputTargetTest

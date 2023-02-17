@@ -26,6 +26,7 @@
 
 #include "aidl_return_util.h"
 #include "aidl_struct_util.h"
+#include "wifi_legacy_hal.h"
 #include "wifi_status_util.h"
 
 #define P2P_MGMT_DEVICE_PREFIX "p2p-dev-"
@@ -34,6 +35,7 @@ namespace {
 using aidl::android::hardware::wifi::IfaceType;
 using aidl::android::hardware::wifi::IWifiChip;
 using CoexRestriction = aidl::android::hardware::wifi::IWifiChip::CoexRestriction;
+using ChannelCategoryMask = aidl::android::hardware::wifi::IWifiChip::ChannelCategoryMask;
 using android::base::unique_fd;
 
 constexpr char kCpioMagic[] = "070701";
@@ -669,6 +671,12 @@ ndk::ScopedAStatus WifiChip::getUsableChannels(WifiBand in_band, WifiIfaceMode i
                            in_ifaceModeMask, in_filterMask);
 }
 
+ndk::ScopedAStatus WifiChip::setAfcChannelAllowance(
+        const std::vector<AvailableAfcFrequencyInfo>& availableAfcFrequencyInfo) {
+    return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
+                           &WifiChip::setAfcChannelAllowanceInternal, availableAfcFrequencyInfo);
+}
+
 ndk::ScopedAStatus WifiChip::triggerSubsystemRestart() {
     return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
                            &WifiChip::triggerSubsystemRestartInternal);
@@ -683,6 +691,18 @@ ndk::ScopedAStatus WifiChip::getSupportedRadioCombinationsMatrix(
 ndk::ScopedAStatus WifiChip::getWifiChipCapabilities(WifiChipCapabilities* _aidl_return) {
     return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
                            &WifiChip::getWifiChipCapabilitiesInternal, _aidl_return);
+}
+
+ndk::ScopedAStatus WifiChip::enableStaChannelForPeerNetwork(
+        ChannelCategoryMask in_channelCategoryEnableFlag) {
+    return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
+                           &WifiChip::enableStaChannelForPeerNetworkInternal,
+                           in_channelCategoryEnableFlag);
+}
+
+ndk::ScopedAStatus WifiChip::setMloMode(const ChipMloMode in_mode) {
+    return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
+                           &WifiChip::setMloModeInternal, in_mode);
 }
 
 void WifiChip::invalidateAndRemoveAllIfaces() {
@@ -755,8 +775,8 @@ std::pair<IWifiChip::ChipCapabilityMask, ndk::ScopedAStatus> WifiChip::getCapabi
         legacy_logger_feature_set = 0;
     }
     uint32_t aidl_caps;
-    if (!aidl_struct_util::convertLegacyFeaturesToAidlChipCapabilities(
-                legacy_feature_set, legacy_logger_feature_set, &aidl_caps)) {
+    if (!aidl_struct_util::convertLegacyFeaturesToAidlChipCapabilities(legacy_feature_set,
+                                                                       &aidl_caps)) {
         return {IWifiChip::ChipCapabilityMask{}, createWifiStatus(WifiStatusCode::ERROR_UNKNOWN)};
     }
     return {static_cast<IWifiChip::ChipCapabilityMask>(aidl_caps), ndk::ScopedAStatus::ok()};
@@ -1132,8 +1152,7 @@ std::pair<std::shared_ptr<IWifiStaIface>, ndk::ScopedAStatus> WifiChip::createSt
                    << legacyErrorToString(legacy_status);
         return {nullptr, createWifiStatusFromLegacyError(legacy_status)};
     }
-    std::shared_ptr<WifiStaIface> iface =
-            ndk::SharedRefBase::make<WifiStaIface>(ifname, legacy_hal_, iface_util_);
+    std::shared_ptr<WifiStaIface> iface = WifiStaIface::create(ifname, legacy_hal_, iface_util_);
     sta_ifaces_.push_back(iface);
     for (const auto& callback : event_cb_handler_.getCallbacks()) {
         if (!callback->onIfaceAdded(IfaceType::STA, ifname).isOk()) {
@@ -1386,6 +1405,12 @@ std::pair<std::vector<WifiUsableChannel>, ndk::ScopedAStatus> WifiChip::getUsabl
     return {aidl_usable_channels, ndk::ScopedAStatus::ok()};
 }
 
+ndk::ScopedAStatus WifiChip::setAfcChannelAllowanceInternal(
+        const std::vector<AvailableAfcFrequencyInfo>& availableAfcFrequencyInfo) {
+    LOG(INFO) << "setAfcChannelAllowance is not yet supported " << availableAfcFrequencyInfo.size();
+    return createWifiStatus(WifiStatusCode::ERROR_NOT_SUPPORTED);
+}
+
 std::pair<WifiRadioCombinationMatrix, ndk::ScopedAStatus>
 WifiChip::getSupportedRadioCombinationsMatrixInternal() {
     legacy_hal::wifi_error legacy_status;
@@ -1426,6 +1451,14 @@ std::pair<WifiChipCapabilities, ndk::ScopedAStatus> WifiChip::getWifiChipCapabil
     }
 
     return {aidl_chip_capabilities, ndk::ScopedAStatus::ok()};
+}
+
+ndk::ScopedAStatus WifiChip::enableStaChannelForPeerNetworkInternal(
+        ChannelCategoryMask channelCategoryEnableFlag) {
+    auto legacy_status = legacy_hal_.lock()->enableStaChannelForPeerNetwork(
+            aidl_struct_util::convertAidlChannelCategoryToLegacy(
+                    static_cast<uint32_t>(channelCategoryEnableFlag)));
+    return createWifiStatusFromLegacyError(legacy_status);
 }
 
 ndk::ScopedAStatus WifiChip::triggerSubsystemRestartInternal() {
@@ -1927,6 +1960,28 @@ bool WifiChip::findUsingNameFromBridgedApInstances(const std::string& name) {
         }
     }
     return false;
+}
+
+ndk::ScopedAStatus WifiChip::setMloModeInternal(const WifiChip::ChipMloMode in_mode) {
+    legacy_hal::wifi_mlo_mode mode;
+    switch (in_mode) {
+        case WifiChip::ChipMloMode::DEFAULT:
+            mode = legacy_hal::wifi_mlo_mode::WIFI_MLO_MODE_DEFAULT;
+            break;
+        case WifiChip::ChipMloMode::LOW_LATENCY:
+            mode = legacy_hal::wifi_mlo_mode::WIFI_MLO_MODE_LOW_LATENCY;
+            break;
+        case WifiChip::ChipMloMode::HIGH_THROUGHPUT:
+            mode = legacy_hal::wifi_mlo_mode::WIFI_MLO_MODE_HIGH_THROUGHPUT;
+            break;
+        case WifiChip::ChipMloMode::LOW_POWER:
+            mode = legacy_hal::wifi_mlo_mode::WIFI_MLO_MODE_LOW_POWER;
+            break;
+        default:
+            PLOG(ERROR) << "Error: invalid mode: " << toString(in_mode);
+            return createWifiStatus(WifiStatusCode::ERROR_INVALID_ARGS);
+    }
+    return createWifiStatusFromLegacyError(legacy_hal_.lock()->setMloMode(mode));
 }
 
 }  // namespace wifi

@@ -337,6 +337,20 @@ std::pair<ScopedAStatus, int32_t> VtsComposerClient::getPreferredBootDisplayConf
     return {mComposerClient->getPreferredBootDisplayConfig(display, &outConfig), outConfig};
 }
 
+std::pair<ScopedAStatus, std::vector<common::HdrConversionCapability>>
+VtsComposerClient::getHdrConversionCapabilities() {
+    std::vector<common::HdrConversionCapability> hdrConversionCapability;
+    return {mComposerClient->getHdrConversionCapabilities(&hdrConversionCapability),
+            hdrConversionCapability};
+}
+
+std::pair<ScopedAStatus, common::Hdr> VtsComposerClient::setHdrConversionStrategy(
+        const common::HdrConversionStrategy& conversionStrategy) {
+    common::Hdr preferredHdrOutputType;
+    return {mComposerClient->setHdrConversionStrategy(conversionStrategy, &preferredHdrOutputType),
+            preferredHdrOutputType};
+}
+
 std::pair<ScopedAStatus, common::Transform> VtsComposerClient::getDisplayPhysicalOrientation(
         int64_t display) {
     common::Transform outDisplayOrientation;
@@ -359,6 +373,12 @@ int32_t VtsComposerClient::getVsyncIdleCount() {
 
 int64_t VtsComposerClient::getVsyncIdleTime() {
     return mComposerCallback->getVsyncIdleTime();
+}
+
+ndk::ScopedAStatus VtsComposerClient::setRefreshRateChangedCallbackDebugEnabled(
+        int64_t /* display */, bool /* enabled */) {
+    // TODO(b/202734676) Add implementation for VTS tests
+    return ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
 }
 
 int64_t VtsComposerClient::getInvalidDisplayId() {
@@ -404,14 +424,31 @@ std::pair<ScopedAStatus, std::vector<VtsDisplay>> VtsComposerClient::getDisplays
                 return {std::move(configs.first), vtsDisplays};
             }
             for (int config : configs.second) {
-                auto status = updateDisplayProperties(&vtsDisplay, config);
+                auto status = addDisplayConfig(&vtsDisplay, config);
                 if (!status.isOk()) {
-                    ALOGE("Unable to get the displays for test, failed to update the properties "
+                    ALOGE("Unable to get the displays for test, failed to add config "
                           "for display %" PRId64,
                           display);
                     return {std::move(status), vtsDisplays};
                 }
             }
+
+            auto config = getActiveConfig(display);
+            if (!config.first.isOk()) {
+                ALOGE("Unable to get the displays for test, failed to get active config "
+                      "for display %" PRId64, display);
+                return {std::move(config.first), vtsDisplays};
+            }
+
+            auto status = updateDisplayProperties(&vtsDisplay, config.second);
+            if (!status.isOk()) {
+                ALOGE("Unable to get the displays for test, "
+                      "failed to update the properties "
+                      "for display %" PRId64,
+                      display);
+                return {std::move(status), vtsDisplays};
+            }
+
             vtsDisplays.emplace_back(vtsDisplay);
             addDisplayToDisplayResources(display, /*isVirtual*/ false);
         }
@@ -420,7 +457,7 @@ std::pair<ScopedAStatus, std::vector<VtsDisplay>> VtsComposerClient::getDisplays
     }
 }
 
-ScopedAStatus VtsComposerClient::updateDisplayProperties(VtsDisplay* vtsDisplay, int32_t config) {
+ScopedAStatus VtsComposerClient::addDisplayConfig(VtsDisplay* vtsDisplay, int32_t config) {
     const auto width =
             getDisplayAttribute(vtsDisplay->getDisplayId(), config, DisplayAttribute::WIDTH);
     const auto height =
@@ -431,7 +468,6 @@ ScopedAStatus VtsComposerClient::updateDisplayProperties(VtsDisplay* vtsDisplay,
             getDisplayAttribute(vtsDisplay->getDisplayId(), config, DisplayAttribute::CONFIG_GROUP);
     if (width.first.isOk() && height.first.isOk() && vsyncPeriod.first.isOk() &&
         configGroup.first.isOk()) {
-        vtsDisplay->setDimensions(width.second, height.second);
         vtsDisplay->addDisplayConfig(config, {vsyncPeriod.second, configGroup.second});
         return ScopedAStatus::ok();
     }
@@ -439,6 +475,21 @@ ScopedAStatus VtsComposerClient::updateDisplayProperties(VtsDisplay* vtsDisplay,
     LOG(ERROR) << "Failed to update display property for width: " << width.first.isOk()
                << ", height: " << height.first.isOk() << ", vsync: " << vsyncPeriod.first.isOk()
                << ", config: " << configGroup.first.isOk();
+    return ScopedAStatus::fromServiceSpecificError(IComposerClient::EX_BAD_CONFIG);
+}
+
+ScopedAStatus VtsComposerClient::updateDisplayProperties(VtsDisplay* vtsDisplay, int32_t config) {
+    const auto width =
+            getDisplayAttribute(vtsDisplay->getDisplayId(), config, DisplayAttribute::WIDTH);
+    const auto height =
+            getDisplayAttribute(vtsDisplay->getDisplayId(), config, DisplayAttribute::HEIGHT);
+    if (width.first.isOk() && height.first.isOk()) {
+        vtsDisplay->setDimensions(width.second, height.second);
+        return ScopedAStatus::ok();
+    }
+
+    LOG(ERROR) << "Failed to update display property for width: " << width.first.isOk()
+               << ", height: " << height.first.isOk();
     return ScopedAStatus::fromServiceSpecificError(IComposerClient::EX_BAD_CONFIG);
 }
 

@@ -15,6 +15,8 @@
  */
 
 #define LOG_TAG "keymint_1_attest_key_test"
+#include <android-base/logging.h>
+#include <android-base/strings.h>
 #include <cutils/log.h>
 #include <cutils/properties.h>
 
@@ -26,16 +28,75 @@
 namespace aidl::android::hardware::security::keymint::test {
 
 namespace {
+string TELEPHONY_CMD_GET_IMEI = "cmd phone get-imei ";
 
 bool IsSelfSigned(const vector<Certificate>& chain) {
     if (chain.size() != 1) return false;
     return ChainSignaturesAreValid(chain);
 }
 
+/*
+ * Run a shell command and collect the output of it. If any error, set an empty string as the
+ * output.
+ */
+string exec_command(string command) {
+    char buffer[128];
+    string result = "";
+
+    FILE* pipe = popen(command.c_str(), "r");
+    if (!pipe) {
+        LOG(ERROR) << "popen failed.";
+        return result;
+    }
+
+    // read till end of process:
+    while (!feof(pipe)) {
+        if (fgets(buffer, 128, pipe) != NULL) {
+            result += buffer;
+        }
+    }
+
+    pclose(pipe);
+    return result;
+}
+
+/*
+ * Get IMEI using Telephony service shell command. If any error while executing the command
+ * then empty string will be returned as output.
+ */
+string get_imei(int slot) {
+    string cmd = TELEPHONY_CMD_GET_IMEI + std::to_string(slot);
+    string output = exec_command(cmd);
+
+    if (output.empty()) {
+        LOG(ERROR) << "Command failed. Cmd: " << cmd;
+        return "";
+    }
+
+    vector<string> out = ::android::base::Tokenize(::android::base::Trim(output), "Device IMEI:");
+
+    if (out.size() != 1) {
+        LOG(ERROR) << "Error in parsing the command output. Cmd: " << cmd;
+        return "";
+    }
+
+    return ::android::base::Trim(out[0]);
+}
+
 }  // namespace
 
 class AttestKeyTest : public KeyMintAidlTestBase {
+  public:
+    void SetUp() override {
+        check_skip_test();
+        KeyMintAidlTestBase::SetUp();
+    }
+
   protected:
+    const string FEATURE_KEYSTORE_APP_ATTEST_KEY = "android.hardware.keystore.app_attest_key";
+
+    const string FEATURE_STRONGBOX_KEYSTORE = "android.hardware.strongbox_keystore";
+
     ErrorCode GenerateAttestKey(const AuthorizationSet& key_desc,
                                 const optional<AttestationKey>& attest_key,
                                 vector<uint8_t>* key_blob,
@@ -59,6 +120,59 @@ class AttestKeyTest : public KeyMintAidlTestBase {
             // just ATTEST_KEY.
         }
         return GenerateKey(key_desc, attest_key, key_blob, key_characteristics, cert_chain);
+    }
+
+    // Check if ATTEST_KEY feature is disabled
+    bool is_attest_key_feature_disabled(void) const {
+        if (!check_feature(FEATURE_KEYSTORE_APP_ATTEST_KEY)) {
+            GTEST_LOG_(INFO) << "Feature " + FEATURE_KEYSTORE_APP_ATTEST_KEY + " is disabled";
+            return true;
+        }
+
+        return false;
+    }
+
+    // Check if StrongBox KeyStore is enabled
+    bool is_strongbox_enabled(void) const {
+        if (check_feature(FEATURE_STRONGBOX_KEYSTORE)) {
+            GTEST_LOG_(INFO) << "Feature " + FEATURE_STRONGBOX_KEYSTORE + " is enabled";
+            return true;
+        }
+
+        return false;
+    }
+
+    // Check if chipset has received a waiver allowing it to be launched with
+    // Android S (or later) with Keymaster 4.0 in StrongBox
+    bool is_chipset_allowed_km4_strongbox(void) const {
+        std::array<char, PROPERTY_VALUE_MAX> buffer;
+
+        auto res = property_get("ro.vendor.qti.soc_model", buffer.data(), nullptr);
+        if (res <= 0) return false;
+
+        const string allowed_soc_models[] = {"SM8450", "SM8475", "SM8550", "SXR2230P"};
+
+        for (const string model : allowed_soc_models) {
+            if (model.compare(buffer.data()) == 0) {
+                GTEST_LOG_(INFO) << "QTI SOC Model " + model + " is allowed SB KM 4.0";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Skip the test if all the following conditions hold:
+    // 1. ATTEST_KEY feature is disabled
+    // 2. STRONGBOX is enabled
+    // 3. The device is running one of the chipsets that have received a waiver
+    //     allowing it to be launched with Android S (or later) with Keymaster 4.0
+    //     in StrongBox
+    void check_skip_test(void) const {
+        if (is_attest_key_feature_disabled() && is_strongbox_enabled() &&
+            is_chipset_allowed_km4_strongbox()) {
+            GTEST_SKIP() << "Test is not applicable";
+        }
     }
 };
 
@@ -795,13 +909,44 @@ TEST_P(AttestKeyTest, EcdsaAttestationID) {
 
     // Collection of valid attestation ID tags.
     auto attestation_id_tags = AuthorizationSetBuilder();
-    add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_BRAND, "ro.product.brand");
+    // Use ro.product.brand_for_attestation property for attestation if it is present else fallback
+    // to ro.product.brand
+    std::string prop_value =
+            ::android::base::GetProperty("ro.product.brand_for_attestation", /* default= */ "");
+    if (!prop_value.empty()) {
+        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_BRAND,
+                          "ro.product.brand_for_attestation");
+    } else {
+        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_BRAND, "ro.product.brand");
+    }
     add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_DEVICE, "ro.product.device");
-    add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_PRODUCT, "ro.product.name");
+    // Use ro.product.name_for_attestation property for attestation if it is present else fallback
+    // to ro.product.name
+    prop_value = ::android::base::GetProperty("ro.product.name_for_attestation", /* default= */ "");
+    if (!prop_value.empty()) {
+        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_PRODUCT,
+                          "ro.product.name_for_attestation");
+    } else {
+        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_PRODUCT, "ro.product.name");
+    }
     add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_SERIAL, "ro.serialno");
     add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_MANUFACTURER,
                       "ro.product.manufacturer");
-    add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_MODEL, "ro.product.model");
+    // Use ro.product.model_for_attestation property for attestation if it is present else fallback
+    // to ro.product.model
+    prop_value =
+            ::android::base::GetProperty("ro.product.model_for_attestation", /* default= */ "");
+    if (!prop_value.empty()) {
+        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_MODEL,
+                          "ro.product.model_for_attestation");
+    } else {
+        add_tag_from_prop(&attestation_id_tags, TAG_ATTESTATION_ID_MODEL, "ro.product.model");
+    }
+
+    string imei = get_imei(0);
+    if (!imei.empty()) {
+        attestation_id_tags.Authorization(TAG_ATTESTATION_ID_IMEI, imei.data(), imei.size());
+    }
 
     for (const KeyParameter& tag : attestation_id_tags) {
         SCOPED_TRACE(testing::Message() << "+tag-" << tag);

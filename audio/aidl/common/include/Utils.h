@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <initializer_list>
 #include <type_traits>
 
@@ -23,10 +25,21 @@
 #include <aidl/android/media/audio/common/AudioDeviceType.h>
 #include <aidl/android/media/audio/common/AudioFormatDescription.h>
 #include <aidl/android/media/audio/common/AudioInputFlags.h>
+#include <aidl/android/media/audio/common/AudioMode.h>
 #include <aidl/android/media/audio/common/AudioOutputFlags.h>
 #include <aidl/android/media/audio/common/PcmType.h>
 
 namespace android::hardware::audio::common {
+
+// Some values are reserved for use by the system code only.
+// HALs must not accept or emit values outside from the provided list.
+constexpr std::array<::aidl::android::media::audio::common::AudioMode, 5> kValidAudioModes = {
+        ::aidl::android::media::audio::common::AudioMode::NORMAL,
+        ::aidl::android::media::audio::common::AudioMode::RINGTONE,
+        ::aidl::android::media::audio::common::AudioMode::IN_CALL,
+        ::aidl::android::media::audio::common::AudioMode::IN_COMMUNICATION,
+        ::aidl::android::media::audio::common::AudioMode::CALL_SCREEN,
+};
 
 constexpr size_t getPcmSampleSizeInBytes(::aidl::android::media::audio::common::PcmType pcm) {
     using ::aidl::android::media::audio::common::PcmType;
@@ -89,6 +102,35 @@ constexpr bool isTelephonyDeviceType(
         ::aidl::android::media::audio::common::AudioDeviceType device) {
     return device == ::aidl::android::media::audio::common::AudioDeviceType::IN_TELEPHONY_RX ||
            device == ::aidl::android::media::audio::common::AudioDeviceType::OUT_TELEPHONY_TX;
+}
+
+constexpr bool isUsbInputDeviceType(::aidl::android::media::audio::common::AudioDeviceType type) {
+    switch (type) {
+        case ::aidl::android::media::audio::common::AudioDeviceType::IN_DOCK:
+        case ::aidl::android::media::audio::common::AudioDeviceType::IN_ACCESSORY:
+        case ::aidl::android::media::audio::common::AudioDeviceType::IN_DEVICE:
+        case ::aidl::android::media::audio::common::AudioDeviceType::IN_HEADSET:
+            return true;
+        default:
+            return false;
+    }
+}
+
+constexpr bool isUsbOutputtDeviceType(::aidl::android::media::audio::common::AudioDeviceType type) {
+    switch (type) {
+        case ::aidl::android::media::audio::common::AudioDeviceType::OUT_DOCK:
+        case ::aidl::android::media::audio::common::AudioDeviceType::OUT_ACCESSORY:
+        case ::aidl::android::media::audio::common::AudioDeviceType::OUT_DEVICE:
+        case ::aidl::android::media::audio::common::AudioDeviceType::OUT_HEADSET:
+            return true;
+        default:
+            return false;
+    }
+}
+
+constexpr bool isValidAudioMode(::aidl::android::media::audio::common::AudioMode mode) {
+    return std::find(kValidAudioModes.begin(), kValidAudioModes.end(), mode) !=
+           kValidAudioModes.end();
 }
 
 // The helper functions defined below are only applicable to the case when an enum type

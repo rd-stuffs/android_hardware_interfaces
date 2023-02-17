@@ -141,6 +141,26 @@ We support the following constant types:
 
 * FuelType
 
+* AutomaticEmergencyBrakingState
+
+* ForwardCollisionWarningState
+
+* BlindSpotWarningState
+
+* LaneDepartureWarningState
+
+* LaneKeepAssistState
+
+* LaneCenteringAssistCommand
+
+* LaneCenteringAssistState
+
+* ErrorState
+
+* WindshieldWipersState
+
+* WindshieldWipersSwitch
+
 * Constants
 
 Every constant type except "Constants" corresponds to a enum defined in Vehicle

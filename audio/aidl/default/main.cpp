@@ -25,9 +25,11 @@
 
 #include "core-impl/Config.h"
 #include "core-impl/Module.h"
+#include "core-impl/ModuleUsb.h"
 
 using aidl::android::hardware::audio::core::Config;
 using aidl::android::hardware::audio::core::Module;
+using aidl::android::hardware::audio::core::ModuleUsb;
 
 int main() {
     // Random values are used in the implementation.
@@ -35,6 +37,8 @@ int main() {
 
     // This is a debug implementation, always enable debug logging.
     android::base::SetMinimumLogSeverity(::android::base::DEBUG);
+    // For more logs, use VERBOSE, however this may hinder performance.
+    // android::base::SetMinimumLogSeverity(::android::base::VERBOSE);
     ABinderProcess_setThreadPoolMaxThreadCount(16);
 
     // Make the default config service
@@ -46,7 +50,7 @@ int main() {
 
     // Make modules
     auto createModule = [](Module::Type type, const std::string& instance) {
-        auto module = ndk::SharedRefBase::make<Module>(type);
+        auto module = Module::createInstance(type);
         ndk::SpAIBinder moduleBinder = module->asBinder();
         const std::string moduleName = std::string(Module::descriptor).append("/").append(instance);
         AIBinder_setMinSchedulerPolicy(moduleBinder.get(), SCHED_NORMAL, ANDROID_PRIORITY_AUDIO);
@@ -55,7 +59,8 @@ int main() {
         return std::make_pair(module, moduleBinder);
     };
     auto modules = {createModule(Module::Type::DEFAULT, "default"),
-                    createModule(Module::Type::R_SUBMIX, "r_submix")};
+                    createModule(Module::Type::R_SUBMIX, "r_submix"),
+                    createModule(Module::Type::USB, "usb")};
 
     ABinderProcess_joinThreadPool();
     return EXIT_FAILURE;  // should not reach

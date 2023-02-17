@@ -37,9 +37,7 @@ namespace wifi {
 namespace aidl_struct_util {
 
 // Chip conversion methods.
-bool convertLegacyFeaturesToAidlChipCapabilities(uint64_t legacy_feature_set,
-                                                 uint32_t legacy_logger_feature_set,
-                                                 uint32_t* aidl_caps);
+bool convertLegacyFeaturesToAidlChipCapabilities(uint64_t legacy_feature_set, uint32_t* aidl_caps);
 bool convertLegacyDebugRingBufferStatusToAidl(
         const legacy_hal::wifi_ring_buffer_status& legacy_status,
         WifiDebugRingBufferStatus* aidl_status);
@@ -71,9 +69,7 @@ WifiBand convertLegacyMacBandToAidlWifiBand(uint32_t band);
 WifiAntennaMode convertLegacyAntennaConfigurationToAidl(uint32_t antenna_cfg);
 
 // STA iface conversion methods.
-bool convertLegacyFeaturesToAidlStaCapabilities(uint64_t legacy_feature_set,
-                                                uint32_t legacy_logger_feature_set,
-                                                uint32_t* aidl_caps);
+bool convertLegacyFeaturesToAidlStaCapabilities(uint64_t legacy_feature_set, uint32_t* aidl_caps);
 bool convertLegacyApfCapabilitiesToAidl(const legacy_hal::PacketFilterCapabilities& legacy_caps,
                                         StaApfPacketFilterCapabilities* aidl_caps);
 bool convertLegacyGscanCapabilitiesToAidl(const legacy_hal::wifi_gscan_capabilities& legacy_caps,
@@ -200,6 +196,7 @@ bool convertLegacyNanBootstrappingRequestIndToAidl(
 bool convertLegacyNanBootstrappingConfirmIndToAidl(
         const legacy_hal::NanBootstrappingConfirmInd& legacy_ind,
         NanBootstrappingConfirmInd* aidl_ind);
+uint32_t convertAidlChannelCategoryToLegacy(uint32_t aidl_channel_category_mask);
 }  // namespace aidl_struct_util
 }  // namespace wifi
 }  // namespace hardware

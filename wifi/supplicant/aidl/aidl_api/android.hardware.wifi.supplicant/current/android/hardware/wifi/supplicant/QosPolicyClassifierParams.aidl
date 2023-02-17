@@ -43,4 +43,5 @@ parcelable QosPolicyClassifierParams {
   android.hardware.wifi.supplicant.ProtocolNextHeader protocolNextHdr;
   byte[] flowLabelIpv6;
   String domainName;
+  byte dscp;
 }

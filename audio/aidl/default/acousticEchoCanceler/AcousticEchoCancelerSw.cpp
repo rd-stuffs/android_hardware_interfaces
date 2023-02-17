@@ -30,6 +30,7 @@ using aidl::android::hardware::audio::effect::AcousticEchoCancelerSw;
 using aidl::android::hardware::audio::effect::Descriptor;
 using aidl::android::hardware::audio::effect::IEffect;
 using aidl::android::hardware::audio::effect::kAcousticEchoCancelerSwImplUUID;
+using aidl::android::hardware::audio::effect::Range;
 using aidl::android::media::audio::common::AudioUuid;
 
 extern "C" binder_exception_t createEffect(const AudioUuid* in_impl_uuid,
@@ -54,15 +55,20 @@ extern "C" binder_exception_t queryEffect(const AudioUuid* in_impl_uuid, Descrip
         return EX_ILLEGAL_ARGUMENT;
     }
     *_aidl_return = AcousticEchoCancelerSw::kDescriptor;
-    LOG(ERROR) << __func__ << "xxx " << _aidl_return->toString();
     return EX_NONE;
 }
 
 namespace aidl::android::hardware::audio::effect {
 
 const std::string AcousticEchoCancelerSw::kEffectName = "AcousticEchoCancelerSw";
-const AcousticEchoCanceler::Capability AcousticEchoCancelerSw::kCapability = {
-        .maxEchoDelayUs = 500, .supportMobileMode = false};
+
+const std::vector<Range::AcousticEchoCancelerRange> AcousticEchoCancelerSw::kRanges = {
+        MAKE_RANGE(AcousticEchoCanceler, echoDelayUs, 0, 500),
+        /* mobile mode not supported, and not settable */
+        MAKE_RANGE(AcousticEchoCanceler, mobileMode, false, false)};
+
+const Capability AcousticEchoCancelerSw::kCapability = {.range = AcousticEchoCancelerSw::kRanges};
+
 const Descriptor AcousticEchoCancelerSw::kDescriptor = {
         .common = {.id = {.type = kAcousticEchoCancelerTypeUUID,
                           .uuid = kAcousticEchoCancelerSwImplUUID,
@@ -72,8 +78,7 @@ const Descriptor AcousticEchoCancelerSw::kDescriptor = {
                              .volume = Flags::Volume::CTRL},
                    .name = AcousticEchoCancelerSw::kEffectName,
                    .implementor = "The Android Open Source Project"},
-        .capability = Capability::make<Capability::acousticEchoCanceler>(
-                AcousticEchoCancelerSw::kCapability)};
+        .capability = AcousticEchoCancelerSw::kCapability};
 
 ndk::ScopedAStatus AcousticEchoCancelerSw::getDescriptor(Descriptor* _aidl_return) {
     LOG(DEBUG) << __func__ << kDescriptor.toString();
@@ -88,8 +93,9 @@ ndk::ScopedAStatus AcousticEchoCancelerSw::setParameterSpecific(
     RETURN_IF(!mContext, EX_NULL_POINTER, "nullContext");
 
     auto& param = specific.get<Parameter::Specific::acousticEchoCanceler>();
-    auto tag = param.getTag();
+    RETURN_IF(!inRange(param, kRanges), EX_ILLEGAL_ARGUMENT, "outOfRange");
 
+    auto tag = param.getTag();
     switch (tag) {
         case AcousticEchoCanceler::echoDelayUs: {
             RETURN_IF(mContext->setEchoDelay(param.get<AcousticEchoCanceler::echoDelayUs>()) !=
@@ -183,10 +189,6 @@ IEffect::Status AcousticEchoCancelerSw::effectProcessImpl(float* in, float* out,
 }
 
 RetCode AcousticEchoCancelerSwContext::setEchoDelay(int echoDelayUs) {
-    if (echoDelayUs < 0 || echoDelayUs > AcousticEchoCancelerSw::kCapability.maxEchoDelayUs) {
-        LOG(DEBUG) << __func__ << " illegal delay " << echoDelayUs;
-        return RetCode::ERROR_ILLEGAL_PARAMETER;
-    }
     mEchoDelayUs = echoDelayUs;
     return RetCode::SUCCESS;
 }

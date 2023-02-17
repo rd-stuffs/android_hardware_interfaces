@@ -154,6 +154,7 @@ class GraphicsTestsBase {
     std::shared_ptr<IAllocator> mAllocator;
     AIMapper* mIMapper = nullptr;
     AIMapper_loadIMapperFn mIMapperLoader;
+    int32_t* mIMapperHALVersion = nullptr;
 
   protected:
     void Initialize(std::shared_ptr<IAllocator> allocator) {
@@ -171,10 +172,12 @@ class GraphicsTestsBase {
         ASSERT_NE(nullptr, mIMapperLoader) << "AIMapper_locaIMapper missing from " << lib_name;
         ASSERT_EQ(AIMAPPER_ERROR_NONE, mIMapperLoader(&mIMapper));
         ASSERT_NE(mIMapper, nullptr);
+        mIMapperHALVersion = (int32_t*)dlsym(so, "ANDROID_HAL_MAPPER_VERSION");
     }
 
   public:
     AIMapper_loadIMapperFn getIMapperLoader() const { return mIMapperLoader; }
+    int32_t* getHalVersion() const { return mIMapperHALVersion; }
 
     std::unique_ptr<BufferAllocation> allocate(const BufferDescriptorInfo& descriptorInfo) {
         AllocationResult result;
@@ -556,6 +559,15 @@ class GraphicsMapperStableCTests
 
     void TearDown() override {}
 };
+
+TEST_P(GraphicsMapperStableCTests, VersionChecks) {
+    ASSERT_NE(nullptr, getHalVersion()) << "Resolving ANDROID_HAL_MAPPER_VERSION symbol failed";
+    int32_t halVersion = *getHalVersion();
+    EXPECT_EQ(halVersion, AIMAPPER_VERSION_5) << "Unrecognized ANDROID_HAL_MAPPER_VERSION";
+    EXPECT_EQ(mapper()->version, AIMAPPER_VERSION_5) << "Unrecognized AIMapper::version";
+    EXPECT_EQ(halVersion, mapper()->version)
+            << "AIMapper version & ANDROID_HAL_MAPPER_VERSION don't agree";
+}
 
 TEST_P(GraphicsMapperStableCTests, AllV5CallbacksDefined) {
     ASSERT_GE(mapper()->version, AIMAPPER_VERSION_5);
@@ -1557,6 +1569,16 @@ TEST_P(GraphicsMapperStableCTests, GetSmpte2094_40) {
     }
 }
 
+TEST_P(GraphicsMapperStableCTests, GetStride) {
+    auto buffer = allocateGeneric();
+    ASSERT_TRUE(buffer);
+    auto bufferHandle = buffer->import();
+    ASSERT_TRUE(bufferHandle);
+    auto value = getStandardMetadata<StandardMetadataType::STRIDE>(*bufferHandle);
+    ASSERT_TRUE(value.has_value());
+    EXPECT_EQ(buffer->stride(), *value);
+}
+
 TEST_P(GraphicsMapperStableCTests, SupportsRequiredGettersSetters) {
     auto buffer = allocateGeneric();
     ASSERT_TRUE(buffer);
@@ -1587,6 +1609,7 @@ TEST_P(GraphicsMapperStableCTests, SupportsRequiredGettersSetters) {
             StandardMetadataType::BLEND_MODE,
             StandardMetadataType::SMPTE2086,
             StandardMetadataType::CTA861_3,
+            StandardMetadataType::STRIDE,
     };
 
     std::vector<StandardMetadataType> requiredSetters = {

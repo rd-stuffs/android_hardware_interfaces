@@ -40,6 +40,7 @@ using aidl::android::media::audio::common::AudioPortExt;
 using aidl::android::media::audio::common::AudioPortMixExt;
 using aidl::android::media::audio::common::AudioProfile;
 using aidl::android::media::audio::common::Int;
+using aidl::android::media::audio::common::MicrophoneInfo;
 using aidl::android::media::audio::common::PcmType;
 using android::hardware::audio::common::makeBitPositionFlagMask;
 
@@ -76,6 +77,11 @@ static AudioPortExt createDeviceExt(AudioDeviceType devType, int32_t flags,
                                     std::string connection = "") {
     AudioPortDeviceExt deviceExt;
     deviceExt.device.type.type = devType;
+    if (devType == AudioDeviceType::IN_MICROPHONE && connection.empty()) {
+        deviceExt.device.address = "bottom";
+    } else if (devType == AudioDeviceType::IN_MICROPHONE_BACK && connection.empty()) {
+        deviceExt.device.address = "back";
+    }
     deviceExt.device.type.connection = std::move(connection);
     deviceExt.flags = flags;
     return AudioPortExt::make<AudioPortExt::Tag::device>(deviceExt);
@@ -387,6 +393,75 @@ std::unique_ptr<Configuration> getRSubmixConfiguration() {
 
         c.routes.push_back(createRoute({rsubmixOutMix}, rsubmixOutDevice));
         c.routes.push_back(createRoute({rsubmixInDevice}, rsubmixInMix));
+
+        return c;
+    }();
+    return std::make_unique<Configuration>(configuration);
+}
+
+// Usb configuration:
+//
+// Device ports:
+//  * "USB Headset Out", OUT_HEADSET, CONNECTION_USB
+//    - no profiles specified
+//  * "USB Headset In", IN_HEADSET, CONNECTION_USB
+//    - no profiles specified
+//
+// Mix ports:
+//  * "usb_headset output", 1 max open, 1 max active stream
+//    - no profiles specified
+//  * "usb_headset input", 1 max open, 1 max active stream
+//    - no profiles specified
+//
+// Profiles for device port connected state:
+//  * USB Headset Out":
+//    - profile PCM 16-bit; MONO, STEREO, INDEX_MASK_1, INDEX_MASK_2; 44100, 48000
+//    - profile PCM 24-bit; MONO, STEREO, INDEX_MASK_1, INDEX_MASK_2; 44100, 48000
+//  * USB Headset In":
+//    - profile PCM 16-bit; MONO, STEREO, INDEX_MASK_1, INDEX_MASK_2; 44100, 48000
+//    - profile PCM 24-bit; MONO, STEREO, INDEX_MASK_1, INDEX_MASK_2; 44100, 48000
+//
+std::unique_ptr<Configuration> getUsbConfiguration() {
+    static const Configuration configuration = []() {
+        const std::vector<AudioProfile> standardPcmAudioProfiles = {
+                createProfile(PcmType::INT_16_BIT,
+                              {AudioChannelLayout::LAYOUT_MONO, AudioChannelLayout::LAYOUT_STEREO,
+                               AudioChannelLayout::INDEX_MASK_1, AudioChannelLayout::INDEX_MASK_2},
+                              {44100, 48000}),
+                createProfile(PcmType::INT_24_BIT,
+                              {AudioChannelLayout::LAYOUT_MONO, AudioChannelLayout::LAYOUT_STEREO,
+                               AudioChannelLayout::INDEX_MASK_1, AudioChannelLayout::INDEX_MASK_2},
+                              {44100, 48000})};
+        Configuration c;
+
+        // Device ports
+
+        AudioPort usbOutHeadset =
+                createPort(c.nextPortId++, "USB Headset Out", 0, false,
+                           createDeviceExt(AudioDeviceType::OUT_HEADSET, 0,
+                                           AudioDeviceDescription::CONNECTION_USB));
+        c.ports.push_back(usbOutHeadset);
+        c.connectedProfiles[usbOutHeadset.id] = standardPcmAudioProfiles;
+
+        AudioPort usbInHeadset =
+                createPort(c.nextPortId++, "USB Headset In", 0, true,
+                           createDeviceExt(AudioDeviceType::IN_HEADSET, 0,
+                                           AudioDeviceDescription::CONNECTION_USB));
+        c.ports.push_back(usbInHeadset);
+        c.connectedProfiles[usbInHeadset.id] = standardPcmAudioProfiles;
+
+        // Mix ports
+
+        AudioPort usbHeadsetOutMix =
+                createPort(c.nextPortId++, "usb_headset output", 0, false, createPortMixExt(1, 1));
+        c.ports.push_back(usbHeadsetOutMix);
+
+        AudioPort usbHeadsetInMix =
+                createPort(c.nextPortId++, "usb_headset input", 0, true, createPortMixExt(1, 1));
+        c.ports.push_back(usbHeadsetInMix);
+
+        c.routes.push_back(createRoute({usbHeadsetOutMix}, usbOutHeadset));
+        c.routes.push_back(createRoute({usbInHeadset}, usbHeadsetInMix));
 
         return c;
     }();

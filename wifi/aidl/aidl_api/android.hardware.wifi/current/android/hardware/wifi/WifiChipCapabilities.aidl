@@ -34,6 +34,7 @@
 package android.hardware.wifi;
 @VintfStability
 parcelable WifiChipCapabilities {
-  int maxMloLinkCount;
+  int maxMloAssociationLinkCount;
+  int maxMloStrLinkCount;
   int maxConcurrentTdlsSessionCount;
 }

@@ -31,8 +31,11 @@ cc_defaults {
         "VtsHalTargetTestDefaults",
     ],
     shared_libs: [
+        "libbinder",
         "libbinder_ndk",
         "libcrypto",
+        "libbase",
+        "packagemanager_aidl-cpp",
     ],
     static_libs: [
         "android.hardware.security.rkp-V3-ndk",

@@ -58,8 +58,8 @@ interface IModule {
   void setMasterVolume(float volume);
   boolean getMicMute();
   void setMicMute(boolean mute);
-  android.hardware.audio.core.MicrophoneInfo[] getMicrophones();
-  void updateAudioMode(android.hardware.audio.core.AudioMode mode);
+  android.media.audio.common.MicrophoneInfo[] getMicrophones();
+  void updateAudioMode(android.media.audio.common.AudioMode mode);
   void updateScreenRotation(android.hardware.audio.core.IModule.ScreenRotation rotation);
   void updateScreenState(boolean isTurnedOn);
   @nullable android.hardware.audio.core.sounddose.ISoundDose getSoundDose();
@@ -68,6 +68,12 @@ interface IModule {
   void setVendorParameters(in android.hardware.audio.core.VendorParameter[] parameters, boolean async);
   void addDeviceEffect(int portConfigId, in android.hardware.audio.effect.IEffect effect);
   void removeDeviceEffect(int portConfigId, in android.hardware.audio.effect.IEffect effect);
+  android.media.audio.common.AudioMMapPolicyInfo[] getMmapPolicyInfos(android.media.audio.common.AudioMMapPolicyType mmapPolicyType);
+  boolean supportsVariableLatency();
+  int getAAudioMixerBurstCount();
+  int getAAudioHardwareBurstMinUsec();
+  const int DEFAULT_AAUDIO_MIXER_BURST_COUNT = 2;
+  const int DEFAULT_AAUDIO_HARDWARE_BURST_MIN_DURATION_US = 1000;
   @VintfStability
   parcelable OpenInputStreamArguments {
     int portConfigId;

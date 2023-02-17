@@ -97,4 +97,12 @@ parcelable NanCapabilities {
      * Flag to indicate if NAN pairing is supported.
      */
     boolean supportsPairing;
+    /**
+     * Flag to indicate if setting NAN cluster ID is supported.
+     */
+    boolean supportsSetClusterId;
+    /**
+     * Flag to indicate if NAN suspension is supported.
+     */
+    boolean supportsSuspension;
 }

@@ -60,8 +60,20 @@ extern "C" binder_exception_t queryEffect(const AudioUuid* in_impl_uuid, Descrip
 namespace aidl::android::hardware::audio::effect {
 
 const std::string EnvReverbSw::kEffectName = "EnvReverbSw";
-const EnvironmentalReverb::Capability EnvReverbSw::kCapability = {
-        .maxDecayTimeMs = EnvironmentalReverb::MAX_DECAY_TIME_MS};
+
+const std::vector<Range::EnvironmentalReverbRange> EnvReverbSw::kRanges = {
+        MAKE_RANGE(EnvironmentalReverb, roomLevelMb, -6000, 0),
+        MAKE_RANGE(EnvironmentalReverb, roomHfLevelMb, -4000, 0),
+        MAKE_RANGE(EnvironmentalReverb, decayTimeMs, 0, 7000),
+        MAKE_RANGE(EnvironmentalReverb, decayHfRatioPm, 100, 2000),
+        MAKE_RANGE(EnvironmentalReverb, levelMb, -6000, 0),
+        MAKE_RANGE(EnvironmentalReverb, delayMs, 0, 65),
+        MAKE_RANGE(EnvironmentalReverb, diffusionPm, 0, 1000),
+        MAKE_RANGE(EnvironmentalReverb, densityPm, 0, 1000)};
+
+const Capability EnvReverbSw::kCapability = {
+        .range = Range::make<Range::environmentalReverb>(EnvReverbSw::kRanges)};
+
 const Descriptor EnvReverbSw::kDescriptor = {
         .common = {.id = {.type = kEnvReverbTypeUUID,
                           .uuid = kEnvReverbSwImplUUID,
@@ -71,7 +83,7 @@ const Descriptor EnvReverbSw::kDescriptor = {
                              .volume = Flags::Volume::CTRL},
                    .name = EnvReverbSw::kEffectName,
                    .implementor = "The Android Open Source Project"},
-        .capability = Capability::make<Capability::environmentalReverb>(EnvReverbSw::kCapability)};
+        .capability = EnvReverbSw::kCapability};
 
 ndk::ScopedAStatus EnvReverbSw::getDescriptor(Descriptor* _aidl_return) {
     LOG(DEBUG) << __func__ << kDescriptor.toString();
@@ -84,8 +96,8 @@ ndk::ScopedAStatus EnvReverbSw::setParameterSpecific(const Parameter::Specific& 
               "EffectNotSupported");
 
     auto& erParam = specific.get<Parameter::Specific::environmentalReverb>();
+    RETURN_IF(!inRange(erParam, kRanges), EX_ILLEGAL_ARGUMENT, "outOfRange");
     auto tag = erParam.getTag();
-
     switch (tag) {
         case EnvironmentalReverb::roomLevelMb: {
             RETURN_IF(mContext->setErRoomLevel(erParam.get<EnvironmentalReverb::roomLevelMb>()) !=
@@ -249,6 +261,46 @@ IEffect::Status EnvReverbSw::effectProcessImpl(float* in, float* out, int sample
         *out++ = *in++;
     }
     return {STATUS_OK, samples, samples};
+}
+
+RetCode EnvReverbSwContext::setErRoomLevel(int roomLevel) {
+    mRoomLevel = roomLevel;
+    return RetCode::SUCCESS;
+}
+
+RetCode EnvReverbSwContext::setErRoomHfLevel(int roomHfLevel) {
+    mRoomHfLevel = roomHfLevel;
+    return RetCode::SUCCESS;
+}
+
+RetCode EnvReverbSwContext::setErDecayTime(int decayTime) {
+    mDecayTime = decayTime;
+    return RetCode::SUCCESS;
+}
+
+RetCode EnvReverbSwContext::setErDecayHfRatio(int decayHfRatio) {
+    mDecayHfRatio = decayHfRatio;
+    return RetCode::SUCCESS;
+}
+
+RetCode EnvReverbSwContext::setErLevel(int level) {
+    mLevel = level;
+    return RetCode::SUCCESS;
+}
+
+RetCode EnvReverbSwContext::setErDelay(int delay) {
+    mDelay = delay;
+    return RetCode::SUCCESS;
+}
+
+RetCode EnvReverbSwContext::setErDiffusion(int diffusion) {
+    mDiffusion = diffusion;
+    return RetCode::SUCCESS;
+}
+
+RetCode EnvReverbSwContext::setErDensity(int density) {
+    mDensity = density;
+    return RetCode::SUCCESS;
 }
 
 }  // namespace aidl::android::hardware::audio::effect

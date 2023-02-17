@@ -531,6 +531,11 @@ TEST_P(GnssHalTest, TestGnssPowerIndication) {
 
     EXPECT_EQ(gnssPowerIndicationCallback->capabilities_cbq_.calledCount(), 1);
 
+    if (gnssPowerIndicationCallback->last_capabilities_ == 0) {
+        // Skipping the test since GnssPowerIndication is not supported.
+        return;
+    }
+
     // Request and verify a GnssPowerStats is received
     gnssPowerIndicationCallback->gnss_power_stats_cbq_.reset();
     iGnssPowerIndication->requestGnssPowerStats();
@@ -1486,7 +1491,7 @@ TEST_P(GnssHalTest, TestGnssMeasurementIntervals_LocationOnAfterMeasurement) {
     ASSERT_TRUE(iGnssMeasurement != nullptr);
 
     int locationIntervalMs = 1000;
-    // Start location first and then start measurement
+    // Start measurement first and then start location
     ALOGD("TestGnssMeasurementIntervals_LocationOnAfterMeasurement");
     for (auto& intervalMs : intervals) {
         auto callback = sp<GnssMeasurementCallbackAidl>::make();

@@ -41,33 +41,6 @@ inline std::vector<int32_t> uintToIntVec(const std::vector<uint32_t>& in) {
     return std::vector<int32_t>(in.begin(), in.end());
 }
 
-IWifiChip::ChipCapabilityMask convertLegacyLoggerFeatureToAidlChipCapability(uint32_t feature) {
-    switch (feature) {
-        case legacy_hal::WIFI_LOGGER_MEMORY_DUMP_SUPPORTED:
-            return IWifiChip::ChipCapabilityMask::DEBUG_MEMORY_FIRMWARE_DUMP;
-        case legacy_hal::WIFI_LOGGER_DRIVER_DUMP_SUPPORTED:
-            return IWifiChip::ChipCapabilityMask::DEBUG_MEMORY_DRIVER_DUMP;
-        case legacy_hal::WIFI_LOGGER_CONNECT_EVENT_SUPPORTED:
-            return IWifiChip::ChipCapabilityMask::DEBUG_RING_BUFFER_CONNECT_EVENT;
-        case legacy_hal::WIFI_LOGGER_POWER_EVENT_SUPPORTED:
-            return IWifiChip::ChipCapabilityMask::DEBUG_RING_BUFFER_POWER_EVENT;
-        case legacy_hal::WIFI_LOGGER_WAKE_LOCK_SUPPORTED:
-            return IWifiChip::ChipCapabilityMask::DEBUG_RING_BUFFER_WAKELOCK_EVENT;
-    };
-    CHECK(false) << "Unknown legacy feature: " << feature;
-    return {};
-}
-
-IWifiStaIface::StaIfaceCapabilityMask convertLegacyLoggerFeatureToAidlStaIfaceCapability(
-        uint32_t feature) {
-    switch (feature) {
-        case legacy_hal::WIFI_LOGGER_PACKET_FATE_SUPPORTED:
-            return IWifiStaIface::StaIfaceCapabilityMask::DEBUG_PACKET_FATE;
-    };
-    CHECK(false) << "Unknown legacy feature: " << feature;
-    return {};
-}
-
 IWifiChip::ChipCapabilityMask convertLegacyFeatureToAidlChipCapability(uint64_t feature) {
     switch (feature) {
         case WIFI_FEATURE_SET_TX_POWER_LIMIT:
@@ -84,6 +57,8 @@ IWifiChip::ChipCapabilityMask convertLegacyFeatureToAidlChipCapability(uint64_t 
             return IWifiChip::ChipCapabilityMask::SET_LATENCY_MODE;
         case WIFI_FEATURE_P2P_RAND_MAC:
             return IWifiChip::ChipCapabilityMask::P2P_RAND_MAC;
+        case WIFI_FEATURE_AFC_CHANNEL:
+            return IWifiChip::ChipCapabilityMask::SET_AFC_CHANNEL_ALLOWANCE;
     };
     CHECK(false) << "Unknown legacy feature: " << feature;
     return {};
@@ -123,43 +98,25 @@ IWifiStaIface::StaIfaceCapabilityMask convertLegacyFeatureToAidlStaIfaceCapabili
     return {};
 }
 
-bool convertLegacyFeaturesToAidlChipCapabilities(uint64_t legacy_feature_set,
-                                                 uint32_t legacy_logger_feature_set,
-                                                 uint32_t* aidl_caps) {
+bool convertLegacyFeaturesToAidlChipCapabilities(uint64_t legacy_feature_set, uint32_t* aidl_caps) {
     if (!aidl_caps) {
         return false;
     }
     *aidl_caps = {};
-    for (const auto feature : {legacy_hal::WIFI_LOGGER_MEMORY_DUMP_SUPPORTED,
-                               legacy_hal::WIFI_LOGGER_DRIVER_DUMP_SUPPORTED,
-                               legacy_hal::WIFI_LOGGER_CONNECT_EVENT_SUPPORTED,
-                               legacy_hal::WIFI_LOGGER_POWER_EVENT_SUPPORTED,
-                               legacy_hal::WIFI_LOGGER_WAKE_LOCK_SUPPORTED}) {
-        if (feature & legacy_logger_feature_set) {
-            *aidl_caps |=
-                    static_cast<uint32_t>(convertLegacyLoggerFeatureToAidlChipCapability(feature));
-        }
-    }
     std::vector<uint64_t> features = {WIFI_FEATURE_SET_TX_POWER_LIMIT,
                                       WIFI_FEATURE_USE_BODY_HEAD_SAR,
                                       WIFI_FEATURE_D2D_RTT,
                                       WIFI_FEATURE_D2AP_RTT,
                                       WIFI_FEATURE_INFRA_60G,
                                       WIFI_FEATURE_SET_LATENCY_MODE,
-                                      WIFI_FEATURE_P2P_RAND_MAC};
+                                      WIFI_FEATURE_P2P_RAND_MAC,
+                                      WIFI_FEATURE_AFC_CHANNEL};
     for (const auto feature : features) {
         if (feature & legacy_feature_set) {
             *aidl_caps |= static_cast<uint32_t>(convertLegacyFeatureToAidlChipCapability(feature));
         }
     }
 
-    // There are no flags for these 3 in the legacy feature set. Adding them to
-    // the set because all the current devices support it.
-    *aidl_caps |=
-            static_cast<uint32_t>(IWifiChip::ChipCapabilityMask::DEBUG_RING_BUFFER_VENDOR_DATA);
-    *aidl_caps |=
-            static_cast<uint32_t>(IWifiChip::ChipCapabilityMask::DEBUG_HOST_WAKE_REASON_STATS);
-    *aidl_caps |= static_cast<uint32_t>(IWifiChip::ChipCapabilityMask::DEBUG_ERROR_ALERTS);
     return true;
 }
 
@@ -492,19 +449,11 @@ bool convertLegacyWifiMacInfosToAidl(
     return true;
 }
 
-bool convertLegacyFeaturesToAidlStaCapabilities(uint64_t legacy_feature_set,
-                                                uint32_t legacy_logger_feature_set,
-                                                uint32_t* aidl_caps) {
+bool convertLegacyFeaturesToAidlStaCapabilities(uint64_t legacy_feature_set, uint32_t* aidl_caps) {
     if (!aidl_caps) {
         return false;
     }
     *aidl_caps = {};
-    for (const auto feature : {legacy_hal::WIFI_LOGGER_PACKET_FATE_SUPPORTED}) {
-        if (feature & legacy_logger_feature_set) {
-            *aidl_caps |= static_cast<uint32_t>(
-                    convertLegacyLoggerFeatureToAidlStaIfaceCapability(feature));
-        }
-    }
     for (const auto feature :
          {WIFI_FEATURE_GSCAN, WIFI_FEATURE_LINK_LAYER_STATS, WIFI_FEATURE_RSSI_MONITOR,
           WIFI_FEATURE_CONTROL_ROAMING, WIFI_FEATURE_IE_WHITELIST, WIFI_FEATURE_SCAN_RAND,
@@ -1283,7 +1232,7 @@ NanPairingRequestType convertLegacyNanPairingRequestTypeToAidl(
     LOG(FATAL);
 }
 
-legacy_hal::Akm convertAidlAkmTypeToLegacy(NanPairingAkm type) {
+legacy_hal::NanAkm convertAidlAkmTypeToLegacy(NanPairingAkm type) {
     switch (type) {
         case NanPairingAkm::SAE:
             return legacy_hal::SAE;
@@ -1293,7 +1242,7 @@ legacy_hal::Akm convertAidlAkmTypeToLegacy(NanPairingAkm type) {
     LOG(FATAL);
 }
 
-NanPairingAkm convertLegacyAkmTypeToAidl(legacy_hal::Akm type) {
+NanPairingAkm convertLegacyAkmTypeToAidl(legacy_hal::NanAkm type) {
     switch (type) {
         case legacy_hal::SAE:
             return NanPairingAkm::SAE;
@@ -1417,6 +1366,7 @@ bool convertLegacyNpsaToAidl(const legacy_hal::NpkSecurityAssociation& legacy_np
     aidl_npsa->npk = std::array<uint8_t, 32>();
     std::copy(legacy_npsa.npk.pmk, legacy_npsa.npk.pmk + 32, std::begin(aidl_npsa->npk));
     aidl_npsa->akm = convertLegacyAkmTypeToAidl(legacy_npsa.akm);
+    aidl_npsa->cipherType = (NanCipherSuiteType)legacy_npsa.cipher_type;
     return true;
 }
 
@@ -1452,6 +1402,12 @@ NanStatusCode convertLegacyNanStatusTypeToAidl(legacy_hal::NanStatusType type) {
             return NanStatusCode::INVALID_PAIRING_ID;
         case legacy_hal::NAN_STATUS_INVALID_BOOTSTRAPPING_ID:
             return NanStatusCode::INVALID_BOOTSTRAPPING_ID;
+        case legacy_hal::NAN_STATUS_REDUNDANT_REQUEST:
+            return NanStatusCode::REDUNDANT_REQUEST;
+        case legacy_hal::NAN_STATUS_NOT_SUPPORTED:
+            return NanStatusCode::NOT_SUPPORTED;
+        case legacy_hal::NAN_STATUS_NO_CONNECTION:
+            return NanStatusCode::NO_CONNECTION;
     }
     CHECK(false);
 }
@@ -1706,6 +1662,8 @@ bool convertAidlNanConfigRequestToLegacy(const NanConfigRequest& aidl_request1,
     legacy_request->enable_instant_mode = aidl_request2.enableInstantCommunicationMode;
     legacy_request->config_instant_mode_channel = 1;
     legacy_request->instant_mode_channel = aidl_request2.instantModeChannel;
+    legacy_request->config_cluster_id = 1;
+    legacy_request->cluster_id_val = aidl_request2.clusterId;
 
     return true;
 }
@@ -1848,6 +1806,7 @@ bool convertAidlNanPublishRequestToLegacy(const NanPublishRequest& aidl_request,
         LOG(ERROR) << "convertAidlNanPublishRequestToLegacy: invalid pairing config";
         return false;
     }
+    legacy_request->enable_suspendability = aidl_request.baseConfigs.enableSessionSuspendability;
 
     return true;
 }
@@ -1994,6 +1953,8 @@ bool convertAidlNanSubscribeRequestToLegacy(const NanSubscribeRequest& aidl_requ
         LOG(ERROR) << "convertAidlNanSubscribeRequestToLegacy: invalid pairing config";
         return false;
     }
+    legacy_request->enable_suspendability = aidl_request.baseConfigs.enableSessionSuspendability;
+
     return true;
 }
 
@@ -2117,6 +2078,7 @@ bool convertAidlNanDataPathInitiatorRequestToLegacy(
         return false;
     }
     memcpy(legacy_request->scid, aidl_request.securityConfig.scid.data(), legacy_request->scid_len);
+    legacy_request->publish_subscribe_id = static_cast<uint8_t>(aidl_request.discoverySessionId);
 
     return true;
 }
@@ -2198,6 +2160,7 @@ bool convertAidlNanDataPathIndicationResponseToLegacy(
         return false;
     }
     memcpy(legacy_request->scid, aidl_request.securityConfig.scid.data(), legacy_request->scid_len);
+    legacy_request->publish_subscribe_id = static_cast<uint8_t>(aidl_request.discoverySessionId);
 
     return true;
 }
@@ -2245,6 +2208,9 @@ bool convertLegacyNanCapabilitiesResponseToAidl(const legacy_hal::NanCapabilitie
     aidl_response->supports6g = legacy_response.is_6g_supported;
     aidl_response->supportsHe = legacy_response.is_he_supported;
     aidl_response->supportsPairing = legacy_response.is_pairing_supported;
+    aidl_response->supportsSetClusterId = legacy_response.is_set_cluster_id_supported;
+    aidl_response->supportsSuspension = legacy_response.is_suspension_supported;
+
     return true;
 }
 
@@ -3095,6 +3061,7 @@ bool convertAidlNanPairingInitiatorRequestToLegacy(const NanPairingRequest& aidl
             aidl_request.securityConfig.securityType == NanPairingSecurityType::OPPORTUNISTIC ? 1
                                                                                               : 0;
     legacy_request->akm = convertAidlAkmTypeToLegacy(aidl_request.securityConfig.akm);
+    legacy_request->cipher_type = (unsigned int)aidl_request.securityConfig.cipherType;
     if (aidl_request.securityConfig.securityType == NanPairingSecurityType::PMK) {
         legacy_request->key_info.key_type = legacy_hal::NAN_SECURITY_KEY_INPUT_PMK;
         legacy_request->key_info.body.pmk_info.pmk_len = aidl_request.securityConfig.pmk.size();
@@ -3152,6 +3119,7 @@ bool convertAidlNanPairingIndicationResponseToLegacy(
             aidl_request.securityConfig.securityType == NanPairingSecurityType::OPPORTUNISTIC ? 1
                                                                                               : 0;
     legacy_request->akm = convertAidlAkmTypeToLegacy(aidl_request.securityConfig.akm);
+    legacy_request->cipher_type = (unsigned int)aidl_request.securityConfig.cipherType;
     legacy_request->rsp_code =
             aidl_request.acceptRequest ? NAN_PAIRING_REQUEST_ACCEPT : NAN_PAIRING_REQUEST_REJECT;
     if (aidl_request.securityConfig.securityType == NanPairingSecurityType::PMK) {
@@ -3203,6 +3171,9 @@ bool convertAidlNanBootstrappingInitiatorRequestToLegacy(
     memcpy(legacy_request->peer_disc_mac_addr, aidl_request.peerDiscMacAddr.data(), 6);
     legacy_request->request_bootstrapping_method =
             convertAidlBootstrappingMethodToLegacy(aidl_request.requestBootstrappingMethod);
+    legacy_request->cookie_length = aidl_request.cookie.size();
+
+    memcpy(legacy_request->cookie, aidl_request.cookie.data(), legacy_request->cookie_length);
 
     return true;
 }
@@ -3297,18 +3268,36 @@ bool convertLegacyNanBootstrappingConfirmIndToAidl(
     *aidl_ind = {};
 
     aidl_ind->bootstrappingInstanceId = legacy_ind.bootstrapping_instance_id;
-    aidl_ind->acceptRequest = legacy_ind.rsp_code == NAN_BOOTSTRAPPING_REQUEST_ACCEPT;
+    aidl_ind->responseCode = static_cast<NanBootstrappingResponseCode>(legacy_ind.rsp_code);
     aidl_ind->reasonCode.status = convertLegacyNanStatusTypeToAidl(legacy_ind.reason_code);
+    aidl_ind->comeBackDelay = legacy_ind.come_back_delay;
+    aidl_ind->cookie =
+            std::vector<uint8_t>(legacy_ind.cookie, legacy_ind.cookie + legacy_ind.cookie_length);
     return true;
 }
 
 bool convertLegacyWifiChipCapabilitiesToAidl(
         const legacy_hal::wifi_chip_capabilities& legacy_chip_capabilities,
         WifiChipCapabilities& aidl_chip_capabilities) {
-    aidl_chip_capabilities.maxMloLinkCount = legacy_chip_capabilities.max_mlo_link_count;
+    aidl_chip_capabilities.maxMloStrLinkCount = legacy_chip_capabilities.max_mlo_str_link_count;
+    aidl_chip_capabilities.maxMloAssociationLinkCount =
+            legacy_chip_capabilities.max_mlo_association_link_count;
     aidl_chip_capabilities.maxConcurrentTdlsSessionCount =
             legacy_chip_capabilities.max_concurrent_tdls_session_count;
     return true;
+}
+
+uint32_t convertAidlChannelCategoryToLegacy(uint32_t aidl_channel_category_mask) {
+    uint32_t channel_category_mask = 0;
+    if (aidl_channel_category_mask &
+        static_cast<int32_t>(IWifiChip::ChannelCategoryMask::INDOOR_CHANNEL)) {
+        channel_category_mask |= legacy_hal::WIFI_INDOOR_CHANNEL;
+    }
+    if (aidl_channel_category_mask &
+        static_cast<int32_t>(IWifiChip::ChannelCategoryMask::DFS_CHANNEL)) {
+        channel_category_mask |= legacy_hal::WIFI_DFS_CHANNEL;
+    }
+    return channel_category_mask;
 }
 
 }  // namespace aidl_struct_util
