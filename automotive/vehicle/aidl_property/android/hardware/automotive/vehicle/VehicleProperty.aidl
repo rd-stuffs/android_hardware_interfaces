@@ -1252,9 +1252,16 @@ enum VehicleProperty {
     AP_POWER_BOOTUP_REASON = 0x0A02 + 0x10000000 + 0x01000000
             + 0x00400000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT32
     /**
-     * Property to represent brightness of the display. Some cars have single
-     * control for the brightness of all displays and this property is to share
-     * change in that control.
+     * Property to represent brightness of the display.
+     *
+     * Some cars have single control for the brightness of all displays and this
+     * property is to share change in that control. In cars which have displays
+     * whose brightness is controlled separately, they must use
+     * PER_DISPLAY_BRIGHTNESS.
+     *
+     * Only one of DISPLAY_BRIGHTNESS and PER_DISPLAY_BRIGHTNESS should be
+     * implemented. If both are available, PER_DISPLAY_BRIGHTNESS is used by
+     * AAOS.
      *
      * If this is writable, android side can set this value when user changes
      * display brightness from Settings. If this is read only, user may still
@@ -1266,6 +1273,29 @@ enum VehicleProperty {
      */
     DISPLAY_BRIGHTNESS = 0x0A03 + 0x10000000 + 0x01000000
             + 0x00400000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT32
+    /**
+     * Property to represent brightness of the displays which are controlled separately.
+     *
+     * Some cars have one or more displays whose brightness is controlled
+     * separately and this property is to inform the brightness of each
+     * passenger display. In cars where all displays' brightness is controlled
+     * together, they must use DISPLAY_BRIGHTNESS.
+     *
+     * Only one of DISPLAY_BRIGHTNESS and PER_DISPLAY_BRIGHTNESS should be
+     * implemented. If both are available, PER_DISPLAY_BRIGHTNESS is used by
+     * AAOS.
+     *
+     * The display port uniquely identifies a physical connector on the device
+     * for display output, ranging from 0 to 255.
+     *
+     * int32Values[0] : display port
+     * int32Values[1] : brightness
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ_WRITE
+     */
+    PER_DISPLAY_BRIGHTNESS = 0x0A04 + 0x10000000 + 0x01000000
+            + 0x00410000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT32_VEC
     /**
      * Property to feed H/W input events to android
      *
@@ -3954,6 +3984,69 @@ enum VehicleProperty {
      */
     CRUISE_CONTROL_COMMAND =
             0x1012 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.INT32,
+
+    /**
+     * Current target speed for Cruise Control (CC).
+     *
+     * OEMs should set the minInt32Value and maxInt32Value values for this property to define the
+     * min and max target speed values. These values must be non-negative.
+     *
+     * The maxFloatValue represents the upper bound of the target speed.
+     * The minFloatValue represents the lower bound of the target speed.
+     *
+     * When this property is not available (for example when CRUISE_CONTROL_ENABLED is false), it
+     * should return StatusCode.NOT_AVAILABLE_DISABLED.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ
+     * @unit VehicleUnit:METER_PER_SEC
+     */
+    CRUISE_CONTROL_TARGET_SPEED =
+            0x1013 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.FLOAT,
+
+    /**
+     * Current target time gap for Adaptive Cruise Control (ACC) or Predictive Cruise Control in
+     * milliseconds.
+     *
+     * This property should specify the target time gap to a leading vehicle. This gap is defined as
+     * the time to travel the distance between the leading vehicle's rear-most point to the ACC
+     * vehicle's front-most point. The actual time gap from a leading vehicle can be above or below
+     * this value.
+     *
+     * The possible values to set for the target time gap should be specified in configArray in
+     * ascending order. All values must be positive. If the property is writable, all values must be
+     * writable.
+     *
+     * Writing to this property when it is not available should return StatusCode.NOT_AVAILABLE.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ_WRITE
+     * @unit VehicleUnit:MILLI_SECS
+     */
+    ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP =
+            0x1014 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.INT32,
+
+    /**
+     * Measured distance from leading vehicle when using Adaptive Cruise Control (ACC) or
+     * Predictive Cruise Control.
+     *
+     * Returns the measured distance in millimeters between the rear-most point of the leading
+     * vehicle and the front-most point of the ACC vehicle.
+     *
+     * The minInt32Value should be 0.
+     * The maxInt32Value should be populated with the maximum range the distance sensor can support.
+     * This value should be non-negative.
+     *
+     * When no lead vehicle is detected (that is, when there is no leading vehicle or the leading
+     * vehicle is too far away for the sensor to detect), this property should return
+     * StatusCode.NOT_AVAILABLE.
+     *
+     * @change_mode VehiclePropertyChangeMode.CONTINUOUS
+     * @access VehiclePropertyAccess.READ
+     * @unit VehicleUnit:MILLIMETER
+     */
+    ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE =
+            0x1015 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.INT32,
 
     /**
      * Enable or disable hands on detection (HOD).
