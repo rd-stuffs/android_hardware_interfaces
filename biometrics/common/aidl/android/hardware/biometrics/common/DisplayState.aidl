@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,28 @@
  * limitations under the License.
  */
 
-package android.hardware.wifi;
+package android.hardware.biometrics.common;
 
 /**
- * Byte array representing an Ssid. Use when we need to
- * pass an array of Ssid's to a method, as variable-sized
- * 2D arrays are not supported in AIDL.
+ * Display state during an operation.
+ *
+ * @hide
  */
 @VintfStability
-parcelable Ssid {
-    byte[32] data;
+@Backing(type="int")
+enum DisplayState {
+    /** The display state is unknown. */
+    UNKNOWN,
+
+    /** The display is on and showing the lockscreen (or an occluding app). */
+    LOCKSCREEN,
+
+    /** The display is off or dozing. */
+    NO_UI,
+
+    /** The display is showing a screensaver (dreaming). */
+    SCREENSAVER,
+
+    /** The display is dreaming with always on display. */
+    AOD,
 }

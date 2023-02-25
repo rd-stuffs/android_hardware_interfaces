@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,18 +31,16 @@
 // with such a backward incompatible change, it has a high risk of breaking
 // later when a module using the interface is updated, e.g., Mainline modules.
 
-package android.hardware.biometrics.common;
-/* @hide */
-@VintfStability
-parcelable OperationContext {
-  int id = 0;
-  android.hardware.biometrics.common.OperationReason reason = android.hardware.biometrics.common.OperationReason.UNKNOWN;
-  /**
-   * @deprecated use displayState instead.
-   */
-  boolean isAod = false;
-  boolean isCrypto = false;
-  android.hardware.biometrics.common.WakeReason wakeReason = android.hardware.biometrics.common.WakeReason.UNKNOWN;
-  android.hardware.biometrics.common.DisplayState displayState = android.hardware.biometrics.common.DisplayState.UNKNOWN;
-  @nullable android.hardware.biometrics.common.AuthenticateReason authenticateReason;
+package android.hardware.automotive.vehicle;
+@Backing(type="int") @VintfStability
+enum LocationCharacterization {
+  PRIOR_LOCATIONS = 0x1,
+  GYROSCOPE_FUSION = 0x2,
+  ACCELEROMETER_FUSION = 0x4,
+  COMPASS_FUSION = 0x8,
+  WHEEL_SPEED_FUSION = 0x10,
+  STEERING_ANGLE_FUSION = 0x20,
+  CAR_SPEED_FUSION = 0x40,
+  DEAD_RECKONED = 0x80,
+  RAW_GNSS_ONLY = 0x100,
 }
