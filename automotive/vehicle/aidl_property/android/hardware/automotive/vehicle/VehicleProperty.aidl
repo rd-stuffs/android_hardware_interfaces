@@ -407,6 +407,10 @@ enum VehicleProperty {
      * all energy sources in a vehicle.  For example, a hybrid car's range will
      * be the sum of the ranges based on fuel and battery.
      *
+     * This property may be writable because a navigation app could update the range if it has a
+     * more accurate estimate based on the upcoming route. However, this property can be set to
+     * VehiclePropertyAccess.READ only at the OEM's discretion.
+     *
      * @change_mode VehiclePropertyChangeMode.CONTINUOUS
      * @access VehiclePropertyAccess.READ_WRITE
      * @unit VehicleUnit:METER
@@ -1596,11 +1600,11 @@ enum VehicleProperty {
      *
      * This parameter selects the memory preset to use to select the seat
      * position. The minValue is always 0, and the maxValue determines the
-     * number of seat positions available.
+     * number of seat preset memory slots available (i.e. numSeatPresets - 1).
      *
      * For instance, if the driver's seat has 3 memory presets, the maxValue
-     * will be 3. When the user wants to select a preset, the desired preset
-     * number (1, 2, or 3) is set.
+     * will be 2. When the user wants to select a preset, the desired preset
+     * number (0, 1, or 2) is set.
      *
      * @change_mode VehiclePropertyChangeMode.ON_CHANGE
      * @access VehiclePropertyAccess.WRITE
