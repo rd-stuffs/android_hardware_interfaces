@@ -336,7 +336,7 @@ void CameraAidlTest::verifySettingsOverrideCharacteristics(const camera_metadata
     int retcode = find_camera_metadata_ro_entry(metadata,
             ANDROID_CONTROL_AVAILABLE_SETTINGS_OVERRIDES, &entry);
     bool supportSettingsOverride = false;
-    if ((0 == retcode) && (entry.count > 0)) {
+    if (0 == retcode) {
         supportSettingsOverride = true;
         bool hasOff = false;
         for (size_t i = 0; i < entry.count; i++) {
@@ -845,7 +845,7 @@ Status CameraAidlTest::getAvailableOutputStreams(const camera_metadata_t* static
         AvailableStream depthPreviewThreshold = {kMaxPreviewWidth, kMaxPreviewHeight,
                                                  static_cast<int32_t>(PixelFormat::Y16)};
         const AvailableStream* depthThreshold =
-                (threshold != nullptr) ? threshold : &depthPreviewThreshold;
+                isDepthOnly(staticMeta) ? &depthPreviewThreshold : threshold;
         fillOutputStreams(&depthEntry, outputStreams, depthThreshold,
                           ANDROID_DEPTH_AVAILABLE_DEPTH_STREAM_CONFIGURATIONS_OUTPUT);
     }
