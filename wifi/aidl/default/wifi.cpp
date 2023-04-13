@@ -19,7 +19,6 @@
 #include <android-base/logging.h>
 
 #include "aidl_return_util.h"
-#include "aidl_sync_util.h"
 #include "wifi_status_util.h"
 
 namespace {
@@ -33,7 +32,6 @@ namespace hardware {
 namespace wifi {
 using aidl_return_util::validateAndCall;
 using aidl_return_util::validateAndCallWithLock;
-using aidl_sync_util::acquireGlobalLock;
 
 Wifi::Wifi(const std::shared_ptr<::android::wifi_system::InterfaceTool> iface_tool,
            const std::shared_ptr<legacy_hal::WifiLegacyHalFactory> legacy_hal_factory,
@@ -80,7 +78,6 @@ ndk::ScopedAStatus Wifi::getChip(int32_t in_chipId, std::shared_ptr<IWifiChip>* 
 }
 
 binder_status_t Wifi::dump(int fd, const char** args, uint32_t numArgs) {
-    const auto lock = acquireGlobalLock();
     LOG(INFO) << "-----------Debug was called----------------";
     if (chips_.size() == 0) {
         LOG(INFO) << "No chips to display.";
