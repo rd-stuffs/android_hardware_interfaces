@@ -46,4 +46,5 @@ cc_library_static {
     name: "android.hardware.camera.common@1.0-helper",
     vendor_available: true,
     whole_static_libs: ["android.hardware.camera.common-helper"],
+    sdclang: false,
 }
