@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,15 @@
 
 #pragma once
 
-#include <aidl/android/hardware/light/BnLights.h>
+#include <aidl/android/media/audio/common/AudioChannelLayout.h>
+#include <aidl/android/media/audio/common/AudioFormatDescription.h>
 
-namespace aidl {
-namespace android {
-namespace hardware {
-namespace light {
+using aidl::android::media::audio::common::AudioChannelLayout;
 
-// Default implementation that reports a few placeholder lights.
-class Lights : public BnLights {
-    ndk::ScopedAStatus setLightState(int id, const HwLightState& state) override;
-    ndk::ScopedAStatus getLights(std::vector<HwLight>* lights) override;
-};
+namespace aidl::android::hardware::audio::core::r_submix {
 
-}  // namespace light
-}  // namespace hardware
-}  // namespace android
-}  // namespace aidl
+bool isChannelMaskSupported(const AudioChannelLayout& channelMask);
+
+bool isSampleRateSupported(int sampleRate);
+
+}  // namespace aidl::android::hardware::audio::core::r_submix
