@@ -28,7 +28,7 @@ namespace aidl::android::hardware::audio::core {
 
 class StreamUsb : public StreamAlsa {
   public:
-    StreamUsb(const StreamContext& context, const Metadata& metadata);
+    StreamUsb(StreamContext* context, const Metadata& metadata);
     // Methods of 'DriverInterface'.
     ::android::status_t transfer(void* buffer, size_t frameCount, size_t* actualFrameCount,
                                  int32_t* latencyMs) override;
@@ -53,7 +53,7 @@ class StreamInUsb final : public StreamIn, public StreamUsb {
             const std::vector<::aidl::android::media::audio::common::MicrophoneInfo>& microphones);
 
   private:
-    void onClose() override { defaultOnClose(); }
+    void onClose(StreamDescriptor::State) override { defaultOnClose(); }
     ndk::ScopedAStatus getActiveMicrophones(
             std::vector<::aidl::android::media::audio::common::MicrophoneDynamicInfo>* _aidl_return)
             override;
@@ -68,7 +68,7 @@ class StreamOutUsb final : public StreamOut, public StreamUsb {
                          offloadInfo);
 
   private:
-    void onClose() override { defaultOnClose(); }
+    void onClose(StreamDescriptor::State) override { defaultOnClose(); }
     ndk::ScopedAStatus getHwVolume(std::vector<float>* _aidl_return) override;
     ndk::ScopedAStatus setHwVolume(const std::vector<float>& in_channelVolumes) override;
 

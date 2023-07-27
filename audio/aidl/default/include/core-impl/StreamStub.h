@@ -22,7 +22,7 @@ namespace aidl::android::hardware::audio::core {
 
 class StreamStub : public StreamCommonImpl {
   public:
-    StreamStub(const StreamContext& context, const Metadata& metadata);
+    StreamStub(StreamContext* context, const Metadata& metadata);
     // Methods of 'DriverInterface'.
     ::android::status_t init() override;
     ::android::status_t drain(StreamDescriptor::DrainMode) override;
@@ -52,7 +52,7 @@ class StreamInStub final : public StreamIn, public StreamStub {
             const std::vector<::aidl::android::media::audio::common::MicrophoneInfo>& microphones);
 
   private:
-    void onClose() override { defaultOnClose(); }
+    void onClose(StreamDescriptor::State) override { defaultOnClose(); }
 };
 
 class StreamOutStub final : public StreamOut, public StreamStub {
@@ -64,7 +64,7 @@ class StreamOutStub final : public StreamOut, public StreamStub {
                           offloadInfo);
 
   private:
-    void onClose() override { defaultOnClose(); }
+    void onClose(StreamDescriptor::State) override { defaultOnClose(); }
 };
 
 }  // namespace aidl::android::hardware::audio::core
