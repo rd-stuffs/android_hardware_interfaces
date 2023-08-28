@@ -61,7 +61,7 @@ class VtsComposerClient {
 
     bool tearDown();
 
-    std::pair<ScopedAStatus, int32_t> getInterfaceVersion();
+    std::pair<ScopedAStatus, int32_t> getInterfaceVersion() const;
 
     std::pair<ScopedAStatus, VirtualDisplay> createVirtualDisplay(int32_t width, int32_t height,
                                                                   PixelFormat pixelFormat,
@@ -142,6 +142,13 @@ class VtsComposerClient {
 
     std::pair<ScopedAStatus, std::vector<int32_t>> getDisplayConfigs(int64_t display);
 
+    std::pair<ScopedAStatus, std::vector<DisplayConfiguration>> getDisplayConfigurations(
+            int64_t display);
+
+    ScopedAStatus notifyExpectedPresent(int64_t display,
+                                        ClockMonotonicTimestamp expectedPresentTime,
+                                        int frameIntervalNs);
+
     std::pair<ScopedAStatus, int32_t> getDisplayVsyncPeriod(int64_t display);
 
     ScopedAStatus setAutoLowLatencyMode(int64_t display, bool isEnabled);
@@ -189,8 +196,12 @@ class VtsComposerClient {
 
     std::vector<RefreshRateChangedDebugData> takeListOfRefreshRateChangedDebugData();
 
+    static constexpr int32_t kMaxFrameIntervalNs = 50000000;  // 20fps
+
   private:
-    ScopedAStatus addDisplayConfig(VtsDisplay* vtsDisplay, int32_t config);
+    void addDisplayConfigs(VtsDisplay*, const std::vector<DisplayConfiguration>&);
+    ScopedAStatus addDisplayConfigLegacy(VtsDisplay*, int32_t config);
+    bool getDisplayConfigurationSupported() const;
     ScopedAStatus updateDisplayProperties(VtsDisplay* vtsDisplay, int32_t config);
 
     ScopedAStatus addDisplayToDisplayResources(int64_t display, bool isVirtual);

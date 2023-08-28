@@ -68,16 +68,22 @@ class BroadcastRadio final : public BnBroadcastRadio {
     const VirtualRadio& mVirtualRadio;
     std::mutex mMutex;
     AmFmRegionConfig mAmFmConfig GUARDED_BY(mMutex);
-    std::unique_ptr<::android::WorkerThread> mThread GUARDED_BY(mMutex) =
+    std::unique_ptr<::android::WorkerThread> mTuningThread GUARDED_BY(mMutex) =
+            std::unique_ptr<::android::WorkerThread>(new ::android::WorkerThread());
+    std::unique_ptr<::android::WorkerThread> mProgramListThread GUARDED_BY(mMutex) =
             std::unique_ptr<::android::WorkerThread>(new ::android::WorkerThread());
     bool mIsTuneCompleted GUARDED_BY(mMutex) = true;
     Properties mProperties GUARDED_BY(mMutex);
     ProgramSelector mCurrentProgram GUARDED_BY(mMutex) = {};
     std::shared_ptr<ITunerCallback> mCallback GUARDED_BY(mMutex);
 
+    // Bitmap for all ConfigFlag values
+    int mConfigFlagValues GUARDED_BY(mMutex) = 0;
+
     std::optional<AmFmBandRange> getAmFmRangeLocked() const;
     void cancelLocked();
     ProgramInfo tuneInternalLocked(const ProgramSelector& sel);
+    void cancelProgramListUpdateLocked();
 
     binder_status_t cmdHelp(int fd) const;
     binder_status_t cmdTune(int fd, const char** args, uint32_t numArgs);

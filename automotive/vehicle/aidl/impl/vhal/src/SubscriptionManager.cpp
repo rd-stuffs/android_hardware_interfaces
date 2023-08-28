@@ -36,6 +36,7 @@ constexpr float ONE_SECOND_IN_NANO = 1'000'000'000.;
 using ::aidl::android::hardware::automotive::vehicle::IVehicleCallback;
 using ::aidl::android::hardware::automotive::vehicle::StatusCode;
 using ::aidl::android::hardware::automotive::vehicle::SubscribeOptions;
+using ::aidl::android::hardware::automotive::vehicle::VehiclePropError;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropValue;
 using ::android::base::Error;
 using ::android::base::Result;
@@ -269,9 +270,40 @@ SubscriptionManager::getSubscribedClients(const std::vector<VehiclePropValue>& u
     return clients;
 }
 
+std::unordered_map<std::shared_ptr<IVehicleCallback>, std::vector<VehiclePropError>>
+SubscriptionManager::getSubscribedClientsForErrorEvents(
+        const std::vector<SetValueErrorEvent>& errorEvents) {
+    std::scoped_lock<std::mutex> lockGuard(mLock);
+    std::unordered_map<std::shared_ptr<IVehicleCallback>, std::vector<VehiclePropError>> clients;
+
+    for (const auto& errorEvent : errorEvents) {
+        PropIdAreaId propIdAreaId{
+                .propId = errorEvent.propId,
+                .areaId = errorEvent.areaId,
+        };
+        if (mClientsByPropIdArea.find(propIdAreaId) == mClientsByPropIdArea.end()) {
+            continue;
+        }
+
+        for (const auto& [_, client] : mClientsByPropIdArea[propIdAreaId]) {
+            clients[client].push_back({
+                    .propId = errorEvent.propId,
+                    .areaId = errorEvent.areaId,
+                    .errorCode = errorEvent.errorCode,
+            });
+        }
+    }
+    return clients;
+}
+
 bool SubscriptionManager::isEmpty() {
     std::scoped_lock<std::mutex> lockGuard(mLock);
     return mSubscribedPropsByClient.empty() && mClientsByPropIdArea.empty();
+}
+
+size_t SubscriptionManager::countClients() {
+    std::scoped_lock<std::mutex> lockGuard(mLock);
+    return mSubscribedPropsByClient.size();
 }
 
 }  // namespace vehicle
