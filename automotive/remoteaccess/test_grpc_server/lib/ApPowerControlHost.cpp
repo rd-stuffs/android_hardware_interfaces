@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
+#include "ApPowerControl.h"
 
-cc_test {
-    name: "VehicleHalVehicleUtilsTest",
-    srcs: ["*.cpp"],
-    vendor: true,
-    static_libs: [
-        "VehicleHalUtils",
-        "libgtest",
-        "libgmock",
-    ],
-    defaults: ["VehicleHalDefaults"],
-    test_suites: ["device-tests"],
+#include <cstdio>
+
+void wakeupAp() {
+    printf("Waking up application processor...\n");
 }
