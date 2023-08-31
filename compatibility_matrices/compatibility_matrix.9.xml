@@ -216,7 +216,7 @@
     </hal>
     <hal format="aidl" optional="true">
         <name>android.hardware.gnss</name>
-        <version>2-3</version>
+        <version>2-4</version>
         <interface>
             <name>IGnss</name>
             <instance>default</instance>
@@ -364,7 +364,7 @@
             <instance>default</instance>
         </interface>
     </hal>
-    <hal format="aidl" optional="true">
+    <hal format="aidl" optional="true" updatable-via-apex="true">
         <name>android.hardware.neuralnetworks</name>
         <version>1-4</version>
         <interface>
@@ -567,6 +567,14 @@
             <instance>default</instance>
         </interface>
     </hal>
+    <hal format="aidl" optional="true" updatable-via-apex="true">
+        <name>android.hardware.threadnetwork</name>
+        <version>1</version>
+        <interface>
+            <name>IThreadChip</name>
+            <regex-instance>chip[0-9]+</regex-instance>
+        </interface>
+    </hal>
     <hal format="aidl" optional="true">
         <name>android.hardware.tv.hdmi.cec</name>
         <version>1</version>
@@ -684,14 +692,6 @@
         <version>5.0</version>
         <interface>
             <regex-instance>.*</regex-instance>
-        </interface>
-    </hal>
-    <hal format="aidl" optional="true" updatable-via-apex="true">
-        <name>android.hardware.threadnetwork</name>
-        <version>1</version>
-        <interface>
-            <name>IThreadChip</name>
-            <regex-instance>chip[0-9]+</regex-instance>
         </interface>
     </hal>
 </compatibility-matrix>
