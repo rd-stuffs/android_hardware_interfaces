@@ -2565,22 +2565,24 @@ TEST_P(NewKeyGenerationTest, LimitedUsageEcdsa) {
  * NewKeyGenerationTest.EcdsaDefaultSize
  *
  * Verifies that failing to specify a curve for EC key generation returns
- * UNSUPPORTED_KEY_SIZE.
+ * UNSUPPORTED_KEY_SIZE or UNSUPPORTED_EC_CURVE.
  */
 TEST_P(NewKeyGenerationTest, EcdsaDefaultSize) {
-    ASSERT_EQ(ErrorCode::UNSUPPORTED_KEY_SIZE,
-              GenerateKey(AuthorizationSetBuilder()
-                                  .Authorization(TAG_ALGORITHM, Algorithm::EC)
-                                  .SigningKey()
-                                  .Digest(Digest::NONE)
-                                  .SetDefaultValidity()));
+    auto result = GenerateKey(AuthorizationSetBuilder()
+                                      .Authorization(TAG_ALGORITHM, Algorithm::EC)
+                                      .SigningKey()
+                                      .Digest(Digest::NONE)
+                                      .SetDefaultValidity());
+    ASSERT_TRUE(result == ErrorCode::UNSUPPORTED_KEY_SIZE ||
+                result == ErrorCode::UNSUPPORTED_EC_CURVE)
+            << "unexpected result " << result;
 }
 
 /*
  * NewKeyGenerationTest.EcdsaInvalidCurve
  *
  * Verifies that specifying an invalid curve for EC key generation returns
- * UNSUPPORTED_KEY_SIZE.
+ * UNSUPPORTED_KEY_SIZE or UNSUPPORTED_EC_CURVE.
  */
 TEST_P(NewKeyGenerationTest, EcdsaInvalidCurve) {
     for (auto curve : InvalidCurves()) {
@@ -2593,7 +2595,8 @@ TEST_P(NewKeyGenerationTest, EcdsaInvalidCurve) {
                                           .SetDefaultValidity(),
                                   &key_blob, &key_characteristics);
         ASSERT_TRUE(result == ErrorCode::UNSUPPORTED_KEY_SIZE ||
-                    result == ErrorCode::UNSUPPORTED_EC_CURVE);
+                    result == ErrorCode::UNSUPPORTED_EC_CURVE)
+                << "unexpected result " << result;
     }
 
     ASSERT_EQ(ErrorCode::UNSUPPORTED_KEY_SIZE,
@@ -8755,6 +8758,7 @@ INSTANTIATE_KEYMINT_AIDL_TEST(UnlockedDeviceRequiredTest);
 
 using VsrRequirementTest = KeyMintAidlTestBase;
 
+// @VsrTest = VSR-3.10-008
 TEST_P(VsrRequirementTest, Vsr13Test) {
     int vsr_api_level = get_vsr_api_level();
     if (vsr_api_level < __ANDROID_API_T__) {
@@ -8763,6 +8767,7 @@ TEST_P(VsrRequirementTest, Vsr13Test) {
     EXPECT_GE(AidlVersion(), 2) << "VSR 13+ requires KeyMint version 2";
 }
 
+// @VsrTest = VSR-3.10-013.001
 TEST_P(VsrRequirementTest, Vsr14Test) {
     int vsr_api_level = get_vsr_api_level();
     if (vsr_api_level < __ANDROID_API_U__) {

@@ -43,6 +43,7 @@
     </hal>
     <hal format="aidl" optional="true">
         <name>android.hardware.automotive.audiocontrol</name>
+        <version>1-2</version>
         <interface>
             <name>IAudioControl</name>
             <instance>default</instance>
@@ -259,22 +260,6 @@
         <version>2</version>
         <interface>
             <name>IGnss</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="aidl" optional="true">
-        <name>android.hardware.gnss.visibility_control</name>
-        <version>1</version>
-        <interface>
-            <name>IGnssVisibilityControl</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="aidl" optional="true">
-        <name>android.hardware.gnss.measurement_corrections</name>
-        <version>1</version>
-        <interface>
-            <name>IMeasurementCorrectionsInterface</name>
             <instance>default</instance>
         </interface>
     </hal>

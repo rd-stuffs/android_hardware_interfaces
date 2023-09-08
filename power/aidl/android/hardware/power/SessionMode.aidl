@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-#pragma once
+package android.hardware.power;
 
-#include <string>
-#include <vector>
-
-namespace android::vintf::details {
-
-// Determine whether VINTF checks |package| is missing from FCMs.
-// |package| can be a HIDL package and version like
-// "android.hardware.foo@1.0", or an AIDL package name like
-// "android.hardware.foo@1".
-bool ShouldCheckMissingHidlHalsInFcm(const std::string& packageAndVersion);
-bool ShouldCheckMissingAidlHalsInFcm(const std::string& packageAndVersion);
-
-}  // namespace android::vintf::details
+@VintfStability
+@Backing(type="int")
+enum SessionMode {
+    /**
+     * This mode indicates that the work of this hint session is not
+     * critical to perceived performance, despite its CPU intensity,
+     * and can be safely scheduled to prefer power efficiency.
+     */
+    POWER_EFFICIENCY,
+}
