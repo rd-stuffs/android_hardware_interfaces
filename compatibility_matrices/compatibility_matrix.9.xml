@@ -120,6 +120,7 @@
         <interface>
             <name>IFace</name>
             <instance>default</instance>
+            <instance>virtual</instance>
         </interface>
     </hal>
     <hal format="aidl" optional="true" updatable-via-apex="true">
@@ -235,15 +236,6 @@
         <version>3</version>
         <interface>
             <name>IComposer</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <!-- Either the native or the HIDL mapper HAL must exist on the device -->
-    <hal format="hidl" optional="true">
-        <name>android.hardware.graphics.mapper</name>
-        <version>4.0</version>
-        <interface>
-            <name>IMapper</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -686,7 +678,7 @@
             <instance>default</instance>
         </interface>
     </hal>
-    <!-- Either the native or the HIDL mapper HAL must exist on the device -->
+    <!-- The native mapper HAL must exist on the device -->
     <hal format="native" optional="true">
         <name>mapper</name>
         <version>5.0</version>
