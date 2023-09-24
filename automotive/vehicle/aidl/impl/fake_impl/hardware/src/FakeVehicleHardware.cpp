@@ -24,7 +24,6 @@
 #include <JsonFakeValueGenerator.h>
 #include <LinearFakeValueGenerator.h>
 #include <PropertyUtils.h>
-#include <TestPropertyUtils.h>
 #include <VehicleHalTypes.h>
 #include <VehicleUtils.h>
 
@@ -32,6 +31,7 @@
 #include <android-base/parsedouble.h>
 #include <android-base/properties.h>
 #include <android-base/strings.h>
+#include <android/hardware/automotive/vehicle/TestVendorProperty.h>
 #include <utils/Log.h>
 #include <utils/SystemClock.h>
 #include <utils/Trace.h>
@@ -52,6 +52,8 @@ namespace fake {
 
 namespace {
 
+using ::aidl::android::hardware::automotive::vehicle::CruiseControlCommand;
+using ::aidl::android::hardware::automotive::vehicle::CruiseControlType;
 using ::aidl::android::hardware::automotive::vehicle::ErrorState;
 using ::aidl::android::hardware::automotive::vehicle::GetValueRequest;
 using ::aidl::android::hardware::automotive::vehicle::GetValueResult;
@@ -61,6 +63,7 @@ using ::aidl::android::hardware::automotive::vehicle::SetValueResult;
 using ::aidl::android::hardware::automotive::vehicle::StatusCode;
 using ::aidl::android::hardware::automotive::vehicle::VehicleApPowerStateReport;
 using ::aidl::android::hardware::automotive::vehicle::VehicleApPowerStateReq;
+using ::aidl::android::hardware::automotive::vehicle::VehicleArea;
 using ::aidl::android::hardware::automotive::vehicle::VehicleHwKeyInputAction;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropConfig;
 using ::aidl::android::hardware::automotive::vehicle::VehicleProperty;
@@ -85,14 +88,12 @@ using ::android::base::StringPrintf;
 //  getPropertiesAsync, and setPropertiesAsync.
 // 0x21403000
 constexpr int32_t STARTING_VENDOR_CODE_PROPERTIES_FOR_TEST =
-        0x3000 | toInt(testpropertyutils_impl::VehiclePropertyGroup::VENDOR) |
-        toInt(testpropertyutils_impl::VehicleArea::GLOBAL) |
-        toInt(testpropertyutils_impl::VehiclePropertyType::INT32);
+        0x3000 | toInt(VehiclePropertyGroup::VENDOR) | toInt(VehicleArea::GLOBAL) |
+        toInt(VehiclePropertyType::INT32);
 // 0x21405000
 constexpr int32_t ENDING_VENDOR_CODE_PROPERTIES_FOR_TEST =
-        0x5000 | toInt(testpropertyutils_impl::VehiclePropertyGroup::VENDOR) |
-        toInt(testpropertyutils_impl::VehicleArea::GLOBAL) |
-        toInt(testpropertyutils_impl::VehiclePropertyType::INT32);
+        0x5000 | toInt(VehiclePropertyGroup::VENDOR) | toInt(VehicleArea::GLOBAL) |
+        toInt(VehiclePropertyType::INT32);
 // The directory for default property configuration file.
 // For config file format, see impl/default_config/config/README.md.
 constexpr char DEFAULT_CONFIG_DIR[] = "/vendor/etc/automotive/vhalconfig/";
@@ -103,7 +104,7 @@ constexpr char OVERRIDE_CONFIG_DIR[] = "/vendor/etc/automotive/vhaloverride/";
 // overwrite the default configs.
 constexpr char OVERRIDE_PROPERTY[] = "persist.vendor.vhal_init_value_override";
 constexpr char POWER_STATE_REQ_CONFIG_PROPERTY[] = "ro.vendor.fake_vhal.ap_power_state_req.config";
-// The value to be returned if VENDOR_PROPERTY_ID is set as the property
+// The value to be returned if VENDOR_PROPERTY_FOR_ERROR_CODE_TESTING is set as the property
 constexpr int VENDOR_ERROR_CODE = 0x00ab0005;
 // A list of supported options for "--set" command.
 const std::unordered_set<std::string> SET_PROP_OPTIONS = {
@@ -611,6 +612,18 @@ FakeVehicleHardware::ValueResultType FakeVehicleHardware::getUserHalProp(
     }
 }
 
+VhalResult<bool> FakeVehicleHardware::isCruiseControlTypeStandard() const {
+    auto isCruiseControlTypeAvailableResult =
+            isAdasPropertyAvailable(toInt(VehicleProperty::CRUISE_CONTROL_TYPE));
+    if (!isCruiseControlTypeAvailableResult.ok()) {
+        return isCruiseControlTypeAvailableResult.error();
+    }
+    auto cruiseControlTypeValue =
+            mServerSidePropStore->readValue(toInt(VehicleProperty::CRUISE_CONTROL_TYPE));
+    return cruiseControlTypeValue.value()->value.int32Values[0] ==
+           toInt(CruiseControlType::STANDARD);
+}
+
 FakeVehicleHardware::ValueResultType FakeVehicleHardware::maybeGetSpecialValue(
         const VehiclePropValue& value, bool* isSpecialValue) const {
     *isSpecialValue = false;
@@ -638,6 +651,7 @@ FakeVehicleHardware::ValueResultType FakeVehicleHardware::maybeGetSpecialValue(
         return StatusError(StatusCode::NOT_AVAILABLE_DISABLED) << "hvac not available";
     }
 
+    VhalResult<void> isAdasPropertyAvailableResult;
     switch (propId) {
         case OBD2_FREEZE_FRAME:
             *isSpecialValue = true;
@@ -653,22 +667,39 @@ FakeVehicleHardware::ValueResultType FakeVehicleHardware::maybeGetSpecialValue(
                 result.value()->timestamp = elapsedRealtimeNano();
             }
             return result;
-        case ECHO_REVERSE_BYTES:
+        case toInt(TestVendorProperty::ECHO_REVERSE_BYTES):
             *isSpecialValue = true;
             return getEchoReverseBytes(value);
-        case VENDOR_PROPERTY_ID:
+        case toInt(TestVendorProperty::VENDOR_PROPERTY_FOR_ERROR_CODE_TESTING):
             *isSpecialValue = true;
             return StatusError((StatusCode)VENDOR_ERROR_CODE);
         case toInt(VehicleProperty::CRUISE_CONTROL_TARGET_SPEED):
-            [[fallthrough]];
-        case toInt(VehicleProperty::ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP):
-            [[fallthrough]];
-        case toInt(VehicleProperty::ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE): {
-            auto isAdasPropertyAvailableResult =
+            isAdasPropertyAvailableResult =
                     isAdasPropertyAvailable(toInt(VehicleProperty::CRUISE_CONTROL_STATE));
             if (!isAdasPropertyAvailableResult.ok()) {
                 *isSpecialValue = true;
                 return isAdasPropertyAvailableResult.error();
+            }
+            return nullptr;
+        case toInt(VehicleProperty::ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP):
+            [[fallthrough]];
+        case toInt(VehicleProperty::ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE): {
+            isAdasPropertyAvailableResult =
+                    isAdasPropertyAvailable(toInt(VehicleProperty::CRUISE_CONTROL_STATE));
+            if (!isAdasPropertyAvailableResult.ok()) {
+                *isSpecialValue = true;
+                return isAdasPropertyAvailableResult.error();
+            }
+            auto isCruiseControlTypeStandardResult = isCruiseControlTypeStandard();
+            if (!isCruiseControlTypeStandardResult.ok()) {
+                *isSpecialValue = true;
+                return isCruiseControlTypeStandardResult.error();
+            }
+            if (isCruiseControlTypeStandardResult.value()) {
+                *isSpecialValue = true;
+                return StatusError(StatusCode::NOT_AVAILABLE_DISABLED)
+                       << "tried to get target time gap or lead vehicle measured distance value "
+                       << "while on a standard CC setting";
             }
             return nullptr;
         }
@@ -730,7 +761,13 @@ void FakeVehicleHardware::sendAdasPropertiesState(int32_t propertyId, int32_t st
         }
         auto& dependentPropConfig = dependentPropConfigResult.value();
         for (auto& areaConfig : dependentPropConfig->areaConfigs) {
-            auto propValue = createAdasStateReq(dependentPropId, areaConfig.areaId, state);
+            int32_t hardcoded_state = state;
+            // TODO: restore old/initial values here instead of hardcoded value (b/295542701)
+            if (state == 1 && dependentPropId == toInt(VehicleProperty::CRUISE_CONTROL_TYPE)) {
+                hardcoded_state = toInt(CruiseControlType::ADAPTIVE);
+            }
+            auto propValue =
+                    createAdasStateReq(dependentPropId, areaConfig.areaId, hardcoded_state);
             // This will trigger a property change event for the current ADAS property value.
             mServerSidePropStore->writeValue(std::move(propValue), /*updateStatus=*/true,
                                              VehiclePropertyStore::EventMode::ALWAYS);
@@ -777,6 +814,8 @@ VhalResult<void> FakeVehicleHardware::maybeSetSpecialValue(const VehiclePropValu
         }
     }
 
+    VhalResult<void> isAdasPropertyAvailableResult;
+    VhalResult<bool> isCruiseControlTypeStandardResult;
     switch (propId) {
         case toInt(VehicleProperty::AP_POWER_STATE_REPORT):
             *isSpecialValue = true;
@@ -795,14 +834,14 @@ VhalResult<void> FakeVehicleHardware::maybeSetSpecialValue(const VehiclePropValu
         case OBD2_FREEZE_FRAME_CLEAR:
             *isSpecialValue = true;
             return mFakeObd2Frame->clearObd2FreezeFrames(value);
-        case VENDOR_PROPERTY_ID:
+        case toInt(TestVendorProperty::VENDOR_PROPERTY_FOR_ERROR_CODE_TESTING):
             *isSpecialValue = true;
             return StatusError((StatusCode)VENDOR_ERROR_CODE);
         case toInt(VehicleProperty::HVAC_TEMPERATURE_VALUE_SUGGESTION):
             *isSpecialValue = true;
             return setHvacTemperatureValueSuggestion(value);
         case toInt(VehicleProperty::LANE_CENTERING_ASSIST_COMMAND): {
-            auto isAdasPropertyAvailableResult =
+            isAdasPropertyAvailableResult =
                     isAdasPropertyAvailable(toInt(VehicleProperty::LANE_CENTERING_ASSIST_STATE));
             if (!isAdasPropertyAvailableResult.ok()) {
                 *isSpecialValue = true;
@@ -810,14 +849,47 @@ VhalResult<void> FakeVehicleHardware::maybeSetSpecialValue(const VehiclePropValu
             return isAdasPropertyAvailableResult;
         }
         case toInt(VehicleProperty::CRUISE_CONTROL_COMMAND):
-            [[fallthrough]];
-        case toInt(VehicleProperty::ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP): {
-            auto isAdasPropertyAvailableResult =
+            isAdasPropertyAvailableResult =
                     isAdasPropertyAvailable(toInt(VehicleProperty::CRUISE_CONTROL_STATE));
             if (!isAdasPropertyAvailableResult.ok()) {
                 *isSpecialValue = true;
+                return isAdasPropertyAvailableResult;
             }
-            return isAdasPropertyAvailableResult;
+            isCruiseControlTypeStandardResult = isCruiseControlTypeStandard();
+            if (!isCruiseControlTypeStandardResult.ok()) {
+                *isSpecialValue = true;
+                return isCruiseControlTypeStandardResult.error();
+            }
+            if (isCruiseControlTypeStandardResult.value() &&
+                (value.value.int32Values[0] ==
+                         toInt(CruiseControlCommand::INCREASE_TARGET_TIME_GAP) ||
+                 value.value.int32Values[0] ==
+                         toInt(CruiseControlCommand::DECREASE_TARGET_TIME_GAP))) {
+                *isSpecialValue = true;
+                return StatusError(StatusCode::NOT_AVAILABLE_DISABLED)
+                       << "tried to use a change target time gap command while on a standard CC "
+                       << "setting";
+            }
+            return {};
+        case toInt(VehicleProperty::ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP): {
+            isAdasPropertyAvailableResult =
+                    isAdasPropertyAvailable(toInt(VehicleProperty::CRUISE_CONTROL_STATE));
+            if (!isAdasPropertyAvailableResult.ok()) {
+                *isSpecialValue = true;
+                return isAdasPropertyAvailableResult;
+            }
+            isCruiseControlTypeStandardResult = isCruiseControlTypeStandard();
+            if (!isCruiseControlTypeStandardResult.ok()) {
+                *isSpecialValue = true;
+                return isCruiseControlTypeStandardResult.error();
+            }
+            if (isCruiseControlTypeStandardResult.value()) {
+                *isSpecialValue = true;
+                return StatusError(StatusCode::NOT_AVAILABLE_DISABLED)
+                       << "tried to set target time gap or lead vehicle measured distance value "
+                       << "while on a standard CC setting";
+            }
+            return {};
         }
 
 #ifdef ENABLE_VEHICLE_HAL_TEST_PROPERTIES
@@ -827,9 +899,9 @@ VhalResult<void> FakeVehicleHardware::maybeSetSpecialValue(const VehiclePropValu
             [[fallthrough]];
         case toInt(VehicleProperty::CLUSTER_NAVIGATION_STATE):
             [[fallthrough]];
-        case VENDOR_CLUSTER_SWITCH_UI:
+        case toInt(TestVendorProperty::VENDOR_CLUSTER_SWITCH_UI):
             [[fallthrough]];
-        case VENDOR_CLUSTER_DISPLAY_STATE:
+        case toInt(TestVendorProperty::VENDOR_CLUSTER_DISPLAY_STATE):
             *isSpecialValue = true;
             updatedValue = mValuePool->obtain(getPropType(value.prop));
             updatedValue->prop = value.prop & ~toInt(VehiclePropertyGroup::MASK);
