@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define LOG_TAG "FaceVirtualHal"
+
 #include <aidl/android/hardware/biometrics/common/SensorStrength.h>
 #include <aidl/android/hardware/biometrics/face/BnSession.h>
 #include <aidl/android/hardware/biometrics/face/FaceSensorType.h>
@@ -60,6 +62,12 @@ class FakeFaceEngine {
     void resetLockoutImpl(ISessionCallback* cb, const keymaster::HardwareAuthToken& /*hat*/);
 
     std::mt19937 mRandom;
+
+  private:
+    static constexpr int32_t FACE_ACQUIRED_VENDOR_BASE = 1000;
+    static constexpr int32_t FACE_ERROR_VENDOR_BASE = 1000;
+    std::pair<AcquiredInfo, int32_t> convertAcquiredInfo(int32_t code);
+    std::pair<Error, int32_t> convertError(int32_t code);
 };
 
 }  // namespace aidl::android::hardware::biometrics::face
