@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,14 @@
 // with such a backward incompatible change, it has a high risk of breaking
 // later when a module using the interface is updated, e.g., Mainline modules.
 
-package android.hardware.wifi;
-@Backing(type="int") @VintfStability
-enum RttPreamble {
-  INVALID = 0,
-  LEGACY = 0x1,
-  HT = 0x2,
-  VHT = 0x4,
-  HE = 0x8,
-  EHT = 0x10,
+package android.hardware.wifi.supplicant;
+@VintfStability
+parcelable P2pConnectInfo {
+  byte[6] peerAddress;
+  android.hardware.wifi.supplicant.WpsProvisionMethod provisionMethod;
+  String preSelectedPin;
+  boolean joinExistingGroup;
+  boolean persistent;
+  int goIntent;
+  @nullable android.hardware.wifi.common.OuiKeyedData[] vendorData;
 }

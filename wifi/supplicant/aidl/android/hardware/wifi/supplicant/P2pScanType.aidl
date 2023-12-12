@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package android.hardware.wifi;
+package android.hardware.wifi.supplicant;
 
 /**
- * RTT Measurement Preamble.
+ * Scan types used in P2P.
  */
 @VintfStability
 @Backing(type="int")
-enum RttPreamble {
-    INVALID = 0,
-    LEGACY = 0x1,
-    HT = 0x2,
-    VHT = 0x4,
+enum P2pScanType {
     /**
-     * Preamble type for 11ax
+     * All channels.
      */
-    HE = 0x8,
+    FULL,
     /**
-     * Preamble type for 11be
+     * Social channels.
      */
-    EHT = 0x10,
+    SOCIAL,
+    /**
+     * Specific channel.
+     */
+    SPECIFIC_FREQ,
 }
