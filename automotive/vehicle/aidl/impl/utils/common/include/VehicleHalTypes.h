@@ -42,11 +42,13 @@
 #include <aidl/android/hardware/automotive/vehicle/GsrComplianceRequirementType.h>
 #include <aidl/android/hardware/automotive/vehicle/HandsOnDetectionDriverState.h>
 #include <aidl/android/hardware/automotive/vehicle/HandsOnDetectionWarning.h>
+#include <aidl/android/hardware/automotive/vehicle/ImpactSensorLocation.h>
 #include <aidl/android/hardware/automotive/vehicle/LaneCenteringAssistCommand.h>
 #include <aidl/android/hardware/automotive/vehicle/LaneCenteringAssistState.h>
 #include <aidl/android/hardware/automotive/vehicle/LaneDepartureWarningState.h>
 #include <aidl/android/hardware/automotive/vehicle/LaneKeepAssistState.h>
 #include <aidl/android/hardware/automotive/vehicle/LocationCharacterization.h>
+#include <aidl/android/hardware/automotive/vehicle/LowSpeedCollisionWarningState.h>
 #include <aidl/android/hardware/automotive/vehicle/Obd2CommonIgnitionMonitors.h>
 #include <aidl/android/hardware/automotive/vehicle/Obd2FuelSystemStatus.h>
 #include <aidl/android/hardware/automotive/vehicle/Obd2FuelType.h>
@@ -59,6 +61,7 @@
 #include <aidl/android/hardware/automotive/vehicle/SetValueResults.h>
 #include <aidl/android/hardware/automotive/vehicle/StatusCode.h>
 #include <aidl/android/hardware/automotive/vehicle/SubscribeOptions.h>
+#include <aidl/android/hardware/automotive/vehicle/VehicleAirbagLocation.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleApPowerStateReport.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleApPowerStateReq.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleArea.h>

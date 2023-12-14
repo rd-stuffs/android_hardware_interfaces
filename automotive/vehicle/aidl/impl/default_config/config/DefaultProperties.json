@@ -1328,6 +1328,75 @@
             ]
         },
         {
+            "property": "VehicleProperty::SEAT_AIRBAGS_DEPLOYED",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "Constants::SEAT_1_LEFT",
+                    "supportedEnumValues": [
+                        "VehicleAirbagLocation::FRONT",
+                        "VehicleAirbagLocation::KNEE",
+                        "VehicleAirbagLocation::LEFT_SIDE",
+                        "VehicleAirbagLocation::RIGHT_SIDE",
+                        "VehicleAirbagLocation::CURTAIN"
+                    ]
+                },
+                {
+                    "areaId": "Constants::SEAT_1_RIGHT",
+                    "supportedEnumValues": [
+                        "VehicleAirbagLocation::FRONT",
+                        "VehicleAirbagLocation::KNEE",
+                        "VehicleAirbagLocation::LEFT_SIDE",
+                        "VehicleAirbagLocation::RIGHT_SIDE",
+                        "VehicleAirbagLocation::CURTAIN"
+                    ]
+                },
+                {
+                    "areaId": "Constants::SEAT_2_LEFT",
+                    "supportedEnumValues": [
+                        "VehicleAirbagLocation::FRONT",
+                        "VehicleAirbagLocation::CURTAIN"
+                    ]
+                },
+                {
+                    "areaId": "Constants::SEAT_2_RIGHT",
+                    "supportedEnumValues": [
+                        "VehicleAirbagLocation::FRONT",
+                        "VehicleAirbagLocation::CURTAIN"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::SEAT_BELT_PRETENSIONER_DEPLOYED",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": "Constants::SEAT_1_LEFT"
+                },
+                {
+                    "areaId": "Constants::SEAT_1_RIGHT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_LEFT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_RIGHT"
+                },
+                {
+                    "areaId": "Constants::SEAT_2_CENTER"
+                }
+            ]
+        },
+        {
             "property": "VehicleProperty::SEAT_OCCUPANCY",
             "defaultValue": {
                 "int32Values": [
@@ -1556,6 +1625,16 @@
                 ]
             },
             "comment": "units in meter",
+            "maxSampleRate": 2.0,
+            "minSampleRate": 1.0
+        },
+        {
+            "property": "VehicleProperty::EV_BATTERY_AVERAGE_TEMPERATURE",
+            "defaultValue": {
+                "floatValues": [
+                    25.0
+                ]
+            },
             "maxSampleRate": 2.0,
             "minSampleRate": 1.0
         },
@@ -2503,6 +2582,27 @@
             }
         },
         {
+            "property": "VehicleProperty::IMPACT_DETECTED",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ImpactSensorLocation::FRONT",
+                        "ImpactSensorLocation::FRONT_LEFT_DOOR_SIDE",
+                        "ImpactSensorLocation::FRONT_RIGHT_DOOR_SIDE",
+                        "ImpactSensorLocation::REAR_LEFT_DOOR_SIDE",
+                        "ImpactSensorLocation::REAR_RIGHT_DOOR_SIDE",
+                        "ImpactSensorLocation::REAR"
+                    ]
+                }
+            ]
+        },
+        {
             "property": "VehicleProperty::DOOR_LOCK",
             "areas": [
                 {
@@ -3109,6 +3209,14 @@
                     "maxInt32Value": 100
                 }
             ]
+        },
+        {
+            "property": "VehicleProperty::VALET_MODE_ENABLED",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            }
         },
         {
             "property": "VehicleProperty::OBD2_LIVE_FRAME",
@@ -3991,6 +4099,43 @@
                     ]
                 }
             ]
+        },
+        {
+            "property": "VehicleProperty::LOW_SPEED_COLLISION_WARNING_ENABLED",
+            "defaultValue": {
+                "int32Values": [
+                    1
+                ]
+            }
+        },
+        {
+            "property": "VehicleProperty::LOW_SPEED_COLLISION_WARNING_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "LowSpeedCollisionWarningState::NO_WARNING"
+                ]
+            },
+            "areas": [
+                {
+                    "areaId": 0,
+                    "supportedEnumValues": [
+                        "ErrorState::NOT_AVAILABLE_SAFETY",
+                        "ErrorState::NOT_AVAILABLE_POOR_VISIBILITY",
+                        "ErrorState::NOT_AVAILABLE_SPEED_HIGH",
+                        "ErrorState::NOT_AVAILABLE_DISABLED",
+                        "LowSpeedCollisionWarningState::NO_WARNING",
+                        "LowSpeedCollisionWarningState::WARNING"
+                    ]
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::ELECTRONIC_STABILITY_CONTROL_ENABLED",
+            "defaultValue": {
+                "int32Values": [
+                    1
+                ]
+            }
         }
     ]
 }
