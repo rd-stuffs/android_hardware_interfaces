@@ -78,6 +78,7 @@ public final class AccessForVehicleProperty {
         Map.entry(VehicleProperty.TRACTION_CONTROL_ACTIVE, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.EV_STOPPING_MODE, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.ELECTRONIC_STABILITY_CONTROL_ENABLED, VehiclePropertyAccess.READ_WRITE),
+        Map.entry(VehicleProperty.ELECTRONIC_STABILITY_CONTROL_STATE, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.HVAC_FAN_SPEED, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.HVAC_FAN_DIRECTION, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.HVAC_TEMPERATURE_CURRENT, VehiclePropertyAccess.READ),
@@ -190,6 +191,11 @@ public final class AccessForVehicleProperty {
         Map.entry(VehicleProperty.GLOVE_BOX_LOCKED, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.VEHICLE_MAP_SERVICE, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.LOCATION_CHARACTERIZATION, VehiclePropertyAccess.READ),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_POSITION, VehiclePropertyAccess.READ),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_ORIENTATION, VehiclePropertyAccess.READ),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_FIELD_OF_VIEW, VehiclePropertyAccess.READ),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_DETECTION_RANGE, VehiclePropertyAccess.READ),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_SUPPORTED_RANGES, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.OBD2_LIVE_FRAME, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.OBD2_FREEZE_FRAME, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.OBD2_FREEZE_FRAME_INFO, VehiclePropertyAccess.READ),
@@ -281,7 +287,9 @@ public final class AccessForVehicleProperty {
         Map.entry(VehicleProperty.DRIVER_DISTRACTION_WARNING_ENABLED, VehiclePropertyAccess.READ_WRITE),
         Map.entry(VehicleProperty.DRIVER_DISTRACTION_WARNING, VehiclePropertyAccess.READ),
         Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_ENABLED, VehiclePropertyAccess.READ_WRITE),
-        Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_STATE, VehiclePropertyAccess.READ)
+        Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_STATE, VehiclePropertyAccess.READ),
+        Map.entry(VehicleProperty.CROSS_TRAFFIC_MONITORING_ENABLED, VehiclePropertyAccess.READ_WRITE),
+        Map.entry(VehicleProperty.CROSS_TRAFFIC_MONITORING_WARNING_STATE, VehiclePropertyAccess.READ)
     );
 
 }

@@ -232,6 +232,20 @@ const std::unordered_map<int32_t, std::vector<int32_t>> mAdasEnabledPropToAdasPr
                         toInt(VehicleProperty::LOW_SPEED_COLLISION_WARNING_STATE),
                 },
         },
+        // ESC
+        {
+                toInt(VehicleProperty::ELECTRONIC_STABILITY_CONTROL_ENABLED),
+                {
+                        toInt(VehicleProperty::ELECTRONIC_STABILITY_CONTROL_STATE),
+                },
+        },
+        // CTMW
+        {
+                toInt(VehicleProperty::CROSS_TRAFFIC_MONITORING_ENABLED),
+                {
+                        toInt(VehicleProperty::CROSS_TRAFFIC_MONITORING_WARNING_STATE),
+                },
+        },
 };
 }  // namespace
 
@@ -475,7 +489,7 @@ int FakeVehicleHardware::getHvacTempNumIncrements(int requestedTemp, int minTemp
                                                   int increment) {
     requestedTemp = std::max(requestedTemp, minTemp);
     requestedTemp = std::min(requestedTemp, maxTemp);
-    int numIncrements = (requestedTemp - minTemp) / increment;
+    int numIncrements = std::round((requestedTemp - minTemp) / static_cast<float>(increment));
     return numIncrements;
 }
 

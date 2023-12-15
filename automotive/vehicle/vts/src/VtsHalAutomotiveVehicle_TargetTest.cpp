@@ -548,6 +548,37 @@ TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyLocationCharacterizationConfig) 
                    VehicleArea::GLOBAL, VehiclePropertyType::INT32);
 }
 
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyUltrasonicsSensorPositionConfig) {
+    verifyProperty(VehicleProperty::ULTRASONICS_SENSOR_POSITION, VehiclePropertyAccess::READ,
+                   VehiclePropertyChangeMode::STATIC, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::VENDOR, VehiclePropertyType::INT32_VEC);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyUltrasonicsSensorOrientationConfig) {
+    verifyProperty(VehicleProperty::ULTRASONICS_SENSOR_ORIENTATION, VehiclePropertyAccess::READ,
+                   VehiclePropertyChangeMode::STATIC, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::VENDOR, VehiclePropertyType::INT32_VEC);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyUltrasonicsSensorFieldOfViewConfig) {
+    verifyProperty(VehicleProperty::ULTRASONICS_SENSOR_FIELD_OF_VIEW, VehiclePropertyAccess::READ,
+                   VehiclePropertyChangeMode::STATIC, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::VENDOR, VehiclePropertyType::INT32_VEC);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyUltrasonicsSensorDetectionRangeConfig) {
+    verifyProperty(VehicleProperty::ULTRASONICS_SENSOR_DETECTION_RANGE, VehiclePropertyAccess::READ,
+                   VehiclePropertyChangeMode::STATIC, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::VENDOR, VehiclePropertyType::INT32_VEC);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyUltrasonicsSensorSupportedRangesConfig) {
+    verifyProperty(VehicleProperty::ULTRASONICS_SENSOR_SUPPORTED_RANGES,
+                   VehiclePropertyAccess::READ, VehiclePropertyChangeMode::STATIC,
+                   VehiclePropertyGroup::SYSTEM, VehicleArea::VENDOR,
+                   VehiclePropertyType::INT32_VEC);
+}
+
 TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyEmergencyLaneKeepAssistEnabledConfig) {
     verifyProperty(VehicleProperty::EMERGENCY_LANE_KEEP_ASSIST_ENABLED,
                    VehiclePropertyAccess::READ_WRITE, VehiclePropertyChangeMode::ON_CHANGE,
@@ -991,6 +1022,24 @@ TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyElectronicStabilityControlEnable
     verifyProperty(VehicleProperty::ELECTRONIC_STABILITY_CONTROL_ENABLED,
                    VehiclePropertyAccess::READ_WRITE, VehiclePropertyChangeMode::ON_CHANGE,
                    VehiclePropertyGroup::SYSTEM, VehicleArea::GLOBAL, VehiclePropertyType::BOOLEAN);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyElectronicStabilityControlStateConfig) {
+    verifyProperty(VehicleProperty::ELECTRONIC_STABILITY_CONTROL_STATE, VehiclePropertyAccess::READ,
+                   VehiclePropertyChangeMode::ON_CHANGE, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::GLOBAL, VehiclePropertyType::INT32);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyCrossTrafficMonitoringEnabledConfig) {
+    verifyProperty(VehicleProperty::CROSS_TRAFFIC_MONITORING_ENABLED,
+                   VehiclePropertyAccess::READ_WRITE, VehiclePropertyChangeMode::ON_CHANGE,
+                   VehiclePropertyGroup::SYSTEM, VehicleArea::GLOBAL, VehiclePropertyType::BOOLEAN);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyCrossTrafficMonitoringWarningStateConfig) {
+    verifyProperty(VehicleProperty::CROSS_TRAFFIC_MONITORING_WARNING_STATE,
+                   VehiclePropertyAccess::READ, VehiclePropertyChangeMode::ON_CHANGE,
+                   VehiclePropertyGroup::SYSTEM, VehicleArea::GLOBAL, VehiclePropertyType::INT32);
 }
 
 bool VtsHalAutomotiveVehicleTargetTest::checkIsSupported(int32_t propertyId) {

@@ -78,6 +78,7 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.TRACTION_CONTROL_ACTIVE, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.EV_STOPPING_MODE, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.ELECTRONIC_STABILITY_CONTROL_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.ELECTRONIC_STABILITY_CONTROL_STATE, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HVAC_FAN_SPEED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HVAC_FAN_DIRECTION, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HVAC_TEMPERATURE_CURRENT, VehiclePropertyChangeMode.ON_CHANGE),
@@ -190,6 +191,11 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.GLOVE_BOX_LOCKED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.VEHICLE_MAP_SERVICE, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.LOCATION_CHARACTERIZATION, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_POSITION, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_ORIENTATION, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_FIELD_OF_VIEW, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_DETECTION_RANGE, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_SUPPORTED_RANGES, VehiclePropertyChangeMode.STATIC),
         Map.entry(VehicleProperty.OBD2_LIVE_FRAME, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.OBD2_FREEZE_FRAME, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.OBD2_FREEZE_FRAME_INFO, VehiclePropertyChangeMode.ON_CHANGE),
@@ -281,7 +287,9 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.DRIVER_DISTRACTION_WARNING_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.DRIVER_DISTRACTION_WARNING, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
-        Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_STATE, VehiclePropertyChangeMode.ON_CHANGE)
+        Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_STATE, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.CROSS_TRAFFIC_MONITORING_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.CROSS_TRAFFIC_MONITORING_WARNING_STATE, VehiclePropertyChangeMode.ON_CHANGE)
     );
 
 }

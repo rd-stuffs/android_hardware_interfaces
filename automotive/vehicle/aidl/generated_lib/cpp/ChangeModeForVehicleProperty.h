@@ -86,6 +86,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::TRACTION_CONTROL_ACTIVE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::EV_STOPPING_MODE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::ELECTRONIC_STABILITY_CONTROL_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::ELECTRONIC_STABILITY_CONTROL_STATE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_FAN_SPEED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_FAN_DIRECTION, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HVAC_TEMPERATURE_CURRENT, VehiclePropertyChangeMode::ON_CHANGE},
@@ -198,6 +199,11 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::GLOVE_BOX_LOCKED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::VEHICLE_MAP_SERVICE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::LOCATION_CHARACTERIZATION, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::ULTRASONICS_SENSOR_POSITION, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::ULTRASONICS_SENSOR_ORIENTATION, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::ULTRASONICS_SENSOR_FIELD_OF_VIEW, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::ULTRASONICS_SENSOR_DETECTION_RANGE, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::ULTRASONICS_SENSOR_SUPPORTED_RANGES, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::OBD2_LIVE_FRAME, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::OBD2_FREEZE_FRAME, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::OBD2_FREEZE_FRAME_INFO, VehiclePropertyChangeMode::ON_CHANGE},
@@ -290,6 +296,8 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::DRIVER_DISTRACTION_WARNING, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::LOW_SPEED_COLLISION_WARNING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::LOW_SPEED_COLLISION_WARNING_STATE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::CROSS_TRAFFIC_MONITORING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::CROSS_TRAFFIC_MONITORING_WARNING_STATE, VehiclePropertyChangeMode::ON_CHANGE},
 };
 
 }  // namespace vehicle

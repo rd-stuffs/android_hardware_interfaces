@@ -43,6 +43,7 @@ public final class EnumForVehicleProperty {
         Map.entry(VehicleProperty.TURN_SIGNAL_STATE, List.of(VehicleTurnSignal.class)),
         Map.entry(VehicleProperty.IGNITION_STATE, List.of(VehicleIgnitionState.class)),
         Map.entry(VehicleProperty.EV_STOPPING_MODE, List.of(EvStoppingMode.class)),
+        Map.entry(VehicleProperty.ELECTRONIC_STABILITY_CONTROL_STATE, List.of(ElectronicStabilityControlState.class, ErrorState.class)),
         Map.entry(VehicleProperty.HVAC_FAN_DIRECTION, List.of(VehicleHvacFanDirection.class)),
         Map.entry(VehicleProperty.HVAC_TEMPERATURE_DISPLAY_UNITS, List.of(VehicleUnit.class)),
         Map.entry(VehicleProperty.HVAC_FAN_DIRECTION_AVAILABLE, List.of(VehicleHvacFanDirection.class)),
@@ -101,7 +102,8 @@ public final class EnumForVehicleProperty {
         Map.entry(VehicleProperty.DRIVER_DROWSINESS_ATTENTION_WARNING, List.of(DriverDrowsinessAttentionWarning.class, ErrorState.class)),
         Map.entry(VehicleProperty.DRIVER_DISTRACTION_STATE, List.of(DriverDistractionState.class, ErrorState.class)),
         Map.entry(VehicleProperty.DRIVER_DISTRACTION_WARNING, List.of(DriverDistractionWarning.class, ErrorState.class)),
-        Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_STATE, List.of(LowSpeedCollisionWarningState.class, ErrorState.class))
+        Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_STATE, List.of(LowSpeedCollisionWarningState.class, ErrorState.class)),
+        Map.entry(VehicleProperty.CROSS_TRAFFIC_MONITORING_WARNING_STATE, List.of(CrossTrafficMonitoringWarningState.class, ErrorState.class))
     );
 
 }
