@@ -1590,6 +1590,22 @@ enum VehicleProperty {
     VALET_MODE_ENABLED =
             0x0A05 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.BOOLEAN,
     /**
+     * Head up display (HUD) enabled
+     *
+     * This property allows the user to turn on/off the HUD for their seat.
+     *
+     * Each HUD in the vehicle should be assigned to the seat that is intended to use it. For
+     * example, if there is a single HUD in the vehicle that is used by the driver so that they no
+     * longer need to continuously look at the instrument cluster, then this property should be
+     * defined with a single area ID equal to the driver's seat area value.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ_WRITE
+     * @access VehiclePropertyAccess.READ
+     */
+    HEAD_UP_DISPLAY_ENABLED =
+            0x0A06 + VehiclePropertyGroup.SYSTEM + VehicleArea.SEAT + VehiclePropertyType.BOOLEAN,
+    /**
      * Property to feed H/W input events to android
      *
      * int32Values[0] : action defined by VehicleHwKeyInputAction
@@ -3473,6 +3489,32 @@ enum VehicleProperty {
             + VehiclePropertyType.INT32_VEC,
 
     /**
+     * The distance reading of the nearest detected object per sensor in millimeters.
+     *
+     * Each individual sensor is identified by its VehicleAreaConfig#areaId and returns the sensor's
+     * measured distance formatted as [distance, distance_error] where:
+     *
+     *     int32Values[0] = distance, the measured distance of the nearest object in millimeters.
+     *                      If only a range is supported, this value must be set to the minimum
+     *                      supported distance in the detected range as specified in
+     *                      ULTRASONICS_SENSOR_SUPPORTED_RANGES.
+     *     int32Values[1] = distance_error, the error of the measured distance value in
+     *                      millimeters.
+     *
+     * If no object is detected, an empty vector must be returned. If distance_error is not
+     * available then an array of only the measured distance must be returned.
+     *
+     * If the data is aggregated by another ECU, then OEMs have the option of reporting the same
+     * reading across all included sensors or reporting a virtual representation of all the included
+     * sensors as if they were one sensor.
+     *
+     * @change_mode VehiclePropertyChangeMode.CONTINUOUS
+     * @access VehiclePropertyAccess.READ
+     */
+    ULTRASONICS_SENSOR_MEASURED_DISTANCE = 0x0C25 + VehiclePropertyGroup.SYSTEM + VehicleArea.VENDOR
+            + VehiclePropertyType.INT32_VEC,
+
+    /**
      * OBD2 Live Sensor Data
      *
      * Reports a snapshot of the current (live) values of the OBD2 sensors available.
@@ -4690,12 +4732,22 @@ enum VehicleProperty {
     /**
      * Request the head unit to be shutdown.
      *
+     * <p>This is required for executing a task when the head unit is powered off (remote task
+     * feature). After the head unit is powered-on to execute the task, the head unit should
+     * be shutdown. The head unit will send this message once the task is finished.
+     *
+     * <p>This is not for the case when a user wants to shutdown the head unit.
+     *
      * <p>This usually involves telling a separate system outside the head unit (e.g. a power
      * controller) to prepare shutting down the head unit.
      *
-     * <p>This does not mean the head unit will shutdown immediately.
+     * <p>Note that the external system must validate whether this request is valid by checking
+     * whether the vehicle is currently in use. If a user enters the vehicle after a
+     * SHUTDOWN_REQUEST is sent, then the system must ignore this request. It
+     * is recommended to store a VehicleInUse property in the power controller and exposes it
+     * through VEHICLE_IN_USE property. A shutdown request must be ignored if VehicleInUse is true.
      *
-     * <p>This means that another system will start sending a shutdown signal to the head unit,
+     * <p>If allowed, the external system will start sending a shutdown signal to the head unit,
      * which will cause VHAL to send SHUTDOWN_PREPARE message to Android. Android will then start
      * the shut down process by handling the message.
      *
@@ -4799,7 +4851,9 @@ enum VehicleProperty {
      * Enable or disable Automatic Emergency Braking (AEB).
      *
      * Set true to enable AEB and false to disable AEB. When AEB is enabled, the ADAS system in the
-     * vehicle should be turned on and monitoring to avoid potential collisions.
+     * vehicle should be turned on and monitoring to avoid potential collisions. This property
+     * should apply for higher speed applications only. For enabling low speed automatic emergency
+     * braking, LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED should be used.
      *
      * In general, AUTOMATIC_EMERGENCY_BRAKING_ENABLED should always return true or false. If the
      * feature is not available due to some temporary state, such as the vehicle speed being too
@@ -4821,7 +4875,9 @@ enum VehicleProperty {
      *
      * Returns the current state of AEB. This property must always return a valid state defined in
      * AutomaticEmergencyBrakingState or ErrorState. It must not surface errors through StatusCode
-     * and must use the supported error states instead.
+     * and must use the supported error states instead. This property should apply for higher speed
+     * applications only. For representing the state of the low speed automatic emergency braking
+     * system, LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE should be used.
      *
      * If AEB includes forward collision warnings before activating the brakes, those warnings must
      * be surfaced through the Forward Collision Warning (FCW) properties.
@@ -5645,6 +5701,58 @@ enum VehicleProperty {
      */
     CROSS_TRAFFIC_MONITORING_WARNING_STATE =
             0x1024 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.INT32,
+
+    /**
+     * Enable or disable Low Speed Automatic Emergency Braking.
+     *
+     * Set true to enable Low Speed Automatic Emergency Braking or false to disable Low Speed
+     * Automatic Emergency Braking. When Low Speed Automatic Emergency Braking is enabled, the ADAS
+     * system in the vehicle should be turned on and monitoring to avoid potential collisions in low
+     * speed conditions. This property is different from the pre-existing
+     * AUTOMATIC_EMERGENCY_BRAKING_ENABLED, which should apply to higher speed applications only. If
+     * the vehicle doesn't have a separate collision avoidance system for low speed environments,
+     * this property should not be implemented.
+     *
+     * In general, LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED should always return true or false.
+     * If the feature is not available due to some temporary state, such as the vehicle speed being
+     * too low, that information must be conveyed through the ErrorState values in the
+     * LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE property.
+     *
+     * This property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to
+     * implement it as VehiclePropertyAccess.READ only.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ_WRITE
+     * @access VehiclePropertyAccess.READ
+     */
+    LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED =
+            0x1025 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.BOOLEAN,
+
+    /**
+     * Low Speed Automatic Emergency Braking state.
+     *
+     * Returns the current state of Low Speed Automatic Emergency Braking. This property must always
+     * return a valid state defined in LowSpeedAutomaticEmergencyBrakingState or ErrorState. It must
+     * not surface errors through StatusCode and must use the supported error states instead. This
+     * property is different from the pre-existing AUTOMATIC_EMERGENCY_BRAKING_STATE, which should
+     * apply to higher speed applications only. If the vehicle doesn't have a separate collision
+     * avoidance system for low speed environments, this property should not be implemented.
+     *
+     * If Low Speed Automatic Emergency Braking includes collision warnings before activating the
+     * brakes, those warnings must be surfaced through use of LOW_SPEED_COLLISION_WARNING_ENABLED
+     * and LOW_SPEED_COLLISION_WARNING_STATE.
+     *
+     * For the global area ID (0), the VehicleAreaConfig#supportedEnumValues array must be defined
+     * unless all states of both LowSpeedAutomaticEmergencyBrakingState (including OTHER, which is
+     * not recommended) and ErrorState are supported.
+     *
+     * @change_mode VehiclePropertyChangeMode.ON_CHANGE
+     * @access VehiclePropertyAccess.READ
+     * @data_enum LowSpeedAutomaticEmergencyBrakingState
+     * @data_enum ErrorState
+     */
+    LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE =
+            0x1026 + VehiclePropertyGroup.SYSTEM + VehicleArea.GLOBAL + VehiclePropertyType.INT32,
 
     /***************************************************************************
      * End of ADAS Properties

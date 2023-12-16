@@ -31,12 +31,22 @@
 // with such a backward incompatible change, it has a high risk of breaking
 // later when a module using the interface is updated, e.g., Mainline modules.
 
-package android.hardware.security.secretkeeper;
-/* @hide */
-@Backing(type="int") @VintfStability
-enum ErrorCode {
-  OK = 0,
-  UNKNOWN_KEY_ID = 1,
-  INTERNAL_ERROR = 2,
-  REQUEST_MALFORMED = 3,
+package android.hardware.power;
+@FixedSize @VintfStability
+parcelable ChannelMessage {
+  int sessionID;
+  android.hardware.power.ChannelMessage.ChannelMessageContents data;
+  @FixedSize @VintfStability
+  union ChannelMessageContents {
+    int[20] tids = {(-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */, (-1) /* -1 */};
+    long targetDuration;
+    android.hardware.power.SessionHint hint;
+    android.hardware.power.ChannelMessage.ChannelMessageContents.SessionModeSetter mode;
+    android.hardware.power.WorkDurationFixedV1 workDuration;
+    @FixedSize @VintfStability
+    parcelable SessionModeSetter {
+      android.hardware.power.SessionMode modeInt;
+      boolean enabled;
+    }
+  }
 }

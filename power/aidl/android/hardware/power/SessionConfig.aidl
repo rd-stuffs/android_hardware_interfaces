@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package android.hardware.security.secretkeeper;
+package android.hardware.power;
 
 /**
- * Secretkeeper unencrypted error code, returned via AIDL as service specific errors in
- * EX_SERVICE_SPECIFIC.
- * @hide
+ * Additional session to be passed to the hint session during creation, or acquired
+ * after creation from the session directly.
  */
 @VintfStability
-@Backing(type="int")
-enum ErrorCode {
-    OK = 0,
-    UNKNOWN_KEY_ID = 1,
-    INTERNAL_ERROR = 2,
-    REQUEST_MALFORMED = 3,
-
-    // TODO(b/291224769): Create a more exhaustive set of error code values.
+parcelable SessionConfig {
+    /**
+     * The session's unique ID, used to identify the session for debugging and
+     * for multiplexing on the per-process FMQ channel.
+     */
+    long id;
 }

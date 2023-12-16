@@ -125,6 +125,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::DISPLAY_BRIGHTNESS, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::PER_DISPLAY_BRIGHTNESS, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::VALET_MODE_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::HEAD_UP_DISPLAY_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HW_KEY_INPUT, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HW_KEY_INPUT_V2, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::HW_MOTION_INPUT, VehiclePropertyChangeMode::ON_CHANGE},
@@ -204,6 +205,7 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::ULTRASONICS_SENSOR_FIELD_OF_VIEW, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::ULTRASONICS_SENSOR_DETECTION_RANGE, VehiclePropertyChangeMode::STATIC},
         {VehicleProperty::ULTRASONICS_SENSOR_SUPPORTED_RANGES, VehiclePropertyChangeMode::STATIC},
+        {VehicleProperty::ULTRASONICS_SENSOR_MEASURED_DISTANCE, VehiclePropertyChangeMode::CONTINUOUS},
         {VehicleProperty::OBD2_LIVE_FRAME, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::OBD2_FREEZE_FRAME, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::OBD2_FREEZE_FRAME_INFO, VehiclePropertyChangeMode::ON_CHANGE},
@@ -298,6 +300,8 @@ std::unordered_map<VehicleProperty, VehiclePropertyChangeMode> ChangeModeForVehi
         {VehicleProperty::LOW_SPEED_COLLISION_WARNING_STATE, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::CROSS_TRAFFIC_MONITORING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
         {VehicleProperty::CROSS_TRAFFIC_MONITORING_WARNING_STATE, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyChangeMode::ON_CHANGE},
+        {VehicleProperty::LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE, VehiclePropertyChangeMode::ON_CHANGE},
 };
 
 }  // namespace vehicle
