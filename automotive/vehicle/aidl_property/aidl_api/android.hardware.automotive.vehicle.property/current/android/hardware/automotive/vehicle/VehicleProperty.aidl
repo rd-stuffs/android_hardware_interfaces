@@ -123,6 +123,7 @@ enum VehicleProperty {
   DISPLAY_BRIGHTNESS = (((0x0A03 + 0x10000000) + 0x01000000) + 0x00400000) /* 289409539 */,
   PER_DISPLAY_BRIGHTNESS = (((0x0A04 + 0x10000000) + 0x01000000) + 0x00410000) /* 289475076 */,
   VALET_MODE_ENABLED = (((0x0A05 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.GLOBAL) + android.hardware.automotive.vehicle.VehiclePropertyType.BOOLEAN) /* 287312389 */,
+  HEAD_UP_DISPLAY_ENABLED = (((0x0A06 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.SEAT) + android.hardware.automotive.vehicle.VehiclePropertyType.BOOLEAN) /* 354421254 */,
   HW_KEY_INPUT = (((0x0A10 + 0x10000000) + 0x01000000) + 0x00410000) /* 289475088 */,
   HW_KEY_INPUT_V2 = (((0x0A11 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.SEAT) + android.hardware.automotive.vehicle.VehiclePropertyType.MIXED) /* 367004177 */,
   HW_MOTION_INPUT = (((0x0A12 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.SEAT) + android.hardware.automotive.vehicle.VehiclePropertyType.MIXED) /* 367004178 */,
@@ -202,6 +203,7 @@ enum VehicleProperty {
   ULTRASONICS_SENSOR_FIELD_OF_VIEW = (((0x0C22 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.VENDOR) + android.hardware.automotive.vehicle.VehiclePropertyType.INT32_VEC) /* 406916130 */,
   ULTRASONICS_SENSOR_DETECTION_RANGE = (((0x0C23 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.VENDOR) + android.hardware.automotive.vehicle.VehiclePropertyType.INT32_VEC) /* 406916131 */,
   ULTRASONICS_SENSOR_SUPPORTED_RANGES = (((0x0C24 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.VENDOR) + android.hardware.automotive.vehicle.VehiclePropertyType.INT32_VEC) /* 406916132 */,
+  ULTRASONICS_SENSOR_MEASURED_DISTANCE = (((0x0C25 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.VENDOR) + android.hardware.automotive.vehicle.VehiclePropertyType.INT32_VEC) /* 406916133 */,
   OBD2_LIVE_FRAME = (((0x0D00 + 0x10000000) + 0x01000000) + 0x00e00000) /* 299896064 */,
   OBD2_FREEZE_FRAME = (((0x0D01 + 0x10000000) + 0x01000000) + 0x00e00000) /* 299896065 */,
   OBD2_FREEZE_FRAME_INFO = (((0x0D02 + 0x10000000) + 0x01000000) + 0x00e00000) /* 299896066 */,
@@ -296,4 +298,6 @@ enum VehicleProperty {
   LOW_SPEED_COLLISION_WARNING_STATE = (((0x1022 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.GLOBAL) + android.hardware.automotive.vehicle.VehiclePropertyType.INT32) /* 289411106 */,
   CROSS_TRAFFIC_MONITORING_ENABLED = (((0x1023 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.GLOBAL) + android.hardware.automotive.vehicle.VehiclePropertyType.BOOLEAN) /* 287313955 */,
   CROSS_TRAFFIC_MONITORING_WARNING_STATE = (((0x1024 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.GLOBAL) + android.hardware.automotive.vehicle.VehiclePropertyType.INT32) /* 289411108 */,
+  LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED = (((0x1025 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.GLOBAL) + android.hardware.automotive.vehicle.VehiclePropertyType.BOOLEAN) /* 287313957 */,
+  LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE = (((0x1026 + android.hardware.automotive.vehicle.VehiclePropertyGroup.SYSTEM) + android.hardware.automotive.vehicle.VehicleArea.GLOBAL) + android.hardware.automotive.vehicle.VehiclePropertyType.INT32) /* 289411110 */,
 }
