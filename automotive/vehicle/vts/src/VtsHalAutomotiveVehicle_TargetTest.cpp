@@ -579,6 +579,13 @@ TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyUltrasonicsSensorSupportedRanges
                    VehiclePropertyType::INT32_VEC);
 }
 
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyUltrasonicsSensorMeasuredDistanceConfig) {
+    verifyProperty(VehicleProperty::ULTRASONICS_SENSOR_MEASURED_DISTANCE,
+                   VehiclePropertyAccess::READ, VehiclePropertyChangeMode::CONTINUOUS,
+                   VehiclePropertyGroup::SYSTEM, VehicleArea::VENDOR,
+                   VehiclePropertyType::INT32_VEC);
+}
+
 TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyEmergencyLaneKeepAssistEnabledConfig) {
     verifyProperty(VehicleProperty::EMERGENCY_LANE_KEEP_ASSIST_ENABLED,
                    VehiclePropertyAccess::READ_WRITE, VehiclePropertyChangeMode::ON_CHANGE,
@@ -1038,6 +1045,24 @@ TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyCrossTrafficMonitoringEnabledCon
 
 TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyCrossTrafficMonitoringWarningStateConfig) {
     verifyProperty(VehicleProperty::CROSS_TRAFFIC_MONITORING_WARNING_STATE,
+                   VehiclePropertyAccess::READ, VehiclePropertyChangeMode::ON_CHANGE,
+                   VehiclePropertyGroup::SYSTEM, VehicleArea::GLOBAL, VehiclePropertyType::INT32);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyHeadUpDisplayEnabledConfig) {
+    verifyProperty(VehicleProperty::HEAD_UP_DISPLAY_ENABLED, VehiclePropertyAccess::READ_WRITE,
+                   VehiclePropertyChangeMode::ON_CHANGE, VehiclePropertyGroup::SYSTEM,
+                   VehicleArea::SEAT, VehiclePropertyType::BOOLEAN);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyLowSpeedAutomaticEmergencyBrakingEnabledConfig) {
+    verifyProperty(VehicleProperty::LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED,
+                   VehiclePropertyAccess::READ_WRITE, VehiclePropertyChangeMode::ON_CHANGE,
+                   VehiclePropertyGroup::SYSTEM, VehicleArea::GLOBAL, VehiclePropertyType::BOOLEAN);
+}
+
+TEST_P(VtsHalAutomotiveVehicleTargetTest, verifyLowSpeedAutomaticEmergencyBrakingStateConfig) {
+    verifyProperty(VehicleProperty::LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE,
                    VehiclePropertyAccess::READ, VehiclePropertyChangeMode::ON_CHANGE,
                    VehiclePropertyGroup::SYSTEM, VehicleArea::GLOBAL, VehiclePropertyType::INT32);
 }

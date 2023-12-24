@@ -2741,9 +2741,8 @@ bool convertAidlRttConfigToLegacyV3(const RttConfig& aidl_config,
     if (!convertAidlRttConfigToLegacy(aidl_config, &(legacy_config->rtt_config))) {
         return false;
     }
-    legacy_config->tx_ltf_repetition_count = aidl_config.txLtfRepetitionCount;
-    legacy_config->ntb_min_measurement_time_millis = aidl_config.ntbMinMeasurementTimeMillis;
-    legacy_config->ntb_max_measurement_time_millis = aidl_config.ntbMaxMeasurementTimeMillis;
+    legacy_config->ntb_min_measurement_time = aidl_config.ntbMinMeasurementTime;
+    legacy_config->ntb_max_measurement_time = aidl_config.ntbMaxMeasurementTime;
     return true;
 }
 
@@ -2891,7 +2890,6 @@ bool convertLegacyRttCapabilitiesToAidl(
     aidl_capabilities->azBwSupport = RttBw::BW_UNSPECIFIED;
     aidl_capabilities->ntbInitiatorSupported = false;
     aidl_capabilities->ntbResponderSupported = false;
-    aidl_capabilities->maxTxLtfRepetitionCount = 0;
     return true;
 }
 
@@ -2919,7 +2917,6 @@ bool convertLegacyRttCapabilitiesV3ToAidl(
             convertLegacyRttBwBitmapToAidl(legacy_capabilities_v3.az_bw_support);
     aidl_capabilities->ntbInitiatorSupported = legacy_capabilities_v3.ntb_initiator_supported;
     aidl_capabilities->ntbResponderSupported = legacy_capabilities_v3.ntb_responder_supported;
-    aidl_capabilities->maxTxLtfRepetitionCount = legacy_capabilities_v3.max_tx_ltf_repetition_count;
     return true;
 }
 
@@ -2994,9 +2991,10 @@ bool convertLegacyVectorOfRttResultToAidl(
         }
         aidl_result.channelFreqMHz = 0;
         aidl_result.packetBw = RttBw::BW_UNSPECIFIED;
-        aidl_result.txLtfRepetitionCount = 0;
-        aidl_result.ntbMinMeasurementTimeMillis = 0;
-        aidl_result.ntbMaxMeasurementTimeMillis = 0;
+        aidl_result.i2rTxLtfRepetitionCount = 0;
+        aidl_result.r2iTxLtfRepetitionCount = 0;
+        aidl_result.ntbMinMeasurementTime = 0;
+        aidl_result.ntbMaxMeasurementTime = 0;
         aidl_results->push_back(aidl_result);
     }
     return true;
@@ -3017,9 +3015,10 @@ bool convertLegacyVectorOfRttResultV2ToAidl(
         aidl_result.channelFreqMHz =
                 legacy_result->frequency != UNSPECIFIED ? legacy_result->frequency : 0;
         aidl_result.packetBw = convertLegacyRttBwToAidl(legacy_result->packet_bw);
-        aidl_result.txLtfRepetitionCount = 0;
-        aidl_result.ntbMinMeasurementTimeMillis = 0;
-        aidl_result.ntbMaxMeasurementTimeMillis = 0;
+        aidl_result.i2rTxLtfRepetitionCount = 0;
+        aidl_result.r2iTxLtfRepetitionCount = 0;
+        aidl_result.ntbMinMeasurementTime = 0;
+        aidl_result.ntbMaxMeasurementTime = 0;
         aidl_results->push_back(aidl_result);
     }
     return true;
@@ -3041,9 +3040,10 @@ bool convertLegacyVectorOfRttResultV3ToAidl(
                                              ? legacy_result->rtt_result.frequency
                                              : 0;
         aidl_result.packetBw = convertLegacyRttBwToAidl(legacy_result->rtt_result.packet_bw);
-        aidl_result.txLtfRepetitionCount = legacy_result->tx_ltf_repetition_count;
-        aidl_result.ntbMinMeasurementTimeMillis = legacy_result->ntb_min_measurement_time_millis;
-        aidl_result.ntbMaxMeasurementTimeMillis = legacy_result->ntb_max_measurement_time_millis;
+        aidl_result.i2rTxLtfRepetitionCount = legacy_result->i2r_tx_ltf_repetition_count;
+        aidl_result.r2iTxLtfRepetitionCount = legacy_result->r2i_tx_ltf_repetition_count;
+        aidl_result.ntbMinMeasurementTime = legacy_result->ntb_min_measurement_time;
+        aidl_result.ntbMaxMeasurementTime = legacy_result->ntb_max_measurement_time;
         aidl_results->push_back(aidl_result);
     }
     return true;

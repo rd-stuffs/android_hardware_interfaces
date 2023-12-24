@@ -117,6 +117,7 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.DISPLAY_BRIGHTNESS, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.PER_DISPLAY_BRIGHTNESS, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.VALET_MODE_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.HEAD_UP_DISPLAY_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HW_KEY_INPUT, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HW_KEY_INPUT_V2, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.HW_MOTION_INPUT, VehiclePropertyChangeMode.ON_CHANGE),
@@ -196,6 +197,7 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.ULTRASONICS_SENSOR_FIELD_OF_VIEW, VehiclePropertyChangeMode.STATIC),
         Map.entry(VehicleProperty.ULTRASONICS_SENSOR_DETECTION_RANGE, VehiclePropertyChangeMode.STATIC),
         Map.entry(VehicleProperty.ULTRASONICS_SENSOR_SUPPORTED_RANGES, VehiclePropertyChangeMode.STATIC),
+        Map.entry(VehicleProperty.ULTRASONICS_SENSOR_MEASURED_DISTANCE, VehiclePropertyChangeMode.CONTINUOUS),
         Map.entry(VehicleProperty.OBD2_LIVE_FRAME, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.OBD2_FREEZE_FRAME, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.OBD2_FREEZE_FRAME_INFO, VehiclePropertyChangeMode.ON_CHANGE),
@@ -289,7 +291,9 @@ public final class ChangeModeForVehicleProperty {
         Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.LOW_SPEED_COLLISION_WARNING_STATE, VehiclePropertyChangeMode.ON_CHANGE),
         Map.entry(VehicleProperty.CROSS_TRAFFIC_MONITORING_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
-        Map.entry(VehicleProperty.CROSS_TRAFFIC_MONITORING_WARNING_STATE, VehiclePropertyChangeMode.ON_CHANGE)
+        Map.entry(VehicleProperty.CROSS_TRAFFIC_MONITORING_WARNING_STATE, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED, VehiclePropertyChangeMode.ON_CHANGE),
+        Map.entry(VehicleProperty.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE, VehiclePropertyChangeMode.ON_CHANGE)
     );
 
 }
