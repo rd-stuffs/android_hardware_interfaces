@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,20 +31,9 @@
 // with such a backward incompatible change, it has a high risk of breaking
 // later when a module using the interface is updated, e.g., Mainline modules.
 
-package android.hardware.automotive.remoteaccess;
+package android.hardware.thermal;
+/* @hide */
 @VintfStability
-interface IRemoteAccess {
-  String getVehicleId();
-  String getWakeupServiceName();
-  String getProcessorId();
-  void setRemoteTaskCallback(android.hardware.automotive.remoteaccess.IRemoteTaskCallback callback);
-  void clearRemoteTaskCallback();
-  void notifyApStateChange(in android.hardware.automotive.remoteaccess.ApState state);
-  boolean isTaskScheduleSupported();
-  android.hardware.automotive.remoteaccess.TaskType[] getSupportedTaskTypesForScheduling();
-  void scheduleTask(in android.hardware.automotive.remoteaccess.ScheduleInfo scheduleInfo);
-  void unscheduleTask(String clientId, String scheduleId);
-  void unscheduleAllTasks(String clientId);
-  boolean isTaskScheduled(String clientId, String scheduleId);
-  List<android.hardware.automotive.remoteaccess.ScheduleInfo> getAllPendingScheduledTasks(String clientId);
+interface ICoolingDeviceChangedCallback {
+  oneway void notifyCoolingDeviceChanged(in android.hardware.thermal.CoolingDevice coolingDevice);
 }
