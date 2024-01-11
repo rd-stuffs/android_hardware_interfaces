@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,29 +31,19 @@
 // with such a backward incompatible change, it has a high risk of breaking
 // later when a module using the interface is updated, e.g., Mainline modules.
 
-package android.hardware.media.c2;
+package android.hardware.biometrics.common;
+/* @hide */
 @VintfStability
-interface IConfigurable {
-  android.hardware.media.c2.IConfigurable.ConfigResult config(in android.hardware.media.c2.Params inParams, in boolean mayBlock);
-  int getId();
-  String getName();
-  android.hardware.media.c2.IConfigurable.QueryResult query(in int[] indices, in boolean mayBlock);
-  android.hardware.media.c2.ParamDescriptor[] querySupportedParams(in int start, in int count);
-  android.hardware.media.c2.IConfigurable.QuerySupportedValuesResult querySupportedValues(in android.hardware.media.c2.FieldSupportedValuesQuery[] inFields, in boolean mayBlock);
+union OperationState {
+  android.hardware.biometrics.common.OperationState.FingerprintOperationState fingerprintOperationState;
+  android.hardware.biometrics.common.OperationState.FaceOperationState faceOperationState;
   @VintfStability
-  parcelable ConfigResult {
-    android.hardware.media.c2.Params params;
-    android.hardware.media.c2.SettingResult[] failures;
-    android.hardware.media.c2.Status status;
+  parcelable FingerprintOperationState {
+    ParcelableHolder extension;
+    boolean isHardwareIgnoringTouches = false;
   }
   @VintfStability
-  parcelable QueryResult {
-    android.hardware.media.c2.Params params;
-    android.hardware.media.c2.Status status;
-  }
-  @VintfStability
-  parcelable QuerySupportedValuesResult {
-    android.hardware.media.c2.FieldSupportedValuesQueryResult[] values;
-    android.hardware.media.c2.Status status;
+  parcelable FaceOperationState {
+    ParcelableHolder extension;
   }
 }
