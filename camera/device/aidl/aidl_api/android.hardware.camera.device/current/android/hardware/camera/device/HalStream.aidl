@@ -42,5 +42,4 @@ parcelable HalStream {
   android.hardware.graphics.common.Dataspace overrideDataSpace;
   String physicalCameraId;
   boolean supportOffline;
-  boolean enableHalBufferManager;
 }

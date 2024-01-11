@@ -62,8 +62,5 @@ interface ISession {
   void onPointerUpWithContext(in android.hardware.biometrics.fingerprint.PointerContext context);
   void onContextChanged(in android.hardware.biometrics.common.OperationContext context);
   void onPointerCancelWithContext(in android.hardware.biometrics.fingerprint.PointerContext context);
-  /**
-   * @deprecated use isHardwareIgnoringTouches in OperationContext from onContextChanged instead
-   */
   void setIgnoreDisplayTouches(in boolean shouldIgnore);
 }

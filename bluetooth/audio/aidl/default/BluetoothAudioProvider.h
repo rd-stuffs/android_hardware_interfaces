@@ -71,12 +71,10 @@ class BluetoothAudioProvider : public BnBluetoothAudioProvider {
       ::aidl::android::hardware::bluetooth::audio::IBluetoothAudioProvider::
           LeAudioAseQosConfigurationPair* _aidl_return) override;
   ndk::ScopedAStatus getLeAudioAseDatapathConfiguration(
-      const std::optional<::aidl::android::hardware::bluetooth::audio::
-                              IBluetoothAudioProvider::StreamConfig>&
-          in_sinkConfig,
-      const std::optional<::aidl::android::hardware::bluetooth::audio::
-                              IBluetoothAudioProvider::StreamConfig>&
-          in_sourceConfig,
+      const ::aidl::android::hardware::bluetooth::audio::AudioContext&
+          in_context,
+      const std::vector<::aidl::android::hardware::bluetooth::audio::
+                            LeAudioConfiguration::StreamMap>& in_streamMap,
       ::aidl::android::hardware::bluetooth::audio::IBluetoothAudioProvider::
           LeAudioDataPathConfigurationPair* _aidl_return) override;
   ndk::ScopedAStatus onSinkAseMetadataChanged(

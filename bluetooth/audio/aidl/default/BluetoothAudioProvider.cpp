@@ -229,17 +229,14 @@ ndk::ScopedAStatus BluetoothAudioProvider::getLeAudioAseQosConfiguration(
 };
 
 ndk::ScopedAStatus BluetoothAudioProvider::getLeAudioAseDatapathConfiguration(
-    const std::optional<::aidl::android::hardware::bluetooth::audio::
-                            IBluetoothAudioProvider::StreamConfig>&
-        in_sinkConfig,
-    const std::optional<::aidl::android::hardware::bluetooth::audio::
-                            IBluetoothAudioProvider::StreamConfig>&
-        in_sourceConfig,
+    const ::aidl::android::hardware::bluetooth::audio::AudioContext& in_context,
+    const std::vector<::aidl::android::hardware::bluetooth::audio::
+                          LeAudioConfiguration::StreamMap>& in_streamMap,
     ::aidl::android::hardware::bluetooth::audio::IBluetoothAudioProvider::
         LeAudioDataPathConfigurationPair* _aidl_return) {
   /* TODO: Implement */
-  (void)in_sinkConfig;
-  (void)in_sourceConfig;
+  (void)in_context;
+  (void)in_streamMap;
   (void)_aidl_return;
   return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
 }

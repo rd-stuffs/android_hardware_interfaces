@@ -21,7 +21,6 @@ import android.hardware.media.c2.FieldSupportedValuesQueryResult;
 import android.hardware.media.c2.ParamDescriptor;
 import android.hardware.media.c2.Params;
 import android.hardware.media.c2.SettingResult;
-import android.hardware.media.c2.Status;
 
 /**
  * Generic configuration interface presented by all configurable Codec2 objects.
@@ -35,42 +34,12 @@ interface IConfigurable {
      * Return parcelable for config() interface.
      *
      * This includes the successful config settings along with the failure reasons of
-     * the specified setting. @p status is for the compatibility with HIDL interface.
-     * (The value is defined in Status.aidl, and possible values are enumerated
-     * in config() interface definition)
+     * the specified setting.
      */
     @VintfStability
     parcelable ConfigResult {
         Params params;
         SettingResult[] failures;
-        Status status;
-    }
-
-    /**
-     * Return parcelable for query() interface.
-     *
-     * @p params is the parameter descripion for queried configuration indices.
-     * @p status is for the compatibility with HIDL interface. (The value is defined in
-     * Status.aidl, and possible values are enumerated in query() interface definition)
-     */
-    @VintfStability
-    parcelable QueryResult {
-        Params params;
-        Status status;
-    }
-
-    /**
-     * Return parcelable for querySupportedValues() interface.
-     *
-     * @p values is the value descripion for queried configuration fields.
-     * @p status is for the compatibility with HIDL interface. (The value is defined in
-     * Status.aidl, and possible values are enumerated in querySupportedValues()
-     * interface definition)
-     */
-    @VintfStability
-    parcelable QuerySupportedValuesResult {
-        FieldSupportedValuesQueryResult[] values;
-        Status status;
     }
 
     /**
@@ -113,8 +82,7 @@ interface IConfigurable {
      * @param mayBlock Whether this call may block or not.
      * @return result of config. Params in the result should be in same order
      *     with @p inParams.
-     *
-     *     Returned @p status will be one of the following.
+     * @throws ServiceSpecificException with one of the following values:
      *   - `Status::NO_MEMORY` - Some supported parameters could not be updated
      *                   successfully because they contained unsupported values.
      *                   These are returned in @p failures.
@@ -178,22 +146,17 @@ interface IConfigurable {
      *
      * @param indices List of C2Param structure indices to query.
      * @param mayBlock Whether this call may block or not.
-     * @return @p params is the flattened representation of std::vector<C2Param> object.
-     *     Technically unsupported settings can be either skipped or invalidated.
-     *     (Invalidated params will be skipped during unflattening to make these identical.)
-     *     In the future we will want these to be invalidated to make it easier
-     *     for the framework code.
-     *
-     *     The order in @p indices still be preserved except skipped settings.
-     *
-     *     Returned @p status will be one of the following.
+     * @return Flattened representation of std::vector<C2Param> object.
+     *     Unsupported settings are skipped in the results. The order in @p indices
+     *     still be preserved except skipped settings.
+     * @throws ServiceSpecificException with one of the following values:
      *   - `Status::NO_MEMORY` - Could not allocate memory for a supported parameter.
      *   - `Status::BLOCKING`  - Querying some parameters requires blocking, but
      *                   @p mayBlock is false.
      *   - `Status::TIMED_OUT` - The operation cannot be finished in a timely manner.
      *   - `Status::CORRUPTED` - Some unknown error occurred.
      */
-    QueryResult query(in int[] indices, in boolean mayBlock);
+    Params query(in int[] indices, in boolean mayBlock);
 
     /**
      * Returns a list of supported parameters within a selected range of C2Param
@@ -234,10 +197,9 @@ interface IConfigurable {
      *
      * @param inFields List of field queries.
      * @param mayBlock Whether this call may block or not.
-     * @return @p values is the list of supported values and results for the
+     * @return List of supported values and results for the
      *     supplied queries.
-     *
-     *     Returned @p status will be one of the following.
+     * @throws ServiceSpecificException with one of the following values:
      *   - `Status::BLOCKING`  - Querying some parameters requires blocking, but
      *                   @p mayBlock is false.
      *   - `Status::NO_MEMORY` - Not enough memory to complete this method.
@@ -246,6 +208,6 @@ interface IConfigurable {
      *   - `Status::TIMED_OUT` - The operation cannot be finished in a timely manner.
      *   - `Status::CORRUPTED` - Some unknown error occurred.
      */
-    QuerySupportedValuesResult querySupportedValues(
+    FieldSupportedValuesQueryResult[] querySupportedValues(
             in FieldSupportedValuesQuery[] inFields, in boolean mayBlock);
 }
