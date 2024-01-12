@@ -35,4 +35,5 @@ package android.hardware.camera.device;
 @VintfStability
 parcelable ConfigureStreamsRet {
   android.hardware.camera.device.HalStream[] halStreams;
+  boolean enableHalBufferManager = false;
 }

@@ -65,5 +65,4 @@ parcelable RttResult {
   long ntbMaxMeasurementTime;
   byte numTxSpatialStreams;
   byte numRxSpatialStreams;
-  @nullable android.hardware.wifi.common.OuiKeyedData[] vendorData;
 }

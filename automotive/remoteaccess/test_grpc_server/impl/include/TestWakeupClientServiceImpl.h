@@ -78,7 +78,6 @@ class TaskQueue final {
     void waitForTask();
     void stopWait();
     bool isEmpty();
-    bool isStopped();
 
   private:
     friend class TaskTimeoutMessageHandler;
@@ -88,7 +87,7 @@ class TaskQueue final {
             GUARDED_BY(mLock);
     // A variable to notify mTasks is not empty.
     std::condition_variable mTasksNotEmptyCv;
-    std::atomic<bool> mStopped = false;
+    std::atomic<bool> mStopped;
     android::sp<Looper> mLooper;
     android::sp<TaskTimeoutMessageHandler> mTaskTimeoutMessageHandler;
     std::atomic<int> mTaskIdCounter = 0;
@@ -215,7 +214,7 @@ class TestWakeupClientServiceImpl : public WakeupClient::Service {
     std::atomic<bool> mRemoteTaskConnectionAlive = false;
     std::mutex mLock;
     bool mGeneratingFakeTask GUARDED_BY(mLock);
-    std::atomic<bool> mServerStopped = false;
+    std::atomic<bool> mServerStopped;
     std::unordered_map<std::string, std::unordered_map<std::string, ScheduleInfo>>
             mInfoByScheduleIdByClientId GUARDED_BY(mLock);
 
