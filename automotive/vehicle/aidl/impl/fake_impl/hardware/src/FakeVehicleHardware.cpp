@@ -53,6 +53,10 @@ namespace {
 
 using ::aidl::android::hardware::automotive::vehicle::CruiseControlCommand;
 using ::aidl::android::hardware::automotive::vehicle::CruiseControlType;
+using ::aidl::android::hardware::automotive::vehicle::DriverDistractionState;
+using ::aidl::android::hardware::automotive::vehicle::DriverDistractionWarning;
+using ::aidl::android::hardware::automotive::vehicle::DriverDrowsinessAttentionState;
+using ::aidl::android::hardware::automotive::vehicle::DriverDrowsinessAttentionWarning;
 using ::aidl::android::hardware::automotive::vehicle::ErrorState;
 using ::aidl::android::hardware::automotive::vehicle::GetValueRequest;
 using ::aidl::android::hardware::automotive::vehicle::GetValueResult;
@@ -60,6 +64,8 @@ using ::aidl::android::hardware::automotive::vehicle::RawPropValues;
 using ::aidl::android::hardware::automotive::vehicle::SetValueRequest;
 using ::aidl::android::hardware::automotive::vehicle::SetValueResult;
 using ::aidl::android::hardware::automotive::vehicle::StatusCode;
+using ::aidl::android::hardware::automotive::vehicle::SubscribeOptions;
+using ::aidl::android::hardware::automotive::vehicle::toString;
 using ::aidl::android::hardware::automotive::vehicle::VehicleApPowerStateReport;
 using ::aidl::android::hardware::automotive::vehicle::VehicleApPowerStateReq;
 using ::aidl::android::hardware::automotive::vehicle::VehicleArea;
@@ -67,6 +73,7 @@ using ::aidl::android::hardware::automotive::vehicle::VehicleHwKeyInputAction;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropConfig;
 using ::aidl::android::hardware::automotive::vehicle::VehicleProperty;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropertyAccess;
+using ::aidl::android::hardware::automotive::vehicle::VehiclePropertyChangeMode;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropertyGroup;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropertyStatus;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropertyType;
@@ -189,6 +196,63 @@ const std::unordered_map<int32_t, std::vector<int32_t>> mAdasEnabledPropToAdasPr
                         toInt(VehicleProperty::HANDS_ON_DETECTION_WARNING),
                 },
         },
+        // Driver Drowsiness and Attention
+        {
+                toInt(VehicleProperty::DRIVER_DROWSINESS_ATTENTION_SYSTEM_ENABLED),
+                {
+                        toInt(VehicleProperty::DRIVER_DROWSINESS_ATTENTION_STATE),
+                },
+        },
+        // Driver Drowsiness and Attention Warning
+        {
+                toInt(VehicleProperty::DRIVER_DROWSINESS_ATTENTION_WARNING_ENABLED),
+                {
+                        toInt(VehicleProperty::DRIVER_DROWSINESS_ATTENTION_WARNING),
+                },
+        },
+        // Driver Distraction
+        {
+                toInt(VehicleProperty::DRIVER_DISTRACTION_SYSTEM_ENABLED),
+                {
+                        toInt(VehicleProperty::DRIVER_DISTRACTION_STATE),
+                        toInt(VehicleProperty::DRIVER_DISTRACTION_WARNING),
+                },
+        },
+        // Driver Distraction Warning
+        {
+                toInt(VehicleProperty::DRIVER_DISTRACTION_WARNING_ENABLED),
+                {
+                        toInt(VehicleProperty::DRIVER_DISTRACTION_WARNING),
+                },
+        },
+        // LSCW
+        {
+                toInt(VehicleProperty::LOW_SPEED_COLLISION_WARNING_ENABLED),
+                {
+                        toInt(VehicleProperty::LOW_SPEED_COLLISION_WARNING_STATE),
+                },
+        },
+        // ESC
+        {
+                toInt(VehicleProperty::ELECTRONIC_STABILITY_CONTROL_ENABLED),
+                {
+                        toInt(VehicleProperty::ELECTRONIC_STABILITY_CONTROL_STATE),
+                },
+        },
+        // CTMW
+        {
+                toInt(VehicleProperty::CROSS_TRAFFIC_MONITORING_ENABLED),
+                {
+                        toInt(VehicleProperty::CROSS_TRAFFIC_MONITORING_WARNING_STATE),
+                },
+        },
+        // LSAEB
+        {
+                toInt(VehicleProperty::LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED),
+                {
+                        toInt(VehicleProperty::LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE),
+                },
+        },
 };
 }  // namespace
 
@@ -301,17 +365,18 @@ void FakeVehicleHardware::init() {
     }
 
     // OBD2_LIVE_FRAME and OBD2_FREEZE_FRAME must be configured in default configs.
-    auto maybeObd2LiveFrame = mServerSidePropStore->getConfig(OBD2_LIVE_FRAME);
+    auto maybeObd2LiveFrame = mServerSidePropStore->getPropConfig(OBD2_LIVE_FRAME);
     if (maybeObd2LiveFrame.has_value()) {
-        mFakeObd2Frame->initObd2LiveFrame(*maybeObd2LiveFrame.value());
+        mFakeObd2Frame->initObd2LiveFrame(maybeObd2LiveFrame.value());
     }
-    auto maybeObd2FreezeFrame = mServerSidePropStore->getConfig(OBD2_FREEZE_FRAME);
+    auto maybeObd2FreezeFrame = mServerSidePropStore->getPropConfig(OBD2_FREEZE_FRAME);
     if (maybeObd2FreezeFrame.has_value()) {
-        mFakeObd2Frame->initObd2FreezeFrame(*maybeObd2FreezeFrame.value());
+        mFakeObd2Frame->initObd2FreezeFrame(maybeObd2FreezeFrame.value());
     }
 
-    mServerSidePropStore->setOnValueChangeCallback(
-            [this](const VehiclePropValue& value) { return onValueChangeCallback(value); });
+    mServerSidePropStore->setOnValuesChangeCallback([this](std::vector<VehiclePropValue> values) {
+        return onValuesChangeCallback(std::move(values));
+    });
 }
 
 std::vector<VehiclePropConfig> FakeVehicleHardware::getAllPropertyConfigs() const {
@@ -431,7 +496,7 @@ int FakeVehicleHardware::getHvacTempNumIncrements(int requestedTemp, int minTemp
                                                   int increment) {
     requestedTemp = std::max(requestedTemp, minTemp);
     requestedTemp = std::min(requestedTemp, maxTemp);
-    int numIncrements = (requestedTemp - minTemp) / increment;
+    int numIncrements = std::round((requestedTemp - minTemp) / static_cast<float>(increment));
     return numIncrements;
 }
 
@@ -469,7 +534,7 @@ void FakeVehicleHardware::updateHvacTemperatureValueSuggestionInput(
 VhalResult<void> FakeVehicleHardware::setHvacTemperatureValueSuggestion(
         const VehiclePropValue& hvacTemperatureValueSuggestion) {
     auto hvacTemperatureSetConfigResult =
-            mServerSidePropStore->getConfig(toInt(VehicleProperty::HVAC_TEMPERATURE_SET));
+            mServerSidePropStore->getPropConfig(toInt(VehicleProperty::HVAC_TEMPERATURE_SET));
 
     if (!hvacTemperatureSetConfigResult.ok()) {
         return StatusError(getErrorCode(hvacTemperatureSetConfigResult)) << StringPrintf(
@@ -496,7 +561,7 @@ VhalResult<void> FakeVehicleHardware::setHvacTemperatureValueSuggestion(
     }
 
     auto updatedValue = mValuePool->obtain(hvacTemperatureValueSuggestion);
-    const auto& hvacTemperatureSetConfigArray = hvacTemperatureSetConfigResult.value()->configArray;
+    const auto& hvacTemperatureSetConfigArray = hvacTemperatureSetConfigResult.value().configArray;
     auto& hvacTemperatureValueSuggestionInput = updatedValue->value.floatValues;
 
     updateHvacTemperatureValueSuggestionInput(hvacTemperatureSetConfigArray,
@@ -596,6 +661,65 @@ VhalResult<void> FakeVehicleHardware::setUserHalProp(const VehiclePropValue& val
         }
     }
     return {};
+}
+
+VhalResult<void> FakeVehicleHardware::synchronizeHvacTemp(int32_t hvacDualOnAreaId,
+                                                          std::optional<float> newTempC) const {
+    auto hvacTemperatureSetResults = mServerSidePropStore->readValuesForProperty(
+            toInt(VehicleProperty::HVAC_TEMPERATURE_SET));
+    if (!hvacTemperatureSetResults.ok()) {
+        return StatusError(StatusCode::NOT_AVAILABLE)
+               << "Failed to get HVAC_TEMPERATURE_SET, error: "
+               << getErrorMsg(hvacTemperatureSetResults);
+    }
+    auto& hvacTemperatureSetValues = hvacTemperatureSetResults.value();
+    std::optional<float> tempCToSynchronize = newTempC;
+    for (size_t i = 0; i < hvacTemperatureSetValues.size(); i++) {
+        int32_t areaId = hvacTemperatureSetValues[i]->areaId;
+        if ((hvacDualOnAreaId & areaId) != areaId) {
+            continue;
+        }
+        if (hvacTemperatureSetValues[i]->status != VehiclePropertyStatus::AVAILABLE) {
+            continue;
+        }
+        // When HVAC_DUAL_ON is initially enabled, synchronize all area IDs
+        // to the temperature of the first area ID, which is the driver's.
+        if (!tempCToSynchronize.has_value()) {
+            tempCToSynchronize = hvacTemperatureSetValues[i]->value.floatValues[0];
+            continue;
+        }
+        auto updatedValue = std::move(hvacTemperatureSetValues[i]);
+        updatedValue->value.floatValues[0] = tempCToSynchronize.value();
+        updatedValue->timestamp = elapsedRealtimeNano();
+        // This will trigger a property change event for the current hvac property value.
+        auto writeResult =
+                mServerSidePropStore->writeValue(std::move(updatedValue), /*updateStatus=*/true,
+                                                 VehiclePropertyStore::EventMode::ALWAYS);
+        if (!writeResult.ok()) {
+            return StatusError(getErrorCode(writeResult))
+                   << "Failed to write value into property store, error: "
+                   << getErrorMsg(writeResult);
+        }
+    }
+    return {};
+}
+
+std::optional<int32_t> FakeVehicleHardware::getSyncedAreaIdIfHvacDualOn(
+        int32_t hvacTemperatureSetAreaId) const {
+    auto hvacDualOnResults =
+            mServerSidePropStore->readValuesForProperty(toInt(VehicleProperty::HVAC_DUAL_ON));
+    if (!hvacDualOnResults.ok()) {
+        return std::nullopt;
+    }
+    auto& hvacDualOnValues = hvacDualOnResults.value();
+    for (size_t i = 0; i < hvacDualOnValues.size(); i++) {
+        if ((hvacDualOnValues[i]->areaId & hvacTemperatureSetAreaId) == hvacTemperatureSetAreaId &&
+            hvacDualOnValues[i]->value.int32Values.size() == 1 &&
+            hvacDualOnValues[i]->value.int32Values[0] == 1) {
+            return hvacDualOnValues[i]->areaId;
+        }
+    }
+    return std::nullopt;
 }
 
 FakeVehicleHardware::ValueResultType FakeVehicleHardware::getUserHalProp(
@@ -760,14 +884,14 @@ void FakeVehicleHardware::sendHvacPropertiesCurrentValues(int32_t areaId, int32_
 void FakeVehicleHardware::sendAdasPropertiesState(int32_t propertyId, int32_t state) {
     auto& adasDependentPropIds = mAdasEnabledPropToAdasPropWithErrorState.find(propertyId)->second;
     for (auto dependentPropId : adasDependentPropIds) {
-        auto dependentPropConfigResult = mServerSidePropStore->getConfig(dependentPropId);
+        auto dependentPropConfigResult = mServerSidePropStore->getPropConfig(dependentPropId);
         if (!dependentPropConfigResult.ok()) {
             ALOGW("Failed to get config for ADAS property 0x%x, error: %s", dependentPropId,
                   getErrorMsg(dependentPropConfigResult).c_str());
             continue;
         }
         auto& dependentPropConfig = dependentPropConfigResult.value();
-        for (auto& areaConfig : dependentPropConfig->areaConfigs) {
+        for (auto& areaConfig : dependentPropConfig.areaConfigs) {
             int32_t hardcoded_state = state;
             // TODO: restore old/initial values here instead of hardcoded value (b/295542701)
             if (state == 1 && dependentPropId == toInt(VehicleProperty::CRUISE_CONTROL_TYPE)) {
@@ -850,6 +974,28 @@ VhalResult<void> FakeVehicleHardware::maybeSetSpecialValue(const VehiclePropValu
         case toInt(VehicleProperty::HVAC_TEMPERATURE_VALUE_SUGGESTION):
             *isSpecialValue = true;
             return setHvacTemperatureValueSuggestion(value);
+        case toInt(VehicleProperty::HVAC_TEMPERATURE_SET):
+            if (value.value.floatValues.size() != 1) {
+                *isSpecialValue = true;
+                return StatusError(StatusCode::INVALID_ARG)
+                       << "HVAC_DUAL_ON requires only one float value";
+            }
+            if (auto hvacDualOnAreaId = getSyncedAreaIdIfHvacDualOn(value.areaId);
+                hvacDualOnAreaId.has_value()) {
+                *isSpecialValue = true;
+                return synchronizeHvacTemp(hvacDualOnAreaId.value(), value.value.floatValues[0]);
+            }
+            return {};
+        case toInt(VehicleProperty::HVAC_DUAL_ON):
+            if (value.value.int32Values.size() != 1) {
+                *isSpecialValue = true;
+                return StatusError(StatusCode::INVALID_ARG)
+                       << "HVAC_DUAL_ON requires only one int32 value";
+            }
+            if (value.value.int32Values[0] == 1) {
+                synchronizeHvacTemp(value.areaId, std::nullopt);
+            }
+            return {};
         case toInt(VehicleProperty::LANE_CENTERING_ASSIST_COMMAND): {
             isAdasPropertyAvailableResult =
                     isAdasPropertyAvailable(toInt(VehicleProperty::LANE_CENTERING_ASSIST_STATE));
@@ -971,10 +1117,11 @@ VhalResult<void> FakeVehicleHardware::setValue(const VehiclePropValue& value) {
     }
 
     auto updatedValue = mValuePool->obtain(value);
-    int64_t timestamp = elapsedRealtimeNano();
-    updatedValue->timestamp = timestamp;
 
-    auto writeResult = mServerSidePropStore->writeValue(std::move(updatedValue));
+    auto writeResult = mServerSidePropStore->writeValue(
+            std::move(updatedValue),
+            /*updateStatus=*/false, /*mode=*/VehiclePropertyStore::EventMode::ON_VALUE_CHANGE,
+            /*useCurrentTimestamp=*/true);
     if (!writeResult.ok()) {
         return StatusError(getErrorCode(writeResult))
                << StringPrintf("failed to write value into property store, error: %s",
@@ -1617,12 +1764,12 @@ std::string FakeVehicleHardware::dumpSpecificProperty(const std::vector<std::str
             continue;
         }
         int32_t prop = propResult.value();
-        auto result = mServerSidePropStore->getConfig(prop);
+        auto result = mServerSidePropStore->getPropConfig(prop);
         if (!result.ok()) {
             msg += StringPrintf("No property %d\n", prop);
             continue;
         }
-        msg += dumpOnePropertyByConfig(rowNumber++, *result.value());
+        msg += dumpOnePropertyByConfig(rowNumber++, result.value());
     }
     return msg;
 }
@@ -1926,54 +2073,196 @@ void FakeVehicleHardware::registerOnPropertySetErrorEvent(
     mOnPropertySetErrorCallback = std::move(callback);
 }
 
-StatusCode FakeVehicleHardware::updateSampleRate(int32_t propId, int32_t areaId, float sampleRate) {
-    // DefaultVehicleHal makes sure that sampleRate must be within minSampleRate and maxSampleRate.
-    // For fake implementation, we would write the same value with a new timestamp into propStore
-    // at sample rate.
-    std::scoped_lock<std::mutex> lockGuard(mLock);
+StatusCode FakeVehicleHardware::subscribe(SubscribeOptions options) {
+    int32_t propId = options.propId;
 
+    auto configResult = mServerSidePropStore->getPropConfig(propId);
+    if (!configResult.ok()) {
+        ALOGE("subscribe: property: %" PRId32 " is not supported", propId);
+        return StatusCode::INVALID_ARG;
+    }
+
+    std::scoped_lock<std::mutex> lockGuard(mLock);
+    for (int areaId : options.areaIds) {
+        if (StatusCode status = subscribePropIdAreaIdLocked(propId, areaId, options.sampleRate,
+                                                            options.enableVariableUpdateRate,
+                                                            configResult.value());
+            status != StatusCode::OK) {
+            return status;
+        }
+    }
+    return StatusCode::OK;
+}
+
+bool FakeVehicleHardware::isVariableUpdateRateSupported(const VehiclePropConfig& vehiclePropConfig,
+                                                        int32_t areaId) {
+    for (size_t i = 0; i < vehiclePropConfig.areaConfigs.size(); i++) {
+        const auto& areaConfig = vehiclePropConfig.areaConfigs[i];
+        if (areaConfig.areaId != areaId) {
+            continue;
+        }
+        if (areaConfig.supportVariableUpdateRate) {
+            return true;
+        }
+        break;
+    }
+    return false;
+}
+
+void FakeVehicleHardware::refreshTimeStampForInterval(int64_t intervalInNanos) {
+    std::unordered_map<PropIdAreaId, VehiclePropertyStore::EventMode, PropIdAreaIdHash>
+            eventModeByPropIdAreaId;
+
+    {
+        std::scoped_lock<std::mutex> lockGuard(mLock);
+
+        if (mActionByIntervalInNanos.find(intervalInNanos) == mActionByIntervalInNanos.end()) {
+            ALOGE("No actions scheduled for the interval: %" PRId64 ", ignore the refresh request",
+                  intervalInNanos);
+            return;
+        }
+
+        ActionForInterval actionForInterval = mActionByIntervalInNanos[intervalInNanos];
+
+        // Make a copy so that we don't hold the lock while trying to refresh the timestamp.
+        // Refreshing the timestamp will inovke onValueChangeCallback which also requires lock, so
+        // we must not hold lock.
+        for (const PropIdAreaId& propIdAreaId : actionForInterval.propIdAreaIdsToRefresh) {
+            const RefreshInfo& refreshInfo = mRefreshInfoByPropIdAreaId[propIdAreaId];
+            eventModeByPropIdAreaId[propIdAreaId] = refreshInfo.eventMode;
+        }
+    }
+
+    mServerSidePropStore->refreshTimestamps(eventModeByPropIdAreaId);
+}
+
+void FakeVehicleHardware::registerRefreshLocked(PropIdAreaId propIdAreaId,
+                                                VehiclePropertyStore::EventMode eventMode,
+                                                float sampleRateHz) {
+    if (mRefreshInfoByPropIdAreaId.find(propIdAreaId) != mRefreshInfoByPropIdAreaId.end()) {
+        unregisterRefreshLocked(propIdAreaId);
+    }
+
+    int64_t intervalInNanos = static_cast<int64_t>(1'000'000'000. / sampleRateHz);
+    RefreshInfo refreshInfo = {
+            .eventMode = eventMode,
+            .intervalInNanos = intervalInNanos,
+    };
+    mRefreshInfoByPropIdAreaId[propIdAreaId] = refreshInfo;
+
+    if (mActionByIntervalInNanos.find(intervalInNanos) != mActionByIntervalInNanos.end()) {
+        // If we have already registered for this interval, then add the action info to the
+        // actions list.
+        mActionByIntervalInNanos[intervalInNanos].propIdAreaIdsToRefresh.insert(propIdAreaId);
+        return;
+    }
+
+    // This is the first action for the interval, register a timer callback for that interval.
+    auto action = std::make_shared<RecurrentTimer::Callback>(
+            [this, intervalInNanos] { refreshTimeStampForInterval(intervalInNanos); });
+    mActionByIntervalInNanos[intervalInNanos] = ActionForInterval{
+            .propIdAreaIdsToRefresh = {propIdAreaId},
+            .recurrentAction = action,
+    };
+    mRecurrentTimer->registerTimerCallback(intervalInNanos, action);
+}
+
+void FakeVehicleHardware::unregisterRefreshLocked(PropIdAreaId propIdAreaId) {
+    if (mRefreshInfoByPropIdAreaId.find(propIdAreaId) == mRefreshInfoByPropIdAreaId.end()) {
+        ALOGW("PropId: %" PRId32 ", areaId: %" PRId32 " was not registered for refresh, ignore",
+              propIdAreaId.propId, propIdAreaId.areaId);
+        return;
+    }
+
+    int64_t intervalInNanos = mRefreshInfoByPropIdAreaId[propIdAreaId].intervalInNanos;
+    auto& actionForInterval = mActionByIntervalInNanos[intervalInNanos];
+    actionForInterval.propIdAreaIdsToRefresh.erase(propIdAreaId);
+    if (actionForInterval.propIdAreaIdsToRefresh.empty()) {
+        mRecurrentTimer->unregisterTimerCallback(actionForInterval.recurrentAction);
+        mActionByIntervalInNanos.erase(intervalInNanos);
+    }
+    mRefreshInfoByPropIdAreaId.erase(propIdAreaId);
+}
+
+StatusCode FakeVehicleHardware::subscribePropIdAreaIdLocked(
+        int32_t propId, int32_t areaId, float sampleRateHz, bool enableVariableUpdateRate,
+        const VehiclePropConfig& vehiclePropConfig) {
     PropIdAreaId propIdAreaId{
             .propId = propId,
             .areaId = areaId,
     };
-    if (mRecurrentActions.find(propIdAreaId) != mRecurrentActions.end()) {
-        mRecurrentTimer->unregisterTimerCallback(mRecurrentActions[propIdAreaId]);
+    switch (vehiclePropConfig.changeMode) {
+        case VehiclePropertyChangeMode::STATIC:
+            ALOGW("subscribe to a static property, do nothing.");
+            return StatusCode::OK;
+        case VehiclePropertyChangeMode::ON_CHANGE:
+            mSubOnChangePropIdAreaIds.insert(std::move(propIdAreaId));
+            return StatusCode::OK;
+        case VehiclePropertyChangeMode::CONTINUOUS:
+            if (sampleRateHz == 0.f) {
+                ALOGE("Must not use sample rate 0 for a continuous property");
+                return StatusCode::INTERNAL_ERROR;
+            }
+            // For continuous properties, we must generate a new onPropertyChange event
+            // periodically according to the sample rate.
+            auto eventMode = VehiclePropertyStore::EventMode::ALWAYS;
+            if (isVariableUpdateRateSupported(vehiclePropConfig, areaId) &&
+                enableVariableUpdateRate) {
+                eventMode = VehiclePropertyStore::EventMode::ON_VALUE_CHANGE;
+            }
+
+            registerRefreshLocked(propIdAreaId, eventMode, sampleRateHz);
+            return StatusCode::OK;
     }
-    if (sampleRate == 0) {
-        return StatusCode::OK;
+}
+
+StatusCode FakeVehicleHardware::unsubscribe(int32_t propId, int32_t areaId) {
+    std::scoped_lock<std::mutex> lockGuard(mLock);
+    PropIdAreaId propIdAreaId{
+            .propId = propId,
+            .areaId = areaId,
+    };
+    if (mRefreshInfoByPropIdAreaId.find(propIdAreaId) != mRefreshInfoByPropIdAreaId.end()) {
+        unregisterRefreshLocked(propIdAreaId);
     }
-    int64_t interval = static_cast<int64_t>(1'000'000'000. / sampleRate);
-    auto action = std::make_shared<RecurrentTimer::Callback>([this, propId, areaId] {
-        // Refresh the property value. In real implementation, this should poll the latest value
-        // from vehicle bus. Here, we are just refreshing the existing value with a new timestamp.
-        auto result = getValue(VehiclePropValue{
-                .areaId = areaId,
-                .prop = propId,
-                .value = {},
-        });
-        if (!result.ok()) {
-            // Failed to read current value, skip refreshing.
-            return;
-        }
-        result.value()->timestamp = elapsedRealtimeNano();
-        // For continuous properties, we must generate a new onPropertyChange event periodically
-        // according to the sample rate.
-        mServerSidePropStore->writeValue(std::move(result.value()), /*updateStatus=*/true,
-                                         VehiclePropertyStore::EventMode::ALWAYS);
-    });
-    mRecurrentTimer->registerTimerCallback(interval, action);
-    mRecurrentActions[propIdAreaId] = action;
+    mSubOnChangePropIdAreaIds.erase(propIdAreaId);
     return StatusCode::OK;
 }
 
 void FakeVehicleHardware::onValueChangeCallback(const VehiclePropValue& value) {
-    if (mOnPropertyChangeCallback == nullptr) {
-        return;
+    ATRACE_CALL();
+    onValuesChangeCallback({value});
+}
+
+void FakeVehicleHardware::onValuesChangeCallback(std::vector<VehiclePropValue> values) {
+    ATRACE_CALL();
+    std::vector<VehiclePropValue> subscribedUpdatedValues;
+
+    {
+        std::scoped_lock<std::mutex> lockGuard(mLock);
+        if (mOnPropertyChangeCallback == nullptr) {
+            return;
+        }
+
+        for (const auto& value : values) {
+            PropIdAreaId propIdAreaId{
+                    .propId = value.prop,
+                    .areaId = value.areaId,
+            };
+            if (mRefreshInfoByPropIdAreaId.find(propIdAreaId) == mRefreshInfoByPropIdAreaId.end() &&
+                mSubOnChangePropIdAreaIds.find(propIdAreaId) == mSubOnChangePropIdAreaIds.end()) {
+                if (FAKE_VEHICLEHARDWARE_DEBUG) {
+                    ALOGD("The updated property value: %s is not subscribed, ignore",
+                          value.toString().c_str());
+                }
+                continue;
+            }
+
+            subscribedUpdatedValues.push_back(value);
+        }
     }
 
-    std::vector<VehiclePropValue> updatedValues;
-    updatedValues.push_back(value);
-    (*mOnPropertyChangeCallback)(std::move(updatedValues));
+    (*mOnPropertyChangeCallback)(std::move(subscribedUpdatedValues));
 }
 
 void FakeVehicleHardware::loadPropConfigsFromDir(

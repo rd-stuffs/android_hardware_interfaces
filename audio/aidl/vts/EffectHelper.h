@@ -21,6 +21,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <Utils.h>
@@ -263,12 +264,11 @@ class EffectHelper {
         return s;
     }
 
-    template <typename T, typename S, Range::Tag R, typename T::Tag tag, typename Functor>
+    template <typename T, typename S, Range::Tag R, typename T::Tag tag>
     static std::set<S> getTestValueSet(
-            std::vector<std::pair<std::shared_ptr<IFactory>, Descriptor>> kFactoryDescList,
-            Functor functor) {
+            std::vector<std::pair<std::shared_ptr<IFactory>, Descriptor>> descList) {
         std::set<S> result;
-        for (const auto& [_, desc] : kFactoryDescList) {
+        for (const auto& [_, desc] : descList) {
             if (desc.capability.range.getTag() == R) {
                 const auto& ranges = desc.capability.range.get<R>();
                 for (const auto& range : ranges) {
@@ -281,6 +281,42 @@ class EffectHelper {
                 }
             }
         }
+        return result;
+    }
+
+    template <typename T, typename S, Range::Tag R, typename T::Tag tag, typename Functor>
+    static std::set<S> getTestValueSet(
+            std::vector<std::pair<std::shared_ptr<IFactory>, Descriptor>> descList,
+            Functor functor) {
+        auto result = getTestValueSet<T, S, R, tag>(descList);
         return functor(result);
+    }
+
+    static void processAndWriteToOutput(std::vector<float>& inputBuffer,
+                                        std::vector<float>& outputBuffer,
+                                        const std::shared_ptr<IEffect>& mEffect,
+                                        IEffect::OpenEffectReturn* mOpenEffectReturn) {
+        // Initialize AidlMessagequeues
+        auto statusMQ = std::make_unique<EffectHelper::StatusMQ>(mOpenEffectReturn->statusMQ);
+        ASSERT_TRUE(statusMQ->isValid());
+        auto inputMQ = std::make_unique<EffectHelper::DataMQ>(mOpenEffectReturn->inputDataMQ);
+        ASSERT_TRUE(inputMQ->isValid());
+        auto outputMQ = std::make_unique<EffectHelper::DataMQ>(mOpenEffectReturn->outputDataMQ);
+        ASSERT_TRUE(outputMQ->isValid());
+
+        // Enabling the process
+        ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::START));
+        ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::PROCESSING));
+
+        // Write from buffer to message queues and calling process
+        EXPECT_NO_FATAL_FAILURE(EffectHelper::writeToFmq(statusMQ, inputMQ, inputBuffer));
+
+        // Read the updated message queues into buffer
+        EXPECT_NO_FATAL_FAILURE(EffectHelper::readFromFmq(statusMQ, 1, outputMQ,
+                                                          outputBuffer.size(), outputBuffer));
+
+        // Disable the process
+        ASSERT_NO_FATAL_FAILURE(command(mEffect, CommandId::RESET));
+        ASSERT_NO_FATAL_FAILURE(expectState(mEffect, State::IDLE));
     }
 };

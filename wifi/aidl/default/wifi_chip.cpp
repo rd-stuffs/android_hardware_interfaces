@@ -20,6 +20,7 @@
 #include <android-base/unique_fd.h>
 #include <cutils/properties.h>
 #include <fcntl.h>
+#include <hardware_legacy/wifi_hal.h>
 #include <net/if.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
@@ -369,6 +370,14 @@ ndk::ScopedAStatus WifiChip::createBridgedApIface(std::shared_ptr<IWifiApIface>*
                            &WifiChip::createBridgedApIfaceInternal, _aidl_return);
 }
 
+ndk::ScopedAStatus WifiChip::createApOrBridgedApIface(
+        IfaceConcurrencyType in_ifaceType, const std::vector<common::OuiKeyedData>& in_vendorData,
+        std::shared_ptr<IWifiApIface>* _aidl_return) {
+    return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
+                           &WifiChip::createApOrBridgedApIfaceInternal, _aidl_return, in_ifaceType,
+                           in_vendorData);
+}
+
 ndk::ScopedAStatus WifiChip::getApIfaceNames(std::vector<std::string>* _aidl_return) {
     return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
                            &WifiChip::getApIfaceNamesInternal, _aidl_return);
@@ -595,6 +604,11 @@ ndk::ScopedAStatus WifiChip::enableStaChannelForPeerNetwork(int32_t in_channelCa
 ndk::ScopedAStatus WifiChip::setMloMode(const ChipMloMode in_mode) {
     return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
                            &WifiChip::setMloModeInternal, in_mode);
+}
+
+ndk::ScopedAStatus WifiChip::setVoipMode(const VoipMode in_mode) {
+    return validateAndCall(this, WifiStatusCode::ERROR_WIFI_CHIP_INVALID,
+                           &WifiChip::setVoipModeInternal, in_mode);
 }
 
 void WifiChip::invalidateAndRemoveAllIfaces() {
@@ -852,6 +866,18 @@ WifiChip::createBridgedApIfaceInternal() {
     }
     std::shared_ptr<WifiApIface> iface = newWifiApIface(br_ifname);
     return {iface, ndk::ScopedAStatus::ok()};
+}
+
+std::pair<std::shared_ptr<IWifiApIface>, ndk::ScopedAStatus>
+WifiChip::createApOrBridgedApIfaceInternal(
+        IfaceConcurrencyType ifaceType, const std::vector<common::OuiKeyedData>& /* vendorData */) {
+    if (ifaceType == IfaceConcurrencyType::AP) {
+        return createApIfaceInternal();
+    } else if (ifaceType == IfaceConcurrencyType::AP_BRIDGED) {
+        return createBridgedApIfaceInternal();
+    } else {
+        return {nullptr, createWifiStatus(WifiStatusCode::ERROR_INVALID_ARGS)};
+    }
 }
 
 std::pair<std::vector<std::string>, ndk::ScopedAStatus> WifiChip::getApIfaceNamesInternal() {
@@ -1891,6 +1917,23 @@ ndk::ScopedAStatus WifiChip::setMloModeInternal(const WifiChip::ChipMloMode in_m
             return createWifiStatus(WifiStatusCode::ERROR_INVALID_ARGS);
     }
     return createWifiStatusFromLegacyError(legacy_hal_.lock()->setMloMode(mode));
+}
+
+ndk::ScopedAStatus WifiChip::setVoipModeInternal(const WifiChip::VoipMode in_mode) {
+    const auto ifname = getFirstActiveWlanIfaceName();
+    wifi_voip_mode mode;
+    switch (in_mode) {
+        case WifiChip::VoipMode::VOICE:
+            mode = wifi_voip_mode::WIFI_VOIP_MODE_VOICE;
+            break;
+        case WifiChip::VoipMode::OFF:
+            mode = wifi_voip_mode::WIFI_VOIP_MODE_OFF;
+            break;
+        default:
+            PLOG(ERROR) << "Error: invalid mode: " << toString(in_mode);
+            return createWifiStatus(WifiStatusCode::ERROR_INVALID_ARGS);
+    }
+    return createWifiStatusFromLegacyError(legacy_hal_.lock()->setVoipMode(ifname, mode));
 }
 
 }  // namespace wifi

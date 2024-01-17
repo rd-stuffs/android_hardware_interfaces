@@ -67,6 +67,7 @@ void aidlToProto(const aidl_vehicle::VehiclePropConfig& in, proto::VehiclePropCo
     for (auto& areaConfig : in.areaConfigs) {
         auto* protoACfg = out->add_area_configs();
         protoACfg->set_area_id(areaConfig.areaId);
+        protoACfg->set_access(static_cast<proto::VehiclePropertyAccess>(toInt(areaConfig.access)));
         protoACfg->set_min_int64_value(areaConfig.minInt64Value);
         protoACfg->set_max_int64_value(areaConfig.maxInt64Value);
         protoACfg->set_min_float_value(areaConfig.minFloatValue);
@@ -78,6 +79,7 @@ void aidlToProto(const aidl_vehicle::VehiclePropConfig& in, proto::VehiclePropCo
                 protoACfg->add_supported_enum_values(supportedEnumValue);
             }
         }
+        protoACfg->set_support_variable_update_rate(areaConfig.supportVariableUpdateRate);
     }
 }
 
@@ -94,15 +96,21 @@ void protoToAidl(const proto::VehiclePropConfig& in, aidl_vehicle::VehiclePropCo
     auto cast_to_acfg = [](const proto::VehicleAreaConfig& protoAcfg) {
         auto vehicleAreaConfig = aidl_vehicle::VehicleAreaConfig{
                 .areaId = protoAcfg.area_id(),
+                .access = static_cast<aidl_vehicle::VehiclePropertyAccess>(protoAcfg.access()),
                 .minInt32Value = protoAcfg.min_int32_value(),
                 .maxInt32Value = protoAcfg.max_int32_value(),
                 .minInt64Value = protoAcfg.min_int64_value(),
                 .maxInt64Value = protoAcfg.max_int64_value(),
                 .minFloatValue = protoAcfg.min_float_value(),
                 .maxFloatValue = protoAcfg.max_float_value(),
+                .supportVariableUpdateRate = protoAcfg.support_variable_update_rate(),
         };
-        COPY_PROTOBUF_VEC_TO_VHAL_TYPE(protoAcfg, supported_enum_values, (&vehicleAreaConfig),
-                                       supportedEnumValues.value());
+        if (protoAcfg.supported_enum_values().size() != 0) {
+            vehicleAreaConfig.supportedEnumValues = std::vector<int64_t>();
+            COPY_PROTOBUF_VEC_TO_VHAL_TYPE(protoAcfg, supported_enum_values, (&vehicleAreaConfig),
+                                           supportedEnumValues.value());
+        }
+
         return vehicleAreaConfig;
     };
     CAST_COPY_PROTOBUF_VEC_TO_VHAL_TYPE(in, area_configs, out, areaConfigs, cast_to_acfg);

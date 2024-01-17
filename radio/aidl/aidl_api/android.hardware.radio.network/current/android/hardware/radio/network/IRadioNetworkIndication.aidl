@@ -50,4 +50,6 @@ interface IRadioNetworkIndication {
   oneway void suppSvcNotify(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.SuppSvcNotification suppSvc);
   oneway void voiceRadioTechChanged(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.RadioTechnology rat);
   oneway void emergencyNetworkScanResult(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.EmergencyRegResult result);
+  oneway void cellularIdentifierDisclosed(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.CellularIdentifierDisclosure disclosure);
+  oneway void securityAlgorithmsUpdated(in android.hardware.radio.RadioIndicationType type, in android.hardware.radio.network.SecurityAlgorithmUpdate securityAlgorithmUpdate);
 }

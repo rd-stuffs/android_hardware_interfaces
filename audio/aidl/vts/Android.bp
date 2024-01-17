@@ -11,6 +11,7 @@ cc_defaults {
     name: "VtsHalAudioTargetTestDefaults",
     defaults: [
         "latest_android_hardware_audio_common_ndk_static",
+        "latest_android_hardware_audio_effect_ndk_static",
         "latest_android_media_audio_common_types_ndk_static",
         "use_libaidlvintf_gtest_helper_static",
         "VtsHalTargetTestDefaults",
@@ -20,7 +21,6 @@ cc_defaults {
         "libfmq",
     ],
     static_libs: [
-        "android.hardware.audio.effect-V1-ndk",
         "android.hardware.common-V2-ndk",
         "android.hardware.common.fmq-V1-ndk",
         "libaudioaidlcommon",
@@ -40,7 +40,10 @@ cc_defaults {
         "general-tests",
         "vts",
     ],
-    srcs: [":effectCommonFile"],
+    srcs: [
+        ":effectCommonFile",
+        "TestUtils.cpp",
+    ],
 }
 
 cc_test {
@@ -83,6 +86,9 @@ cc_test {
     name: "VtsHalDownmixTargetTest",
     defaults: ["VtsHalAudioTargetTestDefaults"],
     srcs: ["VtsHalDownmixTargetTest.cpp"],
+    shared_libs: [
+        "libaudioutils",
+    ],
 }
 
 cc_test {
@@ -162,4 +168,10 @@ cc_test {
     name: "VtsHalNSTargetTest",
     defaults: ["VtsHalAudioTargetTestDefaults"],
     srcs: ["VtsHalNSTargetTest.cpp"],
+}
+
+cc_test {
+    name: "VtsHalSpatializerTargetTest",
+    defaults: ["VtsHalAudioTargetTestDefaults"],
+    srcs: ["VtsHalSpatializerTargetTest.cpp"],
 }

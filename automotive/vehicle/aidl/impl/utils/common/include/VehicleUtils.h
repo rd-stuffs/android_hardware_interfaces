@@ -124,7 +124,6 @@ createVehiclePropValueVec(aidl::android::hardware::automotive::vehicle::VehicleP
             break;  // Valid, but nothing to do.
         default:
             ALOGE("createVehiclePropValue: unknown type: %d", toInt(type));
-            val.reset(nullptr);
     }
     return val;
 }
@@ -328,6 +327,11 @@ struct PropIdAreaIdHash {
         return res;
     }
 };
+
+inline std::string propIdToString(int32_t propId) {
+    return toString(
+            static_cast<aidl::android::hardware::automotive::vehicle::VehicleProperty>(propId));
+}
 
 }  // namespace vehicle
 }  // namespace automotive

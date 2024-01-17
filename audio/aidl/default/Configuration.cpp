@@ -32,6 +32,7 @@ using aidl::android::media::audio::common::AudioDeviceType;
 using aidl::android::media::audio::common::AudioFormatDescription;
 using aidl::android::media::audio::common::AudioFormatType;
 using aidl::android::media::audio::common::AudioGainConfig;
+using aidl::android::media::audio::common::AudioInputFlags;
 using aidl::android::media::audio::common::AudioIoFlags;
 using aidl::android::media::audio::common::AudioOutputFlags;
 using aidl::android::media::audio::common::AudioPort;
@@ -302,8 +303,9 @@ std::unique_ptr<Configuration> getPrimaryConfiguration() {
 //   2. The canonical r_submix configuration only lists 'STEREO' and '48000',
 //      however the framework attempts to open streams for other sample rates
 //      as well. The legacy r_submix implementation allowed that, but libaudiohal@aidl
-//      will not find a mix port to use. Because of that, list all channel
-//      masks and sample rates that the legacy implementation allowed.
+//      will not find a mix port to use. Because of that, list all sample rates that
+//      the legacy implementation allowed (note that mono was not allowed, the framework
+//      is expected to upmix mono tracks into stereo if needed).
 //   3. The legacy implementation had a hard limit on the number of routes (10),
 //      and this is checked indirectly by AudioPlaybackCaptureTest#testPlaybackCaptureDoS
 //      CTS test. Instead of hardcoding the number of routes, we can use
@@ -319,22 +321,26 @@ std::unique_ptr<Configuration> getPrimaryConfiguration() {
 //    - no profiles specified
 //
 // Mix ports:
-//  * "r_submix output", maximum 20 opened streams, maximum 10 active streams
-//    - profile PCM 16-bit; MONO, STEREO; 8000, 11025, 16000, 32000, 44100, 48000
-//  * "r_submix input", maximum 20 opened streams, maximum 10 active streams
-//    - profile PCM 16-bit; MONO, STEREO; 8000, 11025, 16000, 32000, 44100, 48000
+//  * "r_submix output", maximum 10 opened streams, maximum 10 active streams
+//    - profile PCM 16-bit; STEREO; 8000, 11025, 16000, 32000, 44100, 48000, 192000
+//  * "r_submix input", maximum 10 opened streams, maximum 10 active streams
+//    - profile PCM 16-bit; STEREO; 8000, 11025, 16000, 32000, 44100, 48000, 192000
+//  * "r_submix output direct", DIRECT|IEC958_NONAUDIO, 1 max open, 1 max active
+//    - profile PCM 16-bit; STEREO; 8000, 11025, 16000, 32000, 44100, 48000, 192000
+//  * "r_submix input direct", DIRECT, 1 max open, 1 max active
+//    - profile PCM 16-bit; STEREO; 8000, 11025, 16000, 32000, 44100, 48000, 192000
+
 //
 // Routes:
-//  "r_submix output" -> "Remote Submix Out"
-//  "Remote Submix In" -> "r_submix input"
+//  "r_submix output", "r_submix output direct" -> "Remote Submix Out"
+//  "Remote Submix In" -> "r_submix input", "r_submix input direct"
 //
 std::unique_ptr<Configuration> getRSubmixConfiguration() {
     static const Configuration configuration = []() {
         Configuration c;
-        const std::vector<AudioProfile> standardPcmAudioProfiles{
-                createProfile(PcmType::INT_16_BIT,
-                              {AudioChannelLayout::LAYOUT_MONO, AudioChannelLayout::LAYOUT_STEREO},
-                              {8000, 11025, 16000, 32000, 44100, 48000})};
+        const std::vector<AudioProfile> remoteSubmixPcmAudioProfiles{
+                createProfile(PcmType::INT_16_BIT, {AudioChannelLayout::LAYOUT_STEREO},
+                              {8000, 11025, 16000, 32000, 44100, 48000, 192000})};
 
         // Device ports
 
@@ -343,29 +349,57 @@ std::unique_ptr<Configuration> getRSubmixConfiguration() {
                            createDeviceExt(AudioDeviceType::OUT_SUBMIX, 0,
                                            AudioDeviceDescription::CONNECTION_VIRTUAL));
         c.ports.push_back(rsubmixOutDevice);
-        c.connectedProfiles[rsubmixOutDevice.id] = standardPcmAudioProfiles;
+        c.connectedProfiles[rsubmixOutDevice.id] = remoteSubmixPcmAudioProfiles;
 
         AudioPort rsubmixInDevice =
                 createPort(c.nextPortId++, "Remote Submix In", 0, true,
                            createDeviceExt(AudioDeviceType::IN_SUBMIX, 0,
                                            AudioDeviceDescription::CONNECTION_VIRTUAL));
         c.ports.push_back(rsubmixInDevice);
-        c.connectedProfiles[rsubmixInDevice.id] = standardPcmAudioProfiles;
+        c.connectedProfiles[rsubmixInDevice.id] = remoteSubmixPcmAudioProfiles;
 
         // Mix ports
 
         AudioPort rsubmixOutMix =
-                createPort(c.nextPortId++, "r_submix output", 0, false, createPortMixExt(20, 10));
-        rsubmixOutMix.profiles = standardPcmAudioProfiles;
+                createPort(c.nextPortId++, "r_submix output", 0, false, createPortMixExt(10, 10));
+        rsubmixOutMix.profiles = remoteSubmixPcmAudioProfiles;
         c.ports.push_back(rsubmixOutMix);
 
+        // Adding a DIRECT flag to rsubmixInMix breaks the mixer paths, so we need separate
+        // non direct and direct paths. It is added because for IEC61937 encapsulated over PCM, we
+        // need the DIRECT and IEC958_NONAUDIO flags as AudioFlinger adds them.
+        AudioPort rsubmixOutDirectMix =
+                createPort(c.nextPortId++, "r_submix output direct",
+                                makeBitPositionFlagMask({
+                                        AudioOutputFlags::DIRECT,
+                                        AudioOutputFlags::IEC958_NONAUDIO}),
+                                false /* isInput */,
+                                createPortMixExt(1 /* maxOpenStreamCount */,
+                                                 1 /* maxActiveStreamCount */));
+        rsubmixOutDirectMix.profiles = remoteSubmixPcmAudioProfiles;
+        c.ports.push_back(rsubmixOutDirectMix);
+
         AudioPort rsubmixInMix =
-                createPort(c.nextPortId++, "r_submix input", 0, true, createPortMixExt(20, 10));
-        rsubmixInMix.profiles = standardPcmAudioProfiles;
+                createPort(c.nextPortId++, "r_submix input", 0, true, createPortMixExt(10, 10));
+        rsubmixInMix.profiles = remoteSubmixPcmAudioProfiles;
         c.ports.push_back(rsubmixInMix);
 
-        c.routes.push_back(createRoute({rsubmixOutMix}, rsubmixOutDevice));
+        // Adding a DIRECT flag to rsubmixInMix breaks the capture paths, so we need separate
+        // non direct and direct paths. It is added because for IEC61937 encapsulated over PCM, we
+        // need the DIRECT flag for the capability so AudioFlinger can find a DIRECT input match.
+        AudioPort rsubmixInDirectMix =
+                createPort(c.nextPortId++, "r_submix input direct",
+                                makeBitPositionFlagMask({AudioInputFlags::DIRECT}),
+                                true /* isInput */,
+                                createPortMixExt(1 /* maxOpenStreamCount */,
+                                                 1 /* maxActiveStreamCount */));
+        rsubmixInDirectMix.profiles = remoteSubmixPcmAudioProfiles;
+        c.ports.push_back(rsubmixInDirectMix);
+
+        c.routes.push_back(createRoute(
+                {rsubmixOutMix, rsubmixOutDirectMix}, rsubmixOutDevice));
         c.routes.push_back(createRoute({rsubmixInDevice}, rsubmixInMix));
+        c.routes.push_back(createRoute({rsubmixInDevice}, rsubmixInDirectMix));
 
         return c;
     }();

@@ -22,6 +22,7 @@
 #include <optional>
 #include <set>
 
+#include <Utils.h>
 #include <aidl/android/hardware/audio/core/BnModule.h>
 
 #include "core-impl/ChildInterface.h"
@@ -45,13 +46,6 @@ class Module : public BnModule {
         int32_t nextPatchId = 1;
     };
     enum Type : int { DEFAULT, R_SUBMIX, STUB, USB, BLUETOOTH };
-    enum BtInterface : int { BTCONF, BTA2DP, BTLE };
-    typedef std::tuple<std::weak_ptr<IBluetooth>, std::weak_ptr<IBluetoothA2dp>,
-                       std::weak_ptr<IBluetoothLe>>
-            BtProfileHandles;
-
-    // This value is used by default for all AudioPatches and reported by all streams.
-    static constexpr int32_t kLatencyMs = 10;
 
     static std::shared_ptr<Module> createInstance(Type type) {
         return createInstance(type, std::make_unique<Configuration>());
@@ -76,6 +70,7 @@ class Module : public BnModule {
             const ::aidl::android::media::audio::common::AudioPort& in_templateIdAndAdditionalData,
             ::aidl::android::media::audio::common::AudioPort* _aidl_return) override;
     ndk::ScopedAStatus disconnectExternalDevice(int32_t in_portId) override;
+    ndk::ScopedAStatus prepareToDisconnectExternalDevice(int32_t in_portId) override;
     ndk::ScopedAStatus getAudioPatches(std::vector<AudioPatch>* _aidl_return) override;
     ndk::ScopedAStatus getAudioPort(
             int32_t in_portId,
@@ -145,8 +140,6 @@ class Module : public BnModule {
     ndk::ScopedAStatus getAAudioMixerBurstCount(int32_t* _aidl_return) override;
     ndk::ScopedAStatus getAAudioHardwareBurstMinUsec(int32_t* _aidl_return) override;
 
-    // This value is used for all AudioPatches.
-    static constexpr int32_t kMinimumStreamBufferSizeFrames = 256;
     // The maximum stream buffer size is 1 GiB = 2 ** 30 bytes;
     static constexpr int32_t kMaximumStreamBufferSizeBytes = 1 << 30;
 
@@ -203,12 +196,25 @@ class Module : public BnModule {
             const std::vector<::aidl::android::media::audio::common::AudioPortConfig*>& sinks);
     virtual void onExternalDeviceConnectionChanged(
             const ::aidl::android::media::audio::common::AudioPort& audioPort, bool connected);
+    virtual void onPrepareToDisconnectExternalDevice(
+            const ::aidl::android::media::audio::common::AudioPort& audioPort);
     virtual ndk::ScopedAStatus onMasterMuteChanged(bool mute);
     virtual ndk::ScopedAStatus onMasterVolumeChanged(float volume);
     virtual std::vector<::aidl::android::media::audio::common::MicrophoneInfo> getMicrophoneInfos();
     virtual std::unique_ptr<Configuration> initializeConfig();
+    virtual int32_t getNominalLatencyMs(
+            const ::aidl::android::media::audio::common::AudioPortConfig& portConfig);
 
     // Utility and helper functions accessible to subclasses.
+    static int32_t calculateBufferSizeFrames(int32_t latencyMs, int32_t sampleRateHz) {
+        const int32_t rawSizeFrames =
+                aidl::android::hardware::audio::common::frameCountFromDurationMs(latencyMs,
+                                                                                 sampleRateHz);
+        int32_t powerOf2 = 1;
+        while (powerOf2 < rawSizeFrames) powerOf2 <<= 1;
+        return powerOf2;
+    }
+
     ndk::ScopedAStatus bluetoothParametersUpdated();
     void cleanUpPatch(int32_t patchId);
     ndk::ScopedAStatus createStreamContext(
@@ -222,7 +228,6 @@ class Module : public BnModule {
     ndk::ScopedAStatus findPortIdForNewStream(
             int32_t in_portConfigId, ::aidl::android::media::audio::common::AudioPort** port);
     std::vector<AudioRoute*> getAudioRoutesForAudioPortImpl(int32_t portId);
-    virtual BtProfileHandles getBtProfileManagerHandles();
     Configuration& getConfig();
     const ConnectedDevicePorts& getConnectedDevicePorts() const { return mConnectedDevicePorts; }
     bool getMasterMute() const { return mMasterMute; }

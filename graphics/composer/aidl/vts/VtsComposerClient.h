@@ -197,6 +197,7 @@ class VtsComposerClient {
     std::vector<RefreshRateChangedDebugData> takeListOfRefreshRateChangedDebugData();
 
     static constexpr int32_t kMaxFrameIntervalNs = 50000000;  // 20fps
+    static constexpr int32_t kNoFrameIntervalNs = 0;
 
   private:
     void addDisplayConfigs(VtsDisplay*, const std::vector<DisplayConfiguration>&);
@@ -252,10 +253,14 @@ class VtsDisplay {
     int32_t getDisplayHeight() const { return mDisplayHeight; }
 
     struct DisplayConfig {
-        DisplayConfig(int32_t vsyncPeriod_, int32_t configGroup_)
-            : vsyncPeriod(vsyncPeriod_), configGroup(configGroup_) {}
+        DisplayConfig(int32_t vsyncPeriod_, int32_t configGroup_,
+                      std::optional<VrrConfig> vrrConfig_ = {})
+            : vsyncPeriod(vsyncPeriod_),
+              configGroup(configGroup_),
+              vrrConfig(std::move(vrrConfig_)) {}
         int32_t vsyncPeriod;
         int32_t configGroup;
+        std::optional<VrrConfig> vrrConfig;
     };
 
     void addDisplayConfig(int32_t config, DisplayConfig displayConfig) {

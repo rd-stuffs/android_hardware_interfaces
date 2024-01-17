@@ -38,9 +38,15 @@ using ::aidl::android::hardware::automotive::vehicle::AccessForVehicleProperty;
 using ::aidl::android::hardware::automotive::vehicle::AutomaticEmergencyBrakingState;
 using ::aidl::android::hardware::automotive::vehicle::BlindSpotWarningState;
 using ::aidl::android::hardware::automotive::vehicle::ChangeModeForVehicleProperty;
+using ::aidl::android::hardware::automotive::vehicle::CrossTrafficMonitoringWarningState;
 using ::aidl::android::hardware::automotive::vehicle::CruiseControlCommand;
 using ::aidl::android::hardware::automotive::vehicle::CruiseControlState;
 using ::aidl::android::hardware::automotive::vehicle::CruiseControlType;
+using ::aidl::android::hardware::automotive::vehicle::DriverDistractionState;
+using ::aidl::android::hardware::automotive::vehicle::DriverDistractionWarning;
+using ::aidl::android::hardware::automotive::vehicle::DriverDrowsinessAttentionState;
+using ::aidl::android::hardware::automotive::vehicle::DriverDrowsinessAttentionWarning;
+using ::aidl::android::hardware::automotive::vehicle::ElectronicStabilityControlState;
 using ::aidl::android::hardware::automotive::vehicle::EmergencyLaneKeepAssistState;
 using ::aidl::android::hardware::automotive::vehicle::ErrorState;
 using ::aidl::android::hardware::automotive::vehicle::EvConnectorType;
@@ -51,17 +57,22 @@ using ::aidl::android::hardware::automotive::vehicle::FuelType;
 using ::aidl::android::hardware::automotive::vehicle::GsrComplianceRequirementType;
 using ::aidl::android::hardware::automotive::vehicle::HandsOnDetectionDriverState;
 using ::aidl::android::hardware::automotive::vehicle::HandsOnDetectionWarning;
+using ::aidl::android::hardware::automotive::vehicle::ImpactSensorLocation;
 using ::aidl::android::hardware::automotive::vehicle::LaneCenteringAssistCommand;
 using ::aidl::android::hardware::automotive::vehicle::LaneCenteringAssistState;
 using ::aidl::android::hardware::automotive::vehicle::LaneDepartureWarningState;
 using ::aidl::android::hardware::automotive::vehicle::LaneKeepAssistState;
 using ::aidl::android::hardware::automotive::vehicle::LocationCharacterization;
+using ::aidl::android::hardware::automotive::vehicle::LowSpeedAutomaticEmergencyBrakingState;
+using ::aidl::android::hardware::automotive::vehicle::LowSpeedCollisionWarningState;
 using ::aidl::android::hardware::automotive::vehicle::RawPropValues;
+using ::aidl::android::hardware::automotive::vehicle::VehicleAirbagLocation;
 using ::aidl::android::hardware::automotive::vehicle::VehicleApPowerStateReport;
 using ::aidl::android::hardware::automotive::vehicle::VehicleApPowerStateReq;
 using ::aidl::android::hardware::automotive::vehicle::VehicleAreaConfig;
 using ::aidl::android::hardware::automotive::vehicle::VehicleAreaMirror;
 using ::aidl::android::hardware::automotive::vehicle::VehicleAreaWindow;
+using ::aidl::android::hardware::automotive::vehicle::VehicleAutonomousState;
 using ::aidl::android::hardware::automotive::vehicle::VehicleGear;
 using ::aidl::android::hardware::automotive::vehicle::VehicleHvacFanDirection;
 using ::aidl::android::hardware::automotive::vehicle::VehicleIgnitionState;
@@ -240,6 +251,12 @@ JsonValueParser::JsonValueParser() {
             std::make_unique<ConstantParser<WindshieldWipersState>>();
     mConstantParsersByType["WindshieldWipersSwitch"] =
             std::make_unique<ConstantParser<WindshieldWipersSwitch>>();
+    mConstantParsersByType["VehicleAutonomousState"] =
+            std::make_unique<ConstantParser<VehicleAutonomousState>>();
+    mConstantParsersByType["VehicleAirbagLocation"] =
+            std::make_unique<ConstantParser<VehicleAirbagLocation>>();
+    mConstantParsersByType["ImpactSensorLocation"] =
+            std::make_unique<ConstantParser<ImpactSensorLocation>>();
     mConstantParsersByType["EmergencyLaneKeepAssistState"] =
             std::make_unique<ConstantParser<EmergencyLaneKeepAssistState>>();
     mConstantParsersByType["CruiseControlType"] =
@@ -252,6 +269,14 @@ JsonValueParser::JsonValueParser() {
             std::make_unique<ConstantParser<HandsOnDetectionDriverState>>();
     mConstantParsersByType["HandsOnDetectionWarning"] =
             std::make_unique<ConstantParser<HandsOnDetectionWarning>>();
+    mConstantParsersByType["DriverDrowsinessAttentionState"] =
+            std::make_unique<ConstantParser<DriverDrowsinessAttentionState>>();
+    mConstantParsersByType["DriverDrowsinessAttentionWarning"] =
+            std::make_unique<ConstantParser<DriverDrowsinessAttentionWarning>>();
+    mConstantParsersByType["DriverDistractionState"] =
+            std::make_unique<ConstantParser<DriverDistractionState>>();
+    mConstantParsersByType["DriverDistractionWarning"] =
+            std::make_unique<ConstantParser<DriverDistractionWarning>>();
     mConstantParsersByType["ErrorState"] = std::make_unique<ConstantParser<ErrorState>>();
     mConstantParsersByType["AutomaticEmergencyBrakingState"] =
             std::make_unique<ConstantParser<AutomaticEmergencyBrakingState>>();
@@ -267,11 +292,29 @@ JsonValueParser::JsonValueParser() {
             std::make_unique<ConstantParser<LaneCenteringAssistCommand>>();
     mConstantParsersByType["LaneCenteringAssistState"] =
             std::make_unique<ConstantParser<LaneCenteringAssistState>>();
+    mConstantParsersByType["LowSpeedCollisionWarningState"] =
+            std::make_unique<ConstantParser<LowSpeedCollisionWarningState>>();
+    mConstantParsersByType["ElectronicStabilityControlState"] =
+            std::make_unique<ConstantParser<ElectronicStabilityControlState>>();
+    mConstantParsersByType["CrossTrafficMonitoringWarningState"] =
+            std::make_unique<ConstantParser<CrossTrafficMonitoringWarningState>>();
+    mConstantParsersByType["LowSpeedAutomaticEmergencyBrakingState"] =
+            std::make_unique<ConstantParser<LowSpeedAutomaticEmergencyBrakingState>>();
     mConstantParsersByType["Constants"] = std::make_unique<LocalVariableParser>();
 #ifdef ENABLE_VEHICLE_HAL_TEST_PROPERTIES
     mConstantParsersByType["TestVendorProperty"] =
             std::make_unique<CppConstantParser<TestVendorProperty>>();
 #endif  // ENABLE_VEHICLE_HAL_TEST_PROPERTIES
+}
+
+template <>
+Result<bool> JsonValueParser::convertValueToType<bool>(const std::string& fieldName,
+                                                       const Json::Value& value) {
+    if (!value.isBool()) {
+        return Error() << "The value: " << value << " for field: " << fieldName
+                       << " is not in correct type, expect bool";
+    }
+    return value.asBool();
 }
 
 template <>
@@ -531,6 +574,12 @@ void JsonConfigParser::parseAreas(const Json::Value& parentJsonNode, const std::
         tryParseJsonValueToVariable(jsonAreaConfig, "maxFloatValue", /*optional=*/true,
                                     &areaConfig.maxFloatValue, errors);
 
+        // By default we support variable update rate for all properties except it is explicitly
+        // disabled.
+        areaConfig.supportVariableUpdateRate = true;
+        tryParseJsonValueToVariable(jsonAreaConfig, "supportVariableUpdateRate", /*optional=*/true,
+                                    &areaConfig.supportVariableUpdateRate, errors);
+
         std::vector<int64_t> supportedEnumValues;
         tryParseJsonArrayToVariable(jsonAreaConfig, "supportedEnumValues", /*optional=*/true,
                                     &supportedEnumValues, errors);
@@ -584,6 +633,16 @@ std::optional<ConfigDeclaration> JsonConfigParser::parseEachProperty(
 
     if (errors->size() != initialErrorCount) {
         return std::nullopt;
+    }
+
+    // If there is no area config, by default we allow variable update rate, so we have to add
+    // a global area config.
+    if (configDecl.config.areaConfigs.size() == 0) {
+        VehicleAreaConfig areaConfig = {
+                .areaId = 0,
+                .supportVariableUpdateRate = true,
+        };
+        configDecl.config.areaConfigs.push_back(std::move(areaConfig));
     }
     return configDecl;
 }
