@@ -22,7 +22,9 @@ import android.hardware.wifi.supplicant.ISupplicantP2pIfaceCallback;
 import android.hardware.wifi.supplicant.ISupplicantP2pNetwork;
 import android.hardware.wifi.supplicant.IfaceType;
 import android.hardware.wifi.supplicant.MiracastMode;
+import android.hardware.wifi.supplicant.P2pAddGroupConfigurationParams;
 import android.hardware.wifi.supplicant.P2pConnectInfo;
+import android.hardware.wifi.supplicant.P2pCreateGroupOwnerInfo;
 import android.hardware.wifi.supplicant.P2pDiscoveryInfo;
 import android.hardware.wifi.supplicant.P2pExtListenInfo;
 import android.hardware.wifi.supplicant.P2pFrameTypeMask;
@@ -52,6 +54,9 @@ interface ISupplicantP2pIface {
      * negotiation with a specific peer). This is also known as autonomous
      * group owner. Optional |persistentNetworkId| may be used to specify
      * restart of a persistent group.
+     * <p>
+     * @deprecated This method is deprecated from AIDL v3, newer HALs should use
+     * createGroupOwner.
      *
      * @param persistent Used to request a persistent group to be formed.
      * @param persistentNetworkId Used to specify the restart of a persistent
@@ -74,6 +79,9 @@ interface ISupplicantP2pIface {
      * whose network name and group owner's MAC address matches the specified SSID
      * and peer address without WPS process. If peerAddress is 00:00:00:00:00:00, the first found
      * group whose network name matches the specified SSID is joined.
+     * <p>
+     * @deprecated This method is deprecated from AIDL v3, newer HALs should use
+     * addGroupWithConfigurationParams.
      *
      * @param ssid The SSID of this group.
      * @param pskPassphrase The passphrase of this group.
@@ -903,4 +911,31 @@ interface ISupplicantP2pIface {
      *         |SupplicantStatusCode.FAILURE_IFACE_INVALID|
      */
     void configureExtListenWithParams(in P2pExtListenInfo extListenInfo);
+
+    /**
+     * Set up a P2P group owner or join a group as a group client with the
+     * specified configuration. The group configurations required to establish
+     * a connection(SSID, password, channel, etc) are shared out of band.
+     * So the connection process doesn't require a P2P provision discovery or
+     * invitation message exchange.
+     *
+     * @param groupConfigurationParams Parameters associated with this add group operation.
+     * @throws ServiceSpecificException with one of the following values:
+     *         |SupplicantStatusCode.FAILURE_UNKNOWN|,
+     *         |SupplicantStatusCode.FAILURE_IFACE_INVALID|
+     */
+    void addGroupWithConfigurationParams(
+            in P2pAddGroupConfigurationParams groupConfigurationParams);
+
+    /**
+     * Set up a P2P group owner on this device. This is also known as autonomous
+     * group owner. The connection process requires P2P provision discovery
+     * message or invitation message exchange.
+     *
+     * @param groupOwnerInfo Parameters associated with this create group owner operation.
+     * @throws ServiceSpecificException with one of the following values:
+     *         |SupplicantStatusCode.FAILURE_UNKNOWN|,
+     *         |SupplicantStatusCode.FAILURE_IFACE_INVALID|
+     */
+    void createGroupOwner(in P2pCreateGroupOwnerInfo groupOwnerInfo);
 }

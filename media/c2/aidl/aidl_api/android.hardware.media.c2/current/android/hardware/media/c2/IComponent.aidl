@@ -45,6 +45,8 @@ interface IComponent {
   void reset();
   void start();
   void stop();
+  android.hardware.media.c2.IInputSurfaceConnection connectToInputSurface(in android.hardware.media.c2.IInputSurface inputSurface);
+  android.hardware.media.c2.IInputSink asInputSink();
   parcelable BlockPool {
     long blockPoolId;
     android.hardware.media.c2.IConfigurable configurable;

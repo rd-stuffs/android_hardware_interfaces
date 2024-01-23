@@ -1400,7 +1400,7 @@ TEST_P(GraphicsComposerAidlV3Test, NotifyExpectedPresent) {
 class GraphicsComposerAidlCommandTest : public GraphicsComposerAidlTest {
   protected:
     void TearDown() override {
-        const auto errors = mReader.takeErrors();
+        ASSERT_FALSE(mDisplays.empty());
         ASSERT_TRUE(mReader.takeErrors().empty());
         ASSERT_TRUE(mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty());
 

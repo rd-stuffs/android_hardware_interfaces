@@ -21,12 +21,17 @@ package {
 rust_test {
     name: "VtsSecretkeeperTargetTest",
     srcs: ["secretkeeper_test_client.rs"],
+    defaults: [
+        "rdroidtest.defaults",
+    ],
     test_suites: [
         "general-tests",
         "vts",
     ],
     test_config: "AndroidTest.xml",
     rustlibs: [
+        "libdiced_open_dice",
+        "libdice_policy",
         "libsecretkeeper_client",
         "libsecretkeeper_comm_nostd",
         "libsecretkeeper_core_nostd",
@@ -36,9 +41,9 @@ rust_test {
         "libcoset",
         "libauthgraph_vts_test",
         "libbinder_rs",
+        "libciborium",
         "libcoset",
         "liblog_rust",
-        "liblogger",
     ],
     require_root: true,
 }
