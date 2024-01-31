@@ -43,7 +43,6 @@ class EffectImpl : public BnEffect, public EffectThread {
                                     OpenEffectReturn* ret) override;
     virtual ndk::ScopedAStatus close() override;
     virtual ndk::ScopedAStatus command(CommandId id) override;
-    virtual ndk::ScopedAStatus reopen(OpenEffectReturn* ret) override;
 
     virtual ndk::ScopedAStatus getState(State* state) override;
     virtual ndk::ScopedAStatus setParameter(const Parameter& param) override;
