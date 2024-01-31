@@ -151,6 +151,10 @@ std::shared_ptr<EffectContext> BassBoostSw::createContext(const Parameter::Commo
     return mContext;
 }
 
+std::shared_ptr<EffectContext> BassBoostSw::getContext() {
+    return mContext;
+}
+
 RetCode BassBoostSw::releaseContext() {
     if (mContext) {
         mContext.reset();

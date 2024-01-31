@@ -55,23 +55,20 @@ class NoiseSuppressionSw final : public EffectImpl {
     }
 
     ndk::ScopedAStatus getDescriptor(Descriptor* _aidl_return) override;
-    ndk::ScopedAStatus setParameterSpecific(const Parameter::Specific& specific)
-            REQUIRES(mImplMutex) override;
-    ndk::ScopedAStatus getParameterSpecific(const Parameter::Id& id, Parameter::Specific* specific)
-            REQUIRES(mImplMutex) override;
+    ndk::ScopedAStatus setParameterSpecific(const Parameter::Specific& specific) override;
+    ndk::ScopedAStatus getParameterSpecific(const Parameter::Id& id,
+                                            Parameter::Specific* specific) override;
 
-    std::shared_ptr<EffectContext> createContext(const Parameter::Common& common)
-            REQUIRES(mImplMutex) override;
-    RetCode releaseContext() REQUIRES(mImplMutex) override;
+    std::shared_ptr<EffectContext> createContext(const Parameter::Common& common) override;
+    std::shared_ptr<EffectContext> getContext() override;
+    RetCode releaseContext() override;
 
     std::string getEffectName() override { return kEffectName; };
-    IEffect::Status effectProcessImpl(float* in, float* out, int samples)
-            REQUIRES(mImplMutex) override;
+    IEffect::Status effectProcessImpl(float* in, float* out, int samples) override;
 
   private:
-    std::shared_ptr<NoiseSuppressionSwContext> mContext GUARDED_BY(mImplMutex);
+    std::shared_ptr<NoiseSuppressionSwContext> mContext;
     ndk::ScopedAStatus getParameterNoiseSuppression(const NoiseSuppression::Tag& tag,
-                                                    Parameter::Specific* specific)
-            REQUIRES(mImplMutex);
+                                                    Parameter::Specific* specific);
 };
 }  // namespace aidl::android::hardware::audio::effect

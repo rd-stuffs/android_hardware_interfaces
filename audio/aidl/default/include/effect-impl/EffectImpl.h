@@ -49,53 +49,32 @@ class EffectImpl : public BnEffect, public EffectThread {
     virtual ndk::ScopedAStatus setParameter(const Parameter& param) override;
     virtual ndk::ScopedAStatus getParameter(const Parameter::Id& id, Parameter* param) override;
 
-    virtual ndk::ScopedAStatus setParameterCommon(const Parameter& param) REQUIRES(mImplMutex);
-    virtual ndk::ScopedAStatus getParameterCommon(const Parameter::Tag& tag, Parameter* param)
-            REQUIRES(mImplMutex);
+    virtual ndk::ScopedAStatus setParameterCommon(const Parameter& param);
+    virtual ndk::ScopedAStatus getParameterCommon(const Parameter::Tag& tag, Parameter* param);
 
     /* Methods MUST be implemented by each effect instances */
     virtual ndk::ScopedAStatus getDescriptor(Descriptor* desc) = 0;
-    virtual ndk::ScopedAStatus setParameterSpecific(const Parameter::Specific& specific)
-            REQUIRES(mImplMutex) = 0;
+    virtual ndk::ScopedAStatus setParameterSpecific(const Parameter::Specific& specific) = 0;
     virtual ndk::ScopedAStatus getParameterSpecific(const Parameter::Id& id,
-                                                    Parameter::Specific* specific)
-            REQUIRES(mImplMutex) = 0;
+                                                    Parameter::Specific* specific) = 0;
 
     virtual std::string getEffectName() = 0;
-    virtual std::shared_ptr<EffectContext> createContext(const Parameter::Common& common)
-            REQUIRES(mImplMutex);
-    virtual RetCode releaseContext() REQUIRES(mImplMutex) = 0;
+    virtual IEffect::Status effectProcessImpl(float* in, float* out, int samples) override;
 
     /**
-     * @brief effectProcessImpl is running in worker thread which created in EffectThread.
-     *
-     * EffectThread will make sure effectProcessImpl only be called after startThread() successful
-     * and before stopThread() successful.
-     *
-     * effectProcessImpl implementation must not call any EffectThread interface, otherwise it will
-     * cause deadlock.
-     *
-     * @param in address of input float buffer.
-     * @param out address of output float buffer.
-     * @param samples number of samples to process.
-     * @return IEffect::Status
+     * Effect context methods must be implemented by each effect.
+     * Each effect can derive from EffectContext and define its own context, but must upcast to
+     * EffectContext for EffectImpl to use.
      */
-    virtual IEffect::Status effectProcessImpl(float* in, float* out, int samples) = 0;
-
-    /**
-     * process() get data from data MQs, and call effectProcessImpl() for effect data processing.
-     * Its important for the implementation to use mImplMutex for context synchronization.
-     */
-    void process() override;
+    virtual std::shared_ptr<EffectContext> createContext(const Parameter::Common& common) = 0;
+    virtual std::shared_ptr<EffectContext> getContext() = 0;
+    virtual RetCode releaseContext() = 0;
 
   protected:
-    State mState GUARDED_BY(mImplMutex) = State::INIT;
+    State mState = State::INIT;
 
     IEffect::Status status(binder_status_t status, size_t consumed, size_t produced);
     void cleanUp();
-
-    std::mutex mImplMutex;
-    std::shared_ptr<EffectContext> mImplContext GUARDED_BY(mImplMutex);
 
     /**
      * Optional CommandId handling methods for effects to override.
@@ -104,9 +83,6 @@ class EffectImpl : public BnEffect, public EffectThread {
      * For CommandId::STOP and CommandId::RESET, EffectImpl call commandImpl after stop the
      * EffectThread processing.
      */
-    virtual ndk::ScopedAStatus commandImpl(CommandId id) REQUIRES(mImplMutex);
-
-    RetCode notifyEventFlag(uint32_t flag);
-    ::android::hardware::EventFlag* mEventFlag;
+    virtual ndk::ScopedAStatus commandImpl(CommandId id);
 };
 }  // namespace aidl::android::hardware::audio::effect

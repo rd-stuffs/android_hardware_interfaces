@@ -158,6 +158,10 @@ std::shared_ptr<EffectContext> HapticGeneratorSw::createContext(const Parameter:
     return mContext;
 }
 
+std::shared_ptr<EffectContext> HapticGeneratorSw::getContext() {
+    return mContext;
+}
+
 RetCode HapticGeneratorSw::releaseContext() {
     if (mContext) {
         mContext.reset();

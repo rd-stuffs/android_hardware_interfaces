@@ -160,6 +160,10 @@ std::shared_ptr<EffectContext> VolumeSw::createContext(const Parameter::Common& 
     return mContext;
 }
 
+std::shared_ptr<EffectContext> VolumeSw::getContext() {
+    return mContext;
+}
+
 RetCode VolumeSw::releaseContext() {
     if (mContext) {
         mContext.reset();

@@ -46,8 +46,7 @@ enum class RetCode {
     ERROR_NULL_POINTER,      /* NULL pointer */
     ERROR_ALIGNMENT_ERROR,   /* Memory alignment error */
     ERROR_BLOCK_SIZE_EXCEED, /* Maximum block size exceeded */
-    ERROR_EFFECT_LIB_ERROR,  /* Effect implementation library error */
-    ERROR_EVENT_FLAG_ERROR   /* Error with effect event flags */
+    ERROR_EFFECT_LIB_ERROR
 };
 
 static const int INVALID_AUDIO_SESSION_ID = -1;
@@ -68,8 +67,6 @@ inline std::ostream& operator<<(std::ostream& out, const RetCode& code) {
             return out << "ERROR_BLOCK_SIZE_EXCEED";
         case RetCode::ERROR_EFFECT_LIB_ERROR:
             return out << "ERROR_EFFECT_LIB_ERROR";
-        case RetCode::ERROR_EVENT_FLAG_ERROR:
-            return out << "ERROR_EVENT_FLAG_ERROR";
     }
 
     return out << "EnumError: " << code;

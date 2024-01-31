@@ -168,6 +168,10 @@ std::shared_ptr<EffectContext> AcousticEchoCancelerSw::createContext(
     return mContext;
 }
 
+std::shared_ptr<EffectContext> AcousticEchoCancelerSw::getContext() {
+    return mContext;
+}
+
 RetCode AcousticEchoCancelerSw::releaseContext() {
     if (mContext) {
         mContext.reset();

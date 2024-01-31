@@ -155,6 +155,10 @@ std::shared_ptr<EffectContext> NoiseSuppressionSw::createContext(const Parameter
     return mContext;
 }
 
+std::shared_ptr<EffectContext> NoiseSuppressionSw::getContext() {
+    return mContext;
+}
+
 RetCode NoiseSuppressionSw::releaseContext() {
     if (mContext) {
         mContext.reset();

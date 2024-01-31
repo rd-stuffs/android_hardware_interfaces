@@ -144,6 +144,10 @@ std::shared_ptr<EffectContext> DownmixSw::createContext(const Parameter::Common&
     return mContext;
 }
 
+std::shared_ptr<EffectContext> DownmixSw::getContext() {
+    return mContext;
+}
+
 RetCode DownmixSw::releaseContext() {
     if (mContext) {
         mContext.reset();

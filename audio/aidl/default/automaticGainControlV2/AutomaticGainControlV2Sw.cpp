@@ -180,6 +180,10 @@ std::shared_ptr<EffectContext> AutomaticGainControlV2Sw::createContext(
     return mContext;
 }
 
+std::shared_ptr<EffectContext> AutomaticGainControlV2Sw::getContext() {
+    return mContext;
+}
+
 RetCode AutomaticGainControlV2Sw::releaseContext() {
     if (mContext) {
         mContext.reset();
