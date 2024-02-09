@@ -256,6 +256,7 @@ class FakeVehicleHardware : public IVehicleHardware {
     std::string dumpSaveProperty(const std::vector<std::string>& options);
     std::string dumpRestoreProperty(const std::vector<std::string>& options);
     std::string dumpInjectEvent(const std::vector<std::string>& options);
+    std::string dumpSubscriptions();
 
     template <typename T>
     android::base::Result<T> safelyParseInt(int index, const std::string& s) {
@@ -294,7 +295,7 @@ class FakeVehicleHardware : public IVehicleHardware {
     void registerRefreshLocked(PropIdAreaId propIdAreaId, VehiclePropertyStore::EventMode eventMode,
                                float sampleRateHz) REQUIRES(mLock);
     void unregisterRefreshLocked(PropIdAreaId propIdAreaId) REQUIRES(mLock);
-    void refreshTimeStampForInterval(int64_t intervalInNanos) EXCLUDES(mLock);
+    void refreshTimestampForInterval(int64_t intervalInNanos) EXCLUDES(mLock);
 
     static aidl::android::hardware::automotive::vehicle::VehiclePropValue createHwInputKeyProp(
             aidl::android::hardware::automotive::vehicle::VehicleHwKeyInputAction action,
