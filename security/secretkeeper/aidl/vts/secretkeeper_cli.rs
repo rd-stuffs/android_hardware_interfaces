@@ -24,7 +24,11 @@ use authgraph_boringssl::BoringSha256;
 use authgraph_core::traits::Sha256;
 use clap::{Args, Parser, Subcommand};
 use coset::CborSerializable;
-use dice_policy::{ConstraintSpec, ConstraintType, DicePolicy, MissingAction};
+use dice_policy_builder::{
+    policy_for_dice_chain, CertIndex, ConstraintSpec, ConstraintType, MissingAction,
+    WILDCARD_FULL_ARRAY,
+};
+
 use secretkeeper_client::{dice::OwnedDiceArtifactsWithExplicitKey, SkSession};
 use secretkeeper_comm::data_types::{
     error::SecretkeeperError,
@@ -36,6 +40,7 @@ use secretkeeper_comm::data_types::{
 };
 use secretkeeper_test::{
     dice_sample::make_explicit_owned_dice, AUTHORITY_HASH, CONFIG_DESC, MODE, SECURITY_VERSION,
+    SUBCOMPONENT_AUTHORITY_HASH, SUBCOMPONENT_DESCRIPTORS, SUBCOMPONENT_SECURITY_VERSION,
 };
 use std::io::Write;
 
@@ -138,15 +143,45 @@ impl SkClient {
                 ConstraintType::ExactMatch,
                 vec![AUTHORITY_HASH],
                 MissingAction::Fail,
+                CertIndex::All,
             ),
-            ConstraintSpec::new(ConstraintType::ExactMatch, vec![MODE], MissingAction::Fail),
+            ConstraintSpec::new(
+                ConstraintType::ExactMatch,
+                vec![MODE],
+                MissingAction::Fail,
+                CertIndex::All,
+            ),
             ConstraintSpec::new(
                 ConstraintType::GreaterOrEqual,
                 vec![CONFIG_DESC, SECURITY_VERSION],
                 MissingAction::Ignore,
+                CertIndex::All,
+            ),
+            // Constraints on sub components in the second last DiceChainEntry
+            ConstraintSpec::new(
+                ConstraintType::GreaterOrEqual,
+                vec![
+                    CONFIG_DESC,
+                    SUBCOMPONENT_DESCRIPTORS,
+                    WILDCARD_FULL_ARRAY,
+                    SUBCOMPONENT_SECURITY_VERSION,
+                ],
+                MissingAction::Fail,
+                CertIndex::FromEnd(1),
+            ),
+            ConstraintSpec::new(
+                ConstraintType::ExactMatch,
+                vec![
+                    CONFIG_DESC,
+                    SUBCOMPONENT_DESCRIPTORS,
+                    WILDCARD_FULL_ARRAY,
+                    SUBCOMPONENT_AUTHORITY_HASH,
+                ],
+                MissingAction::Fail,
+                CertIndex::FromEnd(1),
             ),
         ];
-        DicePolicy::from_dice_chain(dice, &constraint_spec)
+        policy_for_dice_chain(dice, &constraint_spec)
             .unwrap()
             .to_vec()
             .context("serialize DICE policy")
