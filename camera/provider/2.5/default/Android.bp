@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_camera_framework",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "hardware_interfaces_license"
@@ -88,7 +89,7 @@ cc_library_shared {
     header_libs: [
         "camera.device@3.4-external-impl_headers",
         "camera.device@3.5-external-impl_headers",
-        "camera.device@3.6-external-impl_headers"
+        "camera.device@3.6-external-impl_headers",
     ],
     export_include_dirs: ["."],
     // Since this framework module has a transitive dependency  on a vendor
@@ -129,7 +130,7 @@ cc_defaults {
     ],
     header_libs: [
         "camera.device@3.4-impl_headers",
-        "camera.device@3.5-impl_headers"
+        "camera.device@3.5-impl_headers",
     ],
     // Since this framework module has a transitive dependency  on a vendor
     // proprietary library, we exclude this module from the vendor snapshot so
