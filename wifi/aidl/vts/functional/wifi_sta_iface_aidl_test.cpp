@@ -29,6 +29,7 @@
 
 #include "wifi_aidl_test_utils.h"
 
+using aidl::android::hardware::wifi::CachedScanData;
 using aidl::android::hardware::wifi::IWifi;
 using aidl::android::hardware::wifi::IWifiStaIface;
 using aidl::android::hardware::wifi::MacAddress;
@@ -71,10 +72,20 @@ class WifiStaIfaceAidlTest : public testing::TestWithParam<std::string> {
 
     // Checks if the mDNS Offload is supported by any NIC.
     bool isMdnsOffloadPresentInNIC() {
-        return testing::deviceSupportsFeature("android.hardware.mdns_offload");
+        return testing::deviceSupportsFeature("com.google.android.tv.mdns_offload");
     }
 
-    // Detected panel TV device by using ro.oem.key1 property.
+    bool doesDeviceSupportFullNetworkingUnder2w() {
+        return testing::deviceSupportsFeature("com.google.android.tv.full_networking_under_2w");
+    }
+
+    // Detect TV devices.
+    bool isTvDevice() {
+        return testing::deviceSupportsFeature("android.software.leanback") ||
+               testing::deviceSupportsFeature("android.hardware.type.television");
+    }
+
+    // Detect Panel TV devices by using ro.oem.key1 property.
     // https://docs.partner.android.com/tv/build/platform/props-vars/ro-oem-key1
     bool isPanelTvDevice() {
         const std::string oem_key1 = getPropertyString("ro.oem.key1");
@@ -135,10 +146,23 @@ TEST_P(WifiStaIfaceAidlTest, GetFeatureSet) {
  */
 // @VsrTest = 5.3.12
 TEST_P(WifiStaIfaceAidlTest, CheckApfIsSupported) {
-    // Flat panel TV devices that support MDNS offload do not have to implement APF if the WiFi
-    // chipset does not have sufficient RAM to do so.
-    if (isPanelTvDevice() && isMdnsOffloadPresentInNIC()) {
-        GTEST_SKIP() << "Panel TV supports mDNS offload. It is not required to support APF";
+    const std::string oem_key1 = getPropertyString("ro.oem.key1");
+    if (isTvDevice()) {
+        // Flat panel TV devices that support MDNS offload do not have to implement APF if the WiFi
+        // chipset does not have sufficient RAM to do so.
+        if (isPanelTvDevice() && isMdnsOffloadPresentInNIC()) {
+            GTEST_SKIP() << "Panel TV supports mDNS offload. It is not required to support APF";
+        }
+        // For TV devices declaring the
+        // com.google.android.tv.full_networking_under_2w feature, this indicates
+        // the device can meet the <= 2W standby power requirement while
+        // continuously processing network packets on the CPU, even in standby mode.
+        // In these cases, APF support is strongly recommended rather than being
+        // mandatory.
+        if (doesDeviceSupportFullNetworkingUnder2w()) {
+            GTEST_SKIP() << "TV Device meets the <= 2W standby power demand requirement. It is not "
+                            "required to support APF.";
+        }
     }
     int vendor_api_level = property_get_int32("ro.vendor.api_level", 0);
     // Before VSR 14, APF support is optional.
@@ -312,6 +336,23 @@ TEST_P(WifiStaIfaceAidlTest, PacketFateMonitoring) {
         std::vector<WifiDebugTxPacketFateReport> tx_reports;
         EXPECT_TRUE(wifi_sta_iface_->getDebugRxPacketFates(&rx_reports).isOk());
         EXPECT_TRUE(wifi_sta_iface_->getDebugTxPacketFates(&tx_reports).isOk());
+    }
+}
+
+/*
+ * CachedScanData
+ */
+TEST_P(WifiStaIfaceAidlTest, CachedScanData) {
+    if (!isFeatureSupported(IWifiStaIface::FeatureSetMask::CACHED_SCAN_DATA)) {
+        GTEST_SKIP() << "Cached scan data is not supported.";
+    }
+
+    // Retrieve cached scan data.
+    CachedScanData cached_scan_data = {};
+    EXPECT_TRUE(wifi_sta_iface_->getCachedScanData(&cached_scan_data).isOk());
+
+    if (cached_scan_data.cachedScanResults.size() > 0) {
+        EXPECT_GT(cached_scan_data.cachedScanResults[0].frequencyMhz, 0);
     }
 }
 

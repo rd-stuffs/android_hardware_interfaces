@@ -20,7 +20,7 @@ use authgraph_vts_test as ag_vts;
 use authgraph_boringssl as boring;
 use authgraph_core::key;
 use coset::{CborSerializable, CoseEncrypt0};
-use dice_policy::{ConstraintSpec, ConstraintType, DicePolicy, MissingAction};
+use dice_policy_builder::{CertIndex, ConstraintSpec, ConstraintType, MissingAction, WILDCARD_FULL_ARRAY, policy_for_dice_chain};
 use rdroidtest::{ignore_if, rdroidtest};
 use secretkeeper_client::dice::OwnedDiceArtifactsWithExplicitKey;
 use secretkeeper_client::SkSession;
@@ -34,13 +34,13 @@ use secretkeeper_comm::data_types::{Id, Secret, SeqNum};
 use secretkeeper_comm::data_types::response::Response;
 use secretkeeper_comm::data_types::packet::{ResponsePacket, ResponseType};
 use secretkeeper_test::{
-    AUTHORITY_HASH, MODE, CONFIG_DESC, SECURITY_VERSION,
+    AUTHORITY_HASH, MODE, CONFIG_DESC, SECURITY_VERSION, SUBCOMPONENT_AUTHORITY_HASH,
+    SUBCOMPONENT_DESCRIPTORS, SUBCOMPONENT_SECURITY_VERSION,
     dice_sample::make_explicit_owned_dice
 };
 
 const SECRETKEEPER_SERVICE: &str = "android.hardware.security.secretkeeper.ISecretkeeper";
 const CURRENT_VERSION: u64 = 1;
-
 // Random bytes (of ID_SIZE/SECRET_SIZE) generated for tests.
 const ID_EXAMPLE: Id = Id([
     0xF1, 0xB2, 0xED, 0x3B, 0xD1, 0xBD, 0xF0, 0x7D, 0xE1, 0xF0, 0x01, 0xFC, 0x61, 0x71, 0xD3, 0x42,
@@ -171,7 +171,16 @@ impl SkClient {
 
     /// Helper method to get a secret.
     fn get(&mut self, id: &Id) -> Result<Secret, Error> {
-        let get_request = GetSecretRequest { id: id.clone(), updated_sealing_policy: None };
+        self.get_update_policy(id, None)
+    }
+
+    /// Helper method to get a secret, updating the sealing policy along the way.
+    fn get_update_policy(
+        &mut self,
+        id: &Id,
+        updated_sealing_policy: Option<Vec<u8>>,
+    ) -> Result<Secret, Error> {
+        let get_request = GetSecretRequest { id: id.clone(), updated_sealing_policy };
         let get_request = get_request.serialize_to_packet().to_vec()?;
 
         let get_response = self.secret_management_request(&get_request)?;
@@ -247,18 +256,55 @@ fn assert_entry_not_found(res: Result<Secret, Error>) {
 /// 1. ExactMatch on AUTHORITY_HASH (non-optional).
 /// 2. ExactMatch on MODE (non-optional).
 /// 3. GreaterOrEqual on SECURITY_VERSION (optional).
+/// 4. The second last DiceChainEntry contain SubcomponentDescriptor, for each of those:
+///     a) GreaterOrEqual on SECURITY_VERSION (Required)
+//      b) ExactMatch on AUTHORITY_HASH (Required).
 fn sealing_policy(dice: &[u8]) -> Vec<u8> {
     let constraint_spec = [
-        ConstraintSpec::new(ConstraintType::ExactMatch, vec![AUTHORITY_HASH], MissingAction::Fail),
-        ConstraintSpec::new(ConstraintType::ExactMatch, vec![MODE], MissingAction::Fail),
+        ConstraintSpec::new(
+            ConstraintType::ExactMatch,
+            vec![AUTHORITY_HASH],
+            MissingAction::Fail,
+            CertIndex::All,
+        ),
+        ConstraintSpec::new(
+            ConstraintType::ExactMatch,
+            vec![MODE],
+            MissingAction::Fail,
+            CertIndex::All,
+        ),
         ConstraintSpec::new(
             ConstraintType::GreaterOrEqual,
             vec![CONFIG_DESC, SECURITY_VERSION],
             MissingAction::Ignore,
+            CertIndex::All,
+        ),
+        // Constraints on sub components in the second last DiceChainEntry
+        ConstraintSpec::new(
+            ConstraintType::GreaterOrEqual,
+            vec![
+                CONFIG_DESC,
+                SUBCOMPONENT_DESCRIPTORS,
+                WILDCARD_FULL_ARRAY,
+                SUBCOMPONENT_SECURITY_VERSION,
+            ],
+            MissingAction::Fail,
+            CertIndex::FromEnd(1),
+        ),
+        ConstraintSpec::new(
+            ConstraintType::ExactMatch,
+            vec![
+                CONFIG_DESC,
+                SUBCOMPONENT_DESCRIPTORS,
+                WILDCARD_FULL_ARRAY,
+                SUBCOMPONENT_AUTHORITY_HASH,
+            ],
+            MissingAction::Fail,
+            CertIndex::FromEnd(1),
         ),
     ];
 
-    DicePolicy::from_dice_chain(dice, &constraint_spec).unwrap().to_vec().unwrap()
+    policy_for_dice_chain(dice, &constraint_spec).unwrap().to_vec().unwrap()
 }
 
 /// Perform AuthGraph key exchange, returning the session keys and session ID.
@@ -532,8 +578,9 @@ fn secret_management_replay_protection_out_of_seq_req_not_accepted(instance: Str
 #[rdroidtest(get_instances())]
 fn secret_management_policy_gate(instance: String) {
     let dice_chain = make_explicit_owned_dice(/*Security version in a node */ 100);
-    let mut sk_client = SkClient::with_identity(&instance, dice_chain);
-    sk_client.store(&ID_EXAMPLE, &SECRET_EXAMPLE).unwrap();
+    let mut sk_client_original = SkClient::with_identity(&instance, dice_chain);
+    sk_client_original.store(&ID_EXAMPLE, &SECRET_EXAMPLE).unwrap();
+    assert_eq!(sk_client_original.get(&ID_EXAMPLE).unwrap(), SECRET_EXAMPLE);
 
     // Start a session with higher security_version & get the stored secret.
     let dice_chain_upgraded = make_explicit_owned_dice(/*Security version in a node */ 101);
@@ -545,6 +592,20 @@ fn secret_management_policy_gate(instance: String) {
     let mut sk_client_downgraded = SkClient::with_identity(&instance, dice_chain_downgraded);
     assert!(matches!(
         sk_client_downgraded.get(&ID_EXAMPLE).unwrap_err(),
+        Error::SecretkeeperError(SecretkeeperError::DicePolicyError)
+    ));
+
+    // Now get the secret with the later version, and upgrade the sealing policy along the way.
+    let sealing_policy =
+        sealing_policy(sk_client_upgraded.dice_artifacts.explicit_key_dice_chain().unwrap());
+    assert_eq!(
+        sk_client_upgraded.get_update_policy(&ID_EXAMPLE, Some(sealing_policy)).unwrap(),
+        SECRET_EXAMPLE
+    );
+
+    // The original version of the client should no longer be able to retrieve the secret.
+    assert!(matches!(
+        sk_client_original.get(&ID_EXAMPLE).unwrap_err(),
         Error::SecretkeeperError(SecretkeeperError::DicePolicyError)
     ));
 }

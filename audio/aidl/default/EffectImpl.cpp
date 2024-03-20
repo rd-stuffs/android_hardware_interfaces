@@ -15,7 +15,9 @@
  */
 
 #include <memory>
+#define ATRACE_TAG ATRACE_TAG_AUDIO
 #define LOG_TAG "AHAL_EffectImpl"
+#include <utils/Trace.h>
 #include "effect-impl/EffectImpl.h"
 #include "effect-impl/EffectTypes.h"
 #include "include/effect-impl/EffectTypes.h"
@@ -47,10 +49,16 @@ ndk::ScopedAStatus EffectImpl::open(const Parameter::Common& common,
     RETURN_IF(common.input.base.format.pcm != common.output.base.format.pcm ||
                       common.input.base.format.pcm != PcmType::FLOAT_32_BIT,
               EX_ILLEGAL_ARGUMENT, "dataMustBe32BitsFloat");
+
     std::lock_guard lg(mImplMutex);
     RETURN_OK_IF(mState != State::INIT);
     mImplContext = createContext(common);
     RETURN_IF(!mImplContext, EX_NULL_POINTER, "nullContext");
+
+    int version = 0;
+    RETURN_IF(!getInterfaceVersion(&version).isOk(), EX_UNSUPPORTED_OPERATION,
+              "FailedToGetInterfaceVersion");
+    mImplContext->setVersion(version);
     mEventFlag = mImplContext->getStatusEventFlag();
 
     if (specific.has_value()) {
@@ -298,6 +306,7 @@ IEffect::Status EffectImpl::status(binder_status_t status, size_t consumed, size
 }
 
 void EffectImpl::process() {
+    ATRACE_CALL();
     /**
      * wait for the EventFlag without lock, it's ok because the mEfGroup pointer will not change
      * in the life cycle of workerThread (threadLoop).
@@ -327,7 +336,9 @@ void EffectImpl::process() {
             return;
         }
 
-        auto processSamples = inputMQ->availableToRead();
+        assert(mImplContext->getWorkBufferSize() >=
+               std::max(inputMQ->availableToRead(), outputMQ->availableToWrite()));
+        auto processSamples = std::min(inputMQ->availableToRead(), outputMQ->availableToWrite());
         if (processSamples) {
             inputMQ->read(buffer, processSamples);
             IEffect::Status status = effectProcessImpl(buffer, buffer, processSamples);

@@ -19,6 +19,7 @@
 
 #include <aidl/android/hardware/automotive/vehicle/AutomaticEmergencyBrakingState.h>
 #include <aidl/android/hardware/automotive/vehicle/BlindSpotWarningState.h>
+#include <aidl/android/hardware/automotive/vehicle/CameraServiceState.h>
 #include <aidl/android/hardware/automotive/vehicle/CrossTrafficMonitoringWarningState.h>
 #include <aidl/android/hardware/automotive/vehicle/CruiseControlCommand.h>
 #include <aidl/android/hardware/automotive/vehicle/CruiseControlState.h>
@@ -65,6 +66,7 @@
 #include <aidl/android/hardware/automotive/vehicle/StatusCode.h>
 #include <aidl/android/hardware/automotive/vehicle/SubscribeOptions.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleAirbagLocation.h>
+#include <aidl/android/hardware/automotive/vehicle/VehicleApPowerBootupReason.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleApPowerStateReport.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleApPowerStateReq.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleArea.h>

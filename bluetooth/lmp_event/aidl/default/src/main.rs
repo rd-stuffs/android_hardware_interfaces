@@ -21,7 +21,7 @@ use android_hardware_bluetooth_lmp_event::aidl::android::hardware::bluetooth::lm
 };
 
 use binder::BinderFeatures;
-use log::{info, Level};
+use log::{info, LevelFilter};
 
 mod lmp_event;
 
@@ -30,7 +30,7 @@ const LOG_TAG: &str = "lmp_event_service_example";
 fn main() {
     info!("{LOG_TAG}: starting service");
     let logger_success = logger::init(
-        logger::Config::default().with_tag_on_device(LOG_TAG).with_min_level(Level::Trace)
+        logger::Config::default().with_tag_on_device(LOG_TAG).with_max_level(LevelFilter::Trace)
     );
     if !logger_success {
         panic!("{LOG_TAG}: Failed to start logger");
@@ -41,10 +41,11 @@ fn main() {
     let lmp_event_service = lmp_event::LmpEvent::new();
     let lmp_event_service_binder = BnBluetoothLmpEvent::new_binder(lmp_event_service, BinderFeatures::default());
 
-    binder::add_service(
-        &format!("{}/default", lmp_event::LmpEvent::get_descriptor()),
-        lmp_event_service_binder.as_binder(),
-    ).expect("Failed to register service");
-
+    let descriptor = format!("{}/default", lmp_event::LmpEvent::get_descriptor());
+    if binder::is_declared(&descriptor).expect("Failed to check if declared") {
+        binder::add_service(&descriptor, lmp_event_service_binder.as_binder()).expect("Failed to register service");
+    } else {
+        info!("{LOG_TAG}: Failed to register service. Not declared.");
+    }
     binder::ProcessState::join_thread_pool()
 }
