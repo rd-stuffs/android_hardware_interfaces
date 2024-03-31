@@ -87,6 +87,11 @@ enum VehicleProperty {
     /**
      * Fuel capacity of the vehicle in milliliters
      *
+     * This property must communicate the maximum amount of the fuel that can be stored in the
+     * vehicle in milliliters. This property does not apply to electric vehicles. That is, if
+     * INFO_FUEL_TYPE only contains FuelType::FUEL_TYPE_ELECTRIC, this property must not be
+     * implemented. For EVs, implement INFO_EV_BATTERY_CAPACITY.
+     *
      * @change_mode VehiclePropertyChangeMode.STATIC
      * @access VehiclePropertyAccess.READ
      * @unit VehicleUnit.MILLILITER
@@ -102,7 +107,7 @@ enum VehicleProperty {
      *   An FHEV (Fully Hybrid Electric Vehicle) must not include FuelType::FUEL_TYPE_ELECTRIC in
      *   INFO_FUEL_TYPE's INT32_VEC value. So INFO_FUEL_TYPE can be populated as such:
      *     int32Values = { FuelType::FUEL_TYPE_UNLEADED }
-     *   On the other hand, a PHEV (Partially Hybrid Electric Vehicle) is plug in rechargeable, and
+     *   On the other hand, a PHEV (Plug-in Hybrid Electric Vehicle) is plug in rechargeable, and
      *   hence should include FuelType::FUEL_TYPE_ELECTRIC in INFO_FUEL_TYPE's INT32_VEC value. So
      *   INFO_FUEL_TYPE can be populated as such:
      *     int32Values = { FuelType::FUEL_TYPE_UNLEADED, FuelType::FUEL_TYPE_ELECTRIC }
@@ -115,12 +120,13 @@ enum VehicleProperty {
     INFO_FUEL_TYPE = 0x0105 + 0x10000000 + 0x01000000
             + 0x00410000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT32_VEC
     /**
-     * Nominal battery capacity for EV or hybrid vehicle
+     * Nominal usable battery capacity for EV or hybrid vehicle
      *
-     * Returns the nominal battery capacity, if EV or hybrid. This is the battery capacity when the
-     * vehicle is new. This value might be different from EV_CURRENT_BATTERY_CAPACITY because
-     * EV_CURRENT_BATTERY_CAPACITY returns the real-time battery capacity taking into account
-     * factors such as battery aging and temperature dependency.
+     * Returns the nominal battery capacity, if EV or hybrid. This is the total usable battery
+     * capacity when the vehicle is new. This value might be different from
+     * EV_CURRENT_BATTERY_CAPACITY because EV_CURRENT_BATTERY_CAPACITY returns the real-time usable
+     * battery capacity taking into account factors such as battery aging and temperature
+     * dependency.
      *
      * @change_mode VehiclePropertyChangeMode.STATIC
      * @access VehiclePropertyAccess.READ
@@ -141,6 +147,11 @@ enum VehicleProperty {
             + 0x00410000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT32_VEC
     /**
      * Fuel door location
+     *
+     * This property must communicate the location of the fuel door on the vehicle. This property
+     * does not apply to electric vehicles. That is, if INFO_FUEL_TYPE only contains
+     * FuelType::FUEL_TYPE_ELECTRIC, this property must not be implemented. For EVs, implement
+     * INFO_EV_PORT_LOCATION or INFO_MULTI_EV_PORT_LOCATIONS.
      *
      * @change_mode VehiclePropertyChangeMode.STATIC
      * @data_enum PortLocationType
@@ -249,6 +260,10 @@ enum VehicleProperty {
      *
      * Angle is in degrees.  Left is negative.
      *
+     * This property is independent of the angle of the steering wheel. This property must
+     * communicate the angle of the front wheels with respect to the vehicle, not the angle of the
+     * steering wheel.
+     *
      * @change_mode VehiclePropertyChangeMode.CONTINUOUS
      * @access VehiclePropertyAccess.READ
      * @unit VehicleUnit.DEGREES
@@ -260,6 +275,10 @@ enum VehicleProperty {
      * Rear bicycle model steering angle for vehicle
      *
      * Angle is in degrees.  Left is negative.
+     *
+     * This property is independent of the angle of the steering wheel. This property must
+     * communicate the angle of the rear wheels with respect to the vehicle, not the angle of the
+     * steering wheel.
      *
      * @change_mode VehiclePropertyChangeMode.CONTINUOUS
      * @access VehiclePropertyAccess.READ
@@ -350,9 +369,14 @@ enum VehicleProperty {
     WHEEL_TICK = 0x0306 + 0x10000000 + 0x01000000
             + 0x00510000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT64_VEC
     /**
-     * Fuel remaining in the vehicle, in milliliters
+     * Fuel level in milliliters
      *
-     * Value may not exceed INFO_FUEL_CAPACITY
+     * This property must communicate the current amount of fuel remaining in the vehicle in
+     * milliliters. This property does not apply to electric vehicles. That is, if INFO_FUEL_TYPE
+     * only contains FuelType::FUEL_TYPE_ELECTRIC, this property must not be implemented. For EVs,
+     * implement EV_BATTERY_LEVEL.
+     *
+     * Value may not exceed INFO_FUEL_CAPACITY.
      *
      * @change_mode VehiclePropertyChangeMode.CONTINUOUS
      * @access VehiclePropertyAccess.READ
@@ -363,6 +387,11 @@ enum VehicleProperty {
             + 0x00600000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:FLOAT
     /**
      * Fuel door open
+     *
+     * This property must communicate whether the fuel door on the vehicle is open or not. This
+     * property does not apply to electric vehicles. That is, if INFO_FUEL_TYPE only contains
+     * FuelType::FUEL_TYPE_ELECTRIC, this property must not be implemented. For EVs, implement
+     * EV_CHARGE_PORT_OPEN.
      *
      * This property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to
      * implement it as VehiclePropertyAccess.READ only.
@@ -389,12 +418,13 @@ enum VehicleProperty {
     EV_BATTERY_LEVEL = 0x0309 + 0x10000000 + 0x01000000
             + 0x00600000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:FLOAT
     /**
-     * Current battery capacity for EV or hybrid vehicle
+     * Current usable battery capacity for EV or hybrid vehicle
      *
      * Returns the actual value of battery capacity, if EV or hybrid. This property captures the
-     * real-time battery capacity taking into account factors such as battery aging and temperature
-     * dependency. Therefore, this value might be different from INFO_EV_BATTERY_CAPACITY because
-     * INFO_EV_BATTERY_CAPACITY returns the nominal battery capacity from when the vehicle was new.
+     * real-time usable battery capacity taking into account factors such as battery aging and
+     * temperature dependency. Therefore, this value might be different from
+     * INFO_EV_BATTERY_CAPACITY because INFO_EV_BATTERY_CAPACITY returns the nominal battery
+     * capacity from when the vehicle was new.
      *
      * @change_mode VehiclePropertyChangeMode.ON_CHANGE
      * @access VehiclePropertyAccess.READ
@@ -868,10 +898,18 @@ enum VehicleProperty {
     HVAC_TEMPERATURE_CURRENT = 0x0502 + 0x10000000 + 0x05000000
             + 0x00600000, // VehiclePropertyGroup:SYSTEM,VehicleArea:SEAT,VehiclePropertyType:FLOAT
     /**
-     * HVAC, target temperature set.
+     * HVAC target temperature set in Celsius.
      *
-     * The configArray is used to indicate the valid values for HVAC in Fahrenheit and Celsius.
-     * Android might use it in the HVAC app UI.
+     * The minFloatValue and maxFloatValue in VehicleAreaConfig must be defined.
+     *
+     * The minFloatValue indicates the minimum temperature setting in Celsius.
+     * The maxFloatValue indicates the maximum temperature setting in Celsius.
+     *
+     * If all the values between minFloatValue and maxFloatValue are not supported, the configArray
+     * can be used to list the valid temperature values that can be set. It also describes a lookup
+     * table to convert the temperature from Celsius to Fahrenheit and vice versa for this vehicle.
+     * The configArray must be defined if standard unit conversion is not supported on this vehicle.
+     *
      * The configArray is set as follows:
      *      configArray[0] = [the lower bound of the supported temperature in Celsius] * 10.
      *      configArray[1] = [the upper bound of the supported temperature in Celsius] * 10.
@@ -879,14 +917,35 @@ enum VehicleProperty {
      *      configArray[3] = [the lower bound of the supported temperature in Fahrenheit] * 10.
      *      configArray[4] = [the upper bound of the supported temperature in Fahrenheit] * 10.
      *      configArray[5] = [the increment in Fahrenheit] * 10.
+     *
+     * The minFloatValue and maxFloatValue in VehicleAreaConfig must be equal to configArray[0] and
+     * configArray[1] respectively.
+     *
      * For example, if the vehicle supports temperature values as:
      *      [16.0, 16.5, 17.0 ,..., 28.0] in Celsius
-     *      [60.5, 61.5, 62.5 ,..., 85.5] in Fahrenheit.
-     * The configArray should be configArray = {160, 280, 5, 605, 825, 10}.
+     *      [60.5, 61.5, 62.5 ,..., 84.5] in Fahrenheit
+     * The configArray should be configArray = {160, 280, 5, 605, 845, 10}.
      *
-     * If the vehicle supports HVAC_TEMPERATURE_VALUE_SUGGESTION, the application can use
-     * that property to get the suggested value before setting HVAC_TEMPERATURE_SET. Otherwise,
-     * the application may choose the value in HVAC_TEMPERATURE_SET configArray by itself.
+     * Ideally, the ratio of the Celsius increment to the Fahrenheit increment should be as close to
+     * the actual ratio of 1 degree Celsius to 1.8 degrees Fahrenheit.
+     *
+     * There must be a one to one mapping of all Celsius values to Fahrenheit values defined by the
+     * configArray. The configArray will be used by clients to convert this property's temperature
+     * from Celsius to Fahrenheit. Also, it will let clients know what Celsius value to set the
+     * property to achieve their desired Fahreneheit value for the system. If the ECU does not have
+     * a one to one mapping of all Celsius values to Fahrenheit values, then the config array should
+     * only define the list of Celsius and Fahrenheit values that do have a one to one mapping.
+     *
+     * For example, if the ECU supports Celsius values from 16 to 28 and Fahrenheit values from 60
+     * to 85 both with an increment of 1, then one possible configArray would be {160, 280, 10, 600,
+     * 840, 20}. In this case, 85 would not be a supported temperature.
+     *
+     * Any value set in between a valid value should be rounded to the closest valid value.
+     *
+     * It is highly recommended that the OEM also implement the HVAC_TEMPERATURE_VALUE_SUGGESTION
+     * vehicle property because it provides applications a simple method for determining temperature
+     * values that can be set for this vehicle and for converting values between Celsius and
+     * Fahrenheit.
      *
      * This property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to
      * implement it as VehiclePropertyAccess.READ only.
@@ -1295,7 +1354,22 @@ enum VehicleProperty {
      *
      * An application calls set(VehiclePropValue propValue) with the requested value and unit for
      * the value. OEMs need to return the suggested values in floatValues[2] and floatValues[3] by
-     * onPropertyEvent() callbacks.
+     * onPropertyEvent() callbacks. The suggested values must conform to the values that can be
+     * derived from the HVAC_TEMPERATURE_SET configArray. In other words, the suggested values and
+     * the table of values from the configArray should be the same. It is recommended for the OEM to
+     * add custom logic in their VHAL implementation in order to avoid making requests to the HVAC
+     * ECU.
+     *
+     * The logic can be as follows:
+     * For converting the temperature from celsius to fahrenheit use the following:
+     * // Given tempC and the configArray
+     * float minTempC = configArray[0] / 10.0;
+     * float temperatureIncrementCelsius = configArray[2] / 10.0;
+     * float minTempF = configArray[3] / 10.0;
+     * float temperatureIncrementFahrenheit = configArray[5] / 10.0;
+     * // Round to the closest increment
+     * int numIncrements = round((tempC - minTempC) / temperatureIncrementCelsius);
+     * tempF = temperatureIncrementFahrenheit * numIncrements + minTempF;
      *
      * For example, when a user uses the voice assistant to set HVAC temperature to 66.2 in
      * Fahrenheit.
@@ -1556,6 +1630,11 @@ enum VehicleProperty {
             + 0x00700000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:BYTES
     /**
      * Outside temperature
+     *
+     * This property must communicate the temperature reading of the environment outside the
+     * vehicle. If there are multiple sensors for measuring the outside temperature, this property
+     * should be populated with the mean or a meaningful weighted average of the readings that will
+     * best represent the temperature of the outside environment.
      *
      * @change_mode VehiclePropertyChangeMode.CONTINUOUS
      * @access VehiclePropertyAccess.READ
