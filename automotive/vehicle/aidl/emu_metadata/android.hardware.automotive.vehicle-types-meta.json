@@ -11,12 +11,12 @@
             {
                 "name": "Manufacturer of vehicle",
                 "value": 286261505,
-                "description": "Manufacturer of vehicle"
+                "description": "Manufacturer of vehicle\nThis property must communicate the vehicle's public brand name."
             },
             {
                 "name": "Model of vehicle",
                 "value": 286261506,
-                "description": "Model of vehicle"
+                "description": "Model of vehicle\nThis property must communicate the vehicle's public model name."
             },
             {
                 "name": "INFO_MODEL_YEAR",
@@ -49,7 +49,7 @@
                     "EvConnectorType"
                 ],
                 "data_enum": "EvConnectorType",
-                "description": "List of connectors this EV may use"
+                "description": "List of connectors this EV may use\nIf the vehicle has multiple charging ports, this property must return all possible connector types that can be used by at least one charging port on the vehicle."
             },
             {
                 "name": "Fuel door location",
@@ -67,7 +67,7 @@
                     "PortLocationType"
                 ],
                 "data_enum": "PortLocationType",
-                "description": "EV port location"
+                "description": "EV port location\nThis property must communicate the location of the charging port on the EV using the PortLocationType enum. If there are multiple ports available on the vehicle, this property must return the port that allows the fastest charging. To communicate all port locations, use INFO_MULTI_EV_PORT_LOCATIONS."
             },
             {
                 "name": "INFO_DRIVER_SEAT",
@@ -90,7 +90,7 @@
                     "PortLocationType"
                 ],
                 "data_enum": "PortLocationType",
-                "description": "Multiple EV port locations\nImplement this property if the vehicle has multiple EV ports. Port locations are defined in PortLocationType. For example, a car has one port in front left and one port in rear left: int32Values[0] = PortLocationType::FRONT_LEFT int32Values[0] = PortLocationType::REAR_LEFT"
+                "description": "Multiple EV port locations\nImplement this property if the vehicle has multiple EV ports. Port locations are defined in PortLocationType. For example, a car has one port in front left and one port in rear left: int32Values[0] = PortLocationType::FRONT_LEFT int32Values[1] = PortLocationType::REAR_LEFT\nIf only one port exists on the vehicle, this property's value should list just one element. See INFO_EV_PORT_LOCATION for describing just one port location."
             },
             {
                 "name": "PERF_ODOMETER",
@@ -169,12 +169,12 @@
             {
                 "name": "EV charge port open",
                 "value": 287310602,
-                "description": "EV charge port open\nThis property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to implement it as VehiclePropertyAccess.READ only."
+                "description": "EV charge port open\nIf the vehicle has multiple charging ports, this property must return true if any of the charge ports are open.\nThis property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to implement it as VehiclePropertyAccess.READ only."
             },
             {
                 "name": "EV charge port connected",
                 "value": 287310603,
-                "description": "EV charge port connected"
+                "description": "EV charge port connected\nIf the vehicle has multiple charging ports, this property must return true if any of the charge ports are connected."
             },
             {
                 "name": "EV_BATTERY_INSTANTANEOUS_CHARGE_RATE",
@@ -246,7 +246,7 @@
             {
                 "name": "EV_BRAKE_REGENERATION_LEVEL",
                 "value": 289408012,
-                "description": "Regenerative braking level of a electronic vehicle\nThe maxInt32Value and minInt32Value in VehicleAreaConfig must be defined. All values between minInt32Value and maxInt32Value must be supported. The minInt32Value must be 0.\nThe maxInt32Value indicates the maximum amount of energy regenerated from braking. The minInt32Value indicates no regenerative braking.\nThis property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to implement it as VehiclePropertyAccess.READ only."
+                "description": "Regenerative braking level of a electronic vehicle\nThe maxInt32Value and minInt32Value in VehicleAreaConfig must be defined. All values between minInt32Value and maxInt32Value must be supported. The minInt32Value must be 0.\nThe maxInt32Value indicates the setting for the maximum amount of energy regenerated from braking. The minInt32Value indicates the setting for no regenerative braking.\nThis property is a more granular form of EV_REGENERATIVE_BRAKING_STATE. It allows the user to set a more specific level of regenerative braking if the states in EvRegenerativeBrakingState are not granular enough for the OEM.\nThis property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to implement it as VehiclePropertyAccess.READ only."
             },
             {
                 "name": "Warning for fuel low level.",
@@ -853,9 +853,9 @@
                 "description": "Window Move\nThe maxInt32Value and minInt32Value in each VehicleAreaConfig must be defined. All integers between minInt32Value and maxInt32Value must be supported.\nThe maxInt32Value indicates the window is opening in plane\/closing in the out of plane direction at the fastest speed. The minInt32Value indicates the window is closing in plane\/opening in the out of plane direction at the fastest speed.\nLarger absolute values, either positive or negative, indicate a faster movement speed. Once the window reaches the positional limit, the value must reset to 0. If WINDOW_MOVE's value is currently 0, then that means there is no movement currently occurring.\nThis property is not in any particular unit but in a specified range of relative movement speeds.\nFor a window that may open out of plane (i.e. vent mode of sunroof) this parameter will work as follows:\nIf sunroof is open: Max = open the sunroof further, automatically stop when fully open. Min = close the sunroof, automatically stop when sunroof is closed.\nIf vent is open: Max = close the vent, automatically stop when vent is closed. Min = open the vent further, automatically stop when vent is fully open.\nIf sunroof is in the closed position: Max = open the sunroof, automatically stop when sunroof is fully open. Min = open the vent, automatically stop when vent is fully open.\nThis property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to implement it as VehiclePropertyAccess.READ only."
             },
             {
-                "name": "Window Lock",
+                "name": "Window Child Lock",
                 "value": 320867268,
-                "description": "Window Lock\nTrue indicates windows are locked and can't be moved.\nThis property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to implement it as VehiclePropertyAccess.READ only."
+                "description": "Window Child Lock\nTrue indicates the window is child-locked.\nThis property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to implement it as VehiclePropertyAccess.READ only."
             },
             {
                 "name": "WINDSHIELD_WIPERS_PERIOD",
@@ -1277,7 +1277,7 @@
                     "EvChargeState"
                 ],
                 "data_enum": "EvChargeState",
-                "description": "Charging state of the car\nReturns the current charging state of the car."
+                "description": "Charging state of the car\nReturns the current charging state of the car.\nIf the vehicle has a target charge percentage other than 100, this property must return EvChargeState::STATE_FULLY_CHARGED when the battery charge level has reached the target level. See EV_CHARGE_PERCENT_LIMIT for more context."
             },
             {
                 "name": "EV_CHARGE_SWITCH",
@@ -1296,7 +1296,7 @@
                     "EvRegenerativeBrakingState"
                 ],
                 "data_enum": "EvRegenerativeBrakingState",
-                "description": "Regenerative braking or one-pedal drive state of the car\nReturns the current state associated with the regenerative braking setting in the car"
+                "description": "Regenerative braking or one-pedal drive setting of the car\nReturns the current setting associated with the regenerative braking setting in the car\nIf the OEM requires more setting than those provided in EvRegenerativeBrakingState, the EV_BRAKE_REGENERATION_LEVEL property can be used instead, which provides a more granular way of providing the same information."
             },
             {
                 "name": "TRAILER_PRESENT",

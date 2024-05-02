@@ -59,6 +59,8 @@ enum VehicleProperty {
     /**
      * Manufacturer of vehicle
      *
+     * This property must communicate the vehicle's public brand name.
+     *
      * @change_mode VehiclePropertyChangeMode.STATIC
      * @access VehiclePropertyAccess.READ
      * @version 2
@@ -67,6 +69,8 @@ enum VehicleProperty {
             + 0x00100000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:STRING
     /**
      * Model of vehicle
+     *
+     * This property must communicate the vehicle's public model name.
      *
      * @change_mode VehiclePropertyChangeMode.STATIC
      * @access VehiclePropertyAccess.READ
@@ -138,6 +142,9 @@ enum VehicleProperty {
     /**
      * List of connectors this EV may use
      *
+     * If the vehicle has multiple charging ports, this property must return all possible connector
+     * types that can be used by at least one charging port on the vehicle.
+     *
      * @change_mode VehiclePropertyChangeMode.STATIC
      * @data_enum EvConnectorType
      * @access VehiclePropertyAccess.READ
@@ -162,6 +169,11 @@ enum VehicleProperty {
             + 0x00400000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT32
     /**
      * EV port location
+     *
+     * This property must communicate the location of the charging port on the EV using the
+     * PortLocationType enum. If there are multiple ports available on the vehicle, this property
+     * must return the port that allows the fastest charging. To communicate all port locations,
+     * use INFO_MULTI_EV_PORT_LOCATIONS.
      *
      * @change_mode VehiclePropertyChangeMode.STATIC
      * @access VehiclePropertyAccess.READ
@@ -207,7 +219,10 @@ enum VehicleProperty {
      * Port locations are defined in PortLocationType.
      * For example, a car has one port in front left and one port in rear left:
      *   int32Values[0] = PortLocationType::FRONT_LEFT
-     *   int32Values[0] = PortLocationType::REAR_LEFT
+     *   int32Values[1] = PortLocationType::REAR_LEFT
+     *
+     * If only one port exists on the vehicle, this property's value should list just one element.
+     * See INFO_EV_PORT_LOCATION for describing just one port location.
      *
      * @change_mode VehiclePropertyChangeMode.STATIC
      * @access VehiclePropertyAccess.READ
@@ -436,6 +451,9 @@ enum VehicleProperty {
     /**
      * EV charge port open
      *
+     * If the vehicle has multiple charging ports, this property must return true if any of the
+     * charge ports are open.
+     *
      * This property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to
      * implement it as VehiclePropertyAccess.READ only.
      *
@@ -448,6 +466,9 @@ enum VehicleProperty {
             + 0x00200000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:BOOLEAN
     /**
      * EV charge port connected
+     *
+     * If the vehicle has multiple charging ports, this property must return true if any of the
+     * charge ports are connected.
      *
      * @change_mode VehiclePropertyChangeMode.ON_CHANGE
      * @access VehiclePropertyAccess.READ
@@ -655,8 +676,12 @@ enum VehicleProperty {
      * The maxInt32Value and minInt32Value in VehicleAreaConfig must be defined. All values between
      * minInt32Value and maxInt32Value must be supported. The minInt32Value must be 0.
      *
-     * The maxInt32Value indicates the maximum amount of energy regenerated from braking. The
-     * minInt32Value indicates no regenerative braking.
+     * The maxInt32Value indicates the setting for the maximum amount of energy regenerated from
+     * braking. The minInt32Value indicates the setting for no regenerative braking.
+     *
+     * This property is a more granular form of EV_REGENERATIVE_BRAKING_STATE. It allows the user to
+     * set a more specific level of regenerative braking if the states in EvRegenerativeBrakingState
+     * are not granular enough for the OEM.
      *
      * This property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to
      * implement it as VehiclePropertyAccess.READ only.
@@ -3261,9 +3286,9 @@ enum VehicleProperty {
     WINDOW_MOVE = 0x0BC1 + 0x10000000 + 0x03000000
             + 0x00400000, // VehiclePropertyGroup:SYSTEM,VehicleArea:WINDOW,VehiclePropertyType:INT32
     /**
-     * Window Lock
+     * Window Child Lock
      *
-     * True indicates windows are locked and can't be moved.
+     * True indicates the window is child-locked.
      *
      * This property is defined as VehiclePropertyAccess.READ_WRITE, but OEMs have the option to
      * implement it as VehiclePropertyAccess.READ only.
@@ -4901,6 +4926,10 @@ enum VehicleProperty {
      *
      * Returns the current charging state of the car.
      *
+     * If the vehicle has a target charge percentage other than 100, this property must return
+     * EvChargeState::STATE_FULLY_CHARGED when the battery charge level has reached the target
+     * level. See EV_CHARGE_PERCENT_LIMIT for more context.
+     *
      * @change_mode VehiclePropertyChangeMode.ON_CHANGE
      * @access VehiclePropertyAccess.READ
      * @data_enum EvChargeState
@@ -4940,10 +4969,13 @@ enum VehicleProperty {
             + 0x00400000, // VehiclePropertyGroup:SYSTEM,VehicleArea:GLOBAL,VehiclePropertyType:INT32
 
     /**
-     * Regenerative braking or one-pedal drive state of the car
+     * Regenerative braking or one-pedal drive setting of the car
      *
-     * Returns the current state associated with the regenerative braking
-     * setting in the car
+     * Returns the current setting associated with the regenerative braking setting in the car
+     *
+     * If the OEM requires more setting than those provided in EvRegenerativeBrakingState, the
+     * EV_BRAKE_REGENERATION_LEVEL property can be used instead, which provides a more granular
+     * way of providing the same information.
      *
      * @change_mode VehiclePropertyChangeMode.ON_CHANGE
      * @access VehiclePropertyAccess.READ
