@@ -17,11 +17,15 @@
 //! Default implementation of the KeyMint HAL and related HALs.
 //!
 //! This implementation of the HAL is only intended to allow testing and policy compliance.  A real
-//! implementation **must be implemented in a secure environment**.
+//! implementation **must implement the TA in a secure environment**, as per CDD 9.11 [C-1-1]:
+//! "MUST back up the keystore implementation with an isolated execution environment."
+//!
+//! The additional device-specific components that are required for a real implementation of KeyMint
+//! that is based on the Rust reference implementation are described in system/keymint/README.md.
 
 use kmr_hal::SerializedChannel;
 use kmr_hal_nonsecure::{attestation_id_info, get_boot_info};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use std::ops::DerefMut;
 use std::sync::{mpsc, Arc, Mutex};
 
@@ -62,13 +66,42 @@ fn inner_main() -> Result<(), HalServiceError> {
         error!("{}", panic_info);
     }));
 
-    info!("Insecure KeyMint HAL service is starting.");
+    warn!("Insecure KeyMint HAL service is starting.");
 
     info!("Starting thread pool now.");
     binder::ProcessState::start_thread_pool();
 
     // Create a TA in-process, which acts as a local channel for communication.
     let channel = Arc::new(Mutex::new(LocalTa::new()));
+
+    // Let the TA know information about the boot environment. In a real device this
+    // is communicated directly from the bootloader to the TA, but here we retrieve
+    // the information from system properties and send from the HAL service.
+    let boot_req = get_boot_info();
+    debug!("boot/HAL->TA: boot info is {:?}", boot_req);
+    kmr_hal::send_boot_info(channel.lock().unwrap().deref_mut(), boot_req)
+        .map_err(|e| HalServiceError(format!("Failed to send boot info: {:?}", e)))?;
+
+    // Let the TA know information about the userspace environment.
+    if let Err(e) = kmr_hal::send_hal_info(channel.lock().unwrap().deref_mut()) {
+        error!("Failed to send HAL info: {:?}", e);
+    }
+
+    // Let the TA know about attestation IDs. (In a real device these would be pre-provisioned into
+    // the TA.)
+    let attest_ids = attestation_id_info();
+    if let Err(e) = kmr_hal::send_attest_ids(channel.lock().unwrap().deref_mut(), attest_ids) {
+        error!("Failed to send attestation ID info: {:?}", e);
+    }
+
+    let secret_service = kmr_hal::sharedsecret::Device::new_as_binder(channel.clone());
+    let service_name = format!("{}/{}", SECRET_SERVICE_NAME, SERVICE_INSTANCE);
+    binder::add_service(&service_name, secret_service.as_binder()).map_err(|e| {
+        HalServiceError(format!(
+            "Failed to register service {} because of {:?}.",
+            service_name, e
+        ))
+    })?;
 
     let km_service = kmr_hal::keymint::Device::new_as_binder(channel.clone());
     let service_name = format!("{}/{}", KM_SERVICE_NAME, SERVICE_INSTANCE);
@@ -96,37 +129,6 @@ fn inner_main() -> Result<(), HalServiceError> {
             service_name, e
         ))
     })?;
-
-    let secret_service = kmr_hal::sharedsecret::Device::new_as_binder(channel.clone());
-    let service_name = format!("{}/{}", SECRET_SERVICE_NAME, SERVICE_INSTANCE);
-    binder::add_service(&service_name, secret_service.as_binder()).map_err(|e| {
-        HalServiceError(format!(
-            "Failed to register service {} because of {:?}.",
-            service_name, e
-        ))
-    })?;
-
-    info!("Successfully registered KeyMint HAL services.");
-
-    // Let the TA know information about the boot environment. In a real device this
-    // is communicated directly from the bootloader to the TA, but here we retrieve
-    // the information from system properties and send from the HAL service.
-    let boot_req = get_boot_info();
-    debug!("boot/HAL->TA: boot info is {:?}", boot_req);
-    kmr_hal::send_boot_info(channel.lock().unwrap().deref_mut(), boot_req)
-        .map_err(|e| HalServiceError(format!("Failed to send boot info: {:?}", e)))?;
-
-    // Let the TA know information about the userspace environment.
-    if let Err(e) = kmr_hal::send_hal_info(channel.lock().unwrap().deref_mut()) {
-        error!("Failed to send HAL info: {:?}", e);
-    }
-
-    // Let the TA know about attestation IDs. (In a real device these would be pre-provisioned into
-    // the TA.)
-    let attest_ids = attestation_id_info();
-    if let Err(e) = kmr_hal::send_attest_ids(channel.lock().unwrap().deref_mut(), attest_ids) {
-        error!("Failed to send attestation ID info: {:?}", e);
-    }
 
     info!("Successfully registered KeyMint HAL services.");
     binder::ProcessState::join_thread_pool();
