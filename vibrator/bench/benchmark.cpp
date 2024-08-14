@@ -16,15 +16,14 @@
 
 #include "benchmark/benchmark.h"
 
+#include <aidl/android/hardware/vibrator/BnVibratorCallback.h>
+#include <aidl/android/hardware/vibrator/IVibrator.h>
+
+#include <android/binder_manager.h>
+#include <android/binder_process.h>
 #include <android/hardware/vibrator/1.3/IVibrator.h>
-#include <android/hardware/vibrator/BnVibratorCallback.h>
-#include <android/hardware/vibrator/IVibrator.h>
-#include <binder/IServiceManager.h>
-#include <binder/ProcessState.h>
 #include <future>
 
-using ::android::enum_range;
-using ::android::sp;
 using ::android::hardware::hidl_enum_range;
 using ::android::hardware::Return;
 using ::android::hardware::details::hidl_enum_values;
@@ -33,10 +32,11 @@ using ::benchmark::Fixture;
 using ::benchmark::kMicrosecond;
 using ::benchmark::State;
 using ::benchmark::internal::Benchmark;
+using ::ndk::enum_range;
 
 using namespace ::std::chrono_literals;
 
-namespace Aidl = ::android::hardware::vibrator;
+namespace Aidl = ::aidl::android::hardware::vibrator;
 namespace V1_0 = ::android::hardware::vibrator::V1_0;
 namespace V1_1 = ::android::hardware::vibrator::V1_1;
 namespace V1_2 = ::android::hardware::vibrator::V1_2;
@@ -56,8 +56,8 @@ template <typename I>
 class BaseBench : public Fixture {
   public:
     void SetUp(State& /*state*/) override {
-        android::ProcessState::self()->setThreadPoolMaxThreadCount(1);
-        android::ProcessState::self()->startThreadPool();
+        ABinderProcess_setThreadPoolMaxThreadCount(1);
+        ABinderProcess_startThreadPool();
     }
 
     void TearDown(State& /*state*/) override {
@@ -75,7 +75,7 @@ class BaseBench : public Fixture {
     auto getOtherArg(const State& state, std::size_t index) const { return state.range(index + 0); }
 
   protected:
-    sp<I> mVibrator;
+    std::shared_ptr<I> mVibrator;
 };
 
 template <typename I>
@@ -83,7 +83,12 @@ class VibratorBench : public BaseBench<I> {
   public:
     void SetUp(State& state) override {
         BaseBench<I>::SetUp(state);
-        this->mVibrator = I::getService();
+        auto service = I::getService();
+        if (service) {
+            this->mVibrator = std::shared_ptr<I>(service.release());
+        } else {
+            this->mVibrator = nullptr;
+        }
     }
 
   protected:
@@ -356,7 +361,9 @@ class VibratorBench_Aidl : public BaseBench<Aidl::IVibrator> {
   public:
     void SetUp(State& state) override {
         BaseBench::SetUp(state);
-        this->mVibrator = android::waitForVintfService<Aidl::IVibrator>();
+        auto serviceName = std::string(Aidl::IVibrator::descriptor) + "/default";
+        this->mVibrator = Aidl::IVibrator::fromBinder(
+                ndk::SpAIBinder(AServiceManager_waitForService(serviceName.c_str())));
     }
 
     void TearDown(State& state) override {
@@ -373,9 +380,9 @@ class VibratorBench_Aidl : public BaseBench<Aidl::IVibrator> {
         return (deviceCapabilities & capabilities) == capabilities;
     }
 
-    bool shouldSkipWithError(State& state, const android::binder::Status&& status) {
+    bool shouldSkipWithError(State& state, const ndk::ScopedAStatus&& status) {
         if (!status.isOk()) {
-            state.SkipWithError(status.toString8().c_str());
+            state.SkipWithError(status.getMessage());
             return true;
         }
         return false;
@@ -407,9 +414,9 @@ class HalCallback : public Aidl::BnVibratorCallback {
     HalCallback() = default;
     ~HalCallback() = default;
 
-    android::binder::Status onComplete() override {
+    ndk::ScopedAStatus onComplete() override {
         mPromise.set_value();
-        return android::binder::Status::ok();
+        return ndk::ScopedAStatus::ok();
     }
 
     std::future<void> getFuture() { return mPromise.get_future(); }
@@ -422,7 +429,9 @@ BENCHMARK_WRAPPER(SlowVibratorBench_Aidl, on, {
     auto ms = MAX_ON_DURATION_MS;
 
     for (auto _ : state) {
-        auto cb = hasCapabilities(Aidl::IVibrator::CAP_ON_CALLBACK) ? new HalCallback() : nullptr;
+        auto cb = hasCapabilities(Aidl::IVibrator::CAP_ON_CALLBACK)
+                          ? ndk::SharedRefBase::make<HalCallback>()
+                          : nullptr;
         // Grab the future before callback promise is destroyed by the HAL.
         auto cbFuture = cb ? cb->getFuture() : std::future<void>();
 
@@ -445,7 +454,9 @@ BENCHMARK_WRAPPER(SlowVibratorBench_Aidl, off, {
     auto ms = MAX_ON_DURATION_MS;
 
     for (auto _ : state) {
-        auto cb = hasCapabilities(Aidl::IVibrator::CAP_ON_CALLBACK) ? new HalCallback() : nullptr;
+        auto cb = hasCapabilities(Aidl::IVibrator::CAP_ON_CALLBACK)
+                          ? ndk::SharedRefBase::make<HalCallback>()
+                          : nullptr;
         // Grab the future before callback promise is destroyed by the HAL.
         auto cbFuture = cb ? cb->getFuture() : std::future<void>();
 
@@ -487,7 +498,9 @@ BENCHMARK_WRAPPER(VibratorBench_Aidl, setAmplitude, {
         return;
     }
 
-    auto cb = hasCapabilities(Aidl::IVibrator::CAP_ON_CALLBACK) ? new HalCallback() : nullptr;
+    auto cb = hasCapabilities(Aidl::IVibrator::CAP_ON_CALLBACK)
+                      ? ndk::SharedRefBase::make<HalCallback>()
+                      : nullptr;
     if (shouldSkipWithError(state, mVibrator->on(ms, cb))) {
         return;
     }
@@ -689,8 +702,9 @@ BENCHMARK_WRAPPER(SlowVibratorEffectsBench_Aidl, perform, {
     int32_t lengthMs = 0;
 
     for (auto _ : state) {
-        auto cb = hasCapabilities(Aidl::IVibrator::CAP_PERFORM_CALLBACK) ? new HalCallback()
-                                                                         : nullptr;
+        auto cb = hasCapabilities(Aidl::IVibrator::CAP_PERFORM_CALLBACK)
+                          ? ndk::SharedRefBase::make<HalCallback>()
+                          : nullptr;
         // Grab the future before callback promise is destroyed by the HAL.
         auto cbFuture = cb ? cb->getFuture() : std::future<void>();
 
@@ -803,7 +817,7 @@ BENCHMARK_WRAPPER(SlowVibratorPrimitivesBench_Aidl, compose, {
     effects.push_back(effect);
 
     for (auto _ : state) {
-        auto cb = new HalCallback();
+        auto cb = ndk::SharedRefBase::make<HalCallback>();
         // Grab the future before callback promise is moved and destroyed by the HAL.
         auto cbFuture = cb->getFuture();
 

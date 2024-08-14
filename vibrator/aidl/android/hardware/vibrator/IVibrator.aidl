@@ -16,13 +16,14 @@
 
 package android.hardware.vibrator;
 
-import android.hardware.vibrator.IVibratorCallback;
 import android.hardware.vibrator.Braking;
-import android.hardware.vibrator.Effect;
-import android.hardware.vibrator.EffectStrength;
 import android.hardware.vibrator.CompositeEffect;
 import android.hardware.vibrator.CompositePrimitive;
+import android.hardware.vibrator.Effect;
+import android.hardware.vibrator.EffectStrength;
+import android.hardware.vibrator.IVibratorCallback;
 import android.hardware.vibrator.PrimitivePwle;
+import android.hardware.vibrator.VendorEffect;
 
 @VintfStability
 interface IVibrator {
@@ -70,6 +71,10 @@ interface IVibrator {
      * Whether composePwle is supported.
      */
     const int CAP_COMPOSE_PWLE_EFFECTS = 1 << 10;
+    /**
+     * Whether perform w/ vendor effect is supported.
+     */
+    const int CAP_PERFORM_VENDOR_EFFECTS = 1 << 11;
 
     /**
      * Determine capabilities of the vibrator HAL (CAP_* mask)
@@ -359,4 +364,25 @@ interface IVibrator {
      * @param composite Array of PWLEs.
      */
     void composePwle(in PrimitivePwle[] composite, in IVibratorCallback callback);
+
+    /**
+     * Fire off a vendor-defined haptic event.
+     *
+     * This may not be supported and this support is reflected in
+     * getCapabilities (CAP_PERFORM_VENDOR_EFFECTS).
+     *
+     * The duration of the effect is unknown and can be undefined for looping effects.
+     * IVibratorCallback.onComplete() support is required for this API.
+     *
+     * Doing this operation while the vibrator is already on is undefined behavior. Clients should
+     * explicitly call off.
+     *
+     * @param effect The vendor data representing the effect to be performed.
+     * @param callback A callback used to inform Frameworks of state change.
+     * @throws :
+     *         - EX_UNSUPPORTED_OPERATION if unsupported, as reflected by getCapabilities.
+     *         - EX_ILLEGAL_ARGUMENT for bad framework parameters, e.g. scale or effect strength.
+     *         - EX_SERVICE_SPECIFIC for bad vendor data, vibration is not triggered.
+     */
+    void performVendorEffect(in VendorEffect vendorEffect, in IVibratorCallback callback);
 }

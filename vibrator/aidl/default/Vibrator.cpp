@@ -39,6 +39,9 @@ static constexpr float PWLE_FREQUENCY_MAX_HZ = 160.0;
 static constexpr float PWLE_BW_MAP_SIZE =
         1 + ((PWLE_FREQUENCY_MAX_HZ - PWLE_FREQUENCY_MIN_HZ) / PWLE_FREQUENCY_RESOLUTION_HZ);
 
+// Service specific error code used for vendor vibration effects.
+static constexpr int32_t ERROR_CODE_INVALID_DURATION = 1;
+
 ndk::ScopedAStatus Vibrator::getCapabilities(int32_t* _aidl_return) {
     LOG(VERBOSE) << "Vibrator reporting capabilities";
     *_aidl_return = IVibrator::CAP_ON_CALLBACK | IVibrator::CAP_PERFORM_CALLBACK |
@@ -46,7 +49,7 @@ ndk::ScopedAStatus Vibrator::getCapabilities(int32_t* _aidl_return) {
                     IVibrator::CAP_EXTERNAL_AMPLITUDE_CONTROL | IVibrator::CAP_COMPOSE_EFFECTS |
                     IVibrator::CAP_ALWAYS_ON_CONTROL | IVibrator::CAP_GET_RESONANT_FREQUENCY |
                     IVibrator::CAP_GET_Q_FACTOR | IVibrator::CAP_FREQUENCY_CONTROL |
-                    IVibrator::CAP_COMPOSE_PWLE_EFFECTS;
+                    IVibrator::CAP_COMPOSE_PWLE_EFFECTS | IVibrator::CAP_PERFORM_VENDOR_EFFECTS;
     return ndk::ScopedAStatus::ok();
 }
 
@@ -99,6 +102,36 @@ ndk::ScopedAStatus Vibrator::perform(Effect effect, EffectStrength strength,
     }
 
     *_aidl_return = kEffectMillis;
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Vibrator::performVendorEffect(
+        const VendorEffect& effect, const std::shared_ptr<IVibratorCallback>& callback) {
+    LOG(VERBOSE) << "Vibrator perform vendor effect";
+    EffectStrength strength = effect.strength;
+    if (strength != EffectStrength::LIGHT && strength != EffectStrength::MEDIUM &&
+        strength != EffectStrength::STRONG) {
+        return ndk::ScopedAStatus(AStatus_fromExceptionCode(EX_ILLEGAL_ARGUMENT));
+    }
+    float scale = effect.scale;
+    if (scale <= 0) {
+        return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
+    }
+
+    int32_t durationMs = 0;
+    if (!effect.vendorData.getInt("DURATION_MS", &durationMs) || durationMs <= 0) {
+        return ndk::ScopedAStatus::fromServiceSpecificError(ERROR_CODE_INVALID_DURATION);
+    }
+
+    if (callback != nullptr) {
+        std::thread([callback, durationMs] {
+            LOG(VERBOSE) << "Starting perform on another thread for durationMs:" << durationMs;
+            usleep(durationMs * 1000);
+            LOG(VERBOSE) << "Notifying perform vendor effect complete";
+            callback->onComplete();
+        }).detach();
+    }
+
     return ndk::ScopedAStatus::ok();
 }
 

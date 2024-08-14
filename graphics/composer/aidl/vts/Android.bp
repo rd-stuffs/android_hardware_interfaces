@@ -57,6 +57,7 @@ cc_test {
         "libprocessgroup",
         "libvndksupport",
         "server_configurable_flags",
+        "libtracing_perfetto",
     ],
     header_libs: [
         "android.hardware.graphics.composer3-command-buffer",
