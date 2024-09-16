@@ -366,7 +366,8 @@ TEST_P(VibratorAidl, InvalidEffectsUnsupported) {
 TEST_P(VibratorAidl, PerformVendorEffectSupported) {
     if ((capabilities & IVibrator::CAP_PERFORM_VENDOR_EFFECTS) == 0) return;
 
-    float scale = 0.5f;
+    float scale = 0.0f;
+    float vendorScale = 0.0f;
     for (EffectStrength strength : kEffectStrengths) {
         PersistableBundle vendorData;
         ::aidl::android::hardware::vibrator::testing::fillBasicData(&vendorData);
@@ -379,7 +380,9 @@ TEST_P(VibratorAidl, PerformVendorEffectSupported) {
         effect.vendorData = vendorData;
         effect.strength = strength;
         effect.scale = scale;
-        scale *= 1.5f;
+        effect.vendorScale = vendorScale;
+        scale += 0.5f;
+        vendorScale += 0.2f;
 
         auto callback = ndk::SharedRefBase::make<CompletionCallback>([] {});
         ndk::ScopedAStatus status = vibrator->performVendorEffect(effect, callback);
@@ -408,6 +411,7 @@ TEST_P(VibratorAidl, PerformVendorEffectStability) {
 
     for (EffectStrength strength : kEffectStrengths) {
         float scale = 0.5f;
+        float vendorScale = 0.2f;
         for (uint8_t i = 0; i < iterations; i++) {
             PersistableBundle vendorData;
             ::aidl::android::hardware::vibrator::testing::fillRandomData(&vendorData);
@@ -416,7 +420,9 @@ TEST_P(VibratorAidl, PerformVendorEffectStability) {
             effect.vendorData = vendorData;
             effect.strength = strength;
             effect.scale = scale;
+            effect.vendorScale = vendorScale;
             scale *= 2;
+            vendorScale *= 1.5f;
 
             auto callback = ndk::SharedRefBase::make<CompletionCallback>([] {});
             ndk::ScopedAStatus status = vibrator->performVendorEffect(effect, callback);
@@ -444,6 +450,7 @@ TEST_P(VibratorAidl, PerformVendorEffectEmptyVendorData) {
         VendorEffect effect;
         effect.strength = strength;
         effect.scale = 1.0f;
+        effect.vendorScale = 1.0f;
 
         ndk::ScopedAStatus status = vibrator->performVendorEffect(effect, nullptr /*callback*/);
 
@@ -459,10 +466,12 @@ TEST_P(VibratorAidl, PerformVendorEffectInvalidScale) {
     VendorEffect effect;
     effect.strength = EffectStrength::MEDIUM;
 
-    effect.scale = 0.0f;
+    effect.scale = -1.0f;
+    effect.vendorScale = 1.0f;
     EXPECT_ILLEGAL_ARGUMENT(vibrator->performVendorEffect(effect, nullptr /*callback*/));
 
-    effect.scale = -1.0f;
+    effect.scale = 1.0f;
+    effect.vendorScale = -1.0f;
     EXPECT_ILLEGAL_ARGUMENT(vibrator->performVendorEffect(effect, nullptr /*callback*/));
 }
 
@@ -473,6 +482,7 @@ TEST_P(VibratorAidl, PerformVendorEffectUnsupported) {
         VendorEffect effect;
         effect.strength = strength;
         effect.scale = 1.0f;
+        effect.vendorScale = 1.0f;
 
         EXPECT_UNKNOWN_OR_UNSUPPORTED(vibrator->performVendorEffect(effect, nullptr /*callback*/))
                 << "\n  For vendor effect with strength " << toString(strength);

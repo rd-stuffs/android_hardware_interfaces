@@ -37,4 +37,5 @@ parcelable VendorEffect {
   android.os.PersistableBundle vendorData;
   android.hardware.vibrator.EffectStrength strength = android.hardware.vibrator.EffectStrength.MEDIUM;
   float scale;
+  float vendorScale;
 }

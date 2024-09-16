@@ -117,6 +117,10 @@ ndk::ScopedAStatus Vibrator::performVendorEffect(
     if (scale <= 0) {
         return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
     }
+    float vendorScale = effect.vendorScale;
+    if (vendorScale <= 0) {
+        return ndk::ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
+    }
 
     int32_t durationMs = 0;
     if (!effect.vendorData.getInt("DURATION_MS", &durationMs) || durationMs <= 0) {

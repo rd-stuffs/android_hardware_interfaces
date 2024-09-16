@@ -42,13 +42,15 @@ enum ParamName {
     PARAM_INSTANCE_NAME,
     PARAM_HAPTIC_SCALE_ID,
     PARAM_HAPTIC_SCALE_VIBRATOR_SCALE,
+    PARAM_HAPTIC_SCALE_SCALE_FACTOR,
+    PARAM_HAPTIC_SCALE_ADAPTIVE_SCALE_FACTOR,
     PARAM_VIBRATION_INFORMATION_RESONANT_FREQUENCY,
     PARAM_VIBRATION_INFORMATION_Q_FACTOR,
     PARAM_VIBRATION_INFORMATION_MAX_AMPLITUDE,
 };
 using HapticGeneratorParamTestParam =
         std::tuple<std::pair<std::shared_ptr<IFactory>, Descriptor>, int,
-                   HapticGenerator::VibratorScale, float, float, float>;
+                   HapticGenerator::VibratorScale, float, float, float, float, float>;
 
 /*
  * Testing parameter range, assuming the parameter supported by effect is in this range.
@@ -67,6 +69,10 @@ const std::vector<int> kHapticScaleIdValues = {MIN_ID, 0, MAX_ID};
 const std::vector<HapticGenerator::VibratorScale> kVibratorScaleValues = {
         ndk::enum_range<HapticGenerator::VibratorScale>().begin(),
         ndk::enum_range<HapticGenerator::VibratorScale>().end()};
+const std::vector<float> kScaleFactorValues = {HapticGenerator::HapticScale::UNDEFINED_SCALE_FACTOR,
+                                               0.0f, 0.5f, 1.0f, MAX_FLOAT};
+const std::vector<float> kAdaptiveScaleFactorValues = {
+        HapticGenerator::HapticScale::UNDEFINED_SCALE_FACTOR, 0.0f, 0.5f, 1.0f, MAX_FLOAT};
 
 const std::vector<float> kResonantFrequencyValues = {MIN_FLOAT, 100, MAX_FLOAT};
 const std::vector<float> kQFactorValues = {MIN_FLOAT, 100, MAX_FLOAT};
@@ -78,6 +84,8 @@ class HapticGeneratorParamTest : public ::testing::TestWithParam<HapticGenerator
     HapticGeneratorParamTest()
         : mParamHapticScaleId(std::get<PARAM_HAPTIC_SCALE_ID>(GetParam())),
           mParamVibratorScale(std::get<PARAM_HAPTIC_SCALE_VIBRATOR_SCALE>(GetParam())),
+          mParamScaleFactor(std::get<PARAM_HAPTIC_SCALE_SCALE_FACTOR>(GetParam())),
+          mParamAdaptiveScaleFactor(std::get<PARAM_HAPTIC_SCALE_ADAPTIVE_SCALE_FACTOR>(GetParam())),
           mParamResonantFrequency(
                   std::get<PARAM_VIBRATION_INFORMATION_RESONANT_FREQUENCY>(GetParam())),
           mParamQFactor(std::get<PARAM_VIBRATION_INFORMATION_Q_FACTOR>(GetParam())),
@@ -107,6 +115,8 @@ class HapticGeneratorParamTest : public ::testing::TestWithParam<HapticGenerator
     Descriptor mDescriptor;
     int mParamHapticScaleId = 0;
     HapticGenerator::VibratorScale mParamVibratorScale = HapticGenerator::VibratorScale::MUTE;
+    float mParamScaleFactor = HapticGenerator::HapticScale::UNDEFINED_SCALE_FACTOR;
+    float mParamAdaptiveScaleFactor = HapticGenerator::HapticScale::UNDEFINED_SCALE_FACTOR;
     float mParamResonantFrequency = 0;
     float mParamQFactor = 0;
     float mParamMaxAmplitude = 0;
@@ -135,9 +145,14 @@ class HapticGeneratorParamTest : public ::testing::TestWithParam<HapticGenerator
         }
     }
 
-    void addHapticScaleParam(int id, HapticGenerator::VibratorScale scale) {
+    void addHapticScaleParam(int id, HapticGenerator::VibratorScale scale, float scaleFactor,
+                             float adaptiveScaleFactor) {
         HapticGenerator setHg;
-        std::vector<HapticGenerator::HapticScale> hapticScales = {{.id = id, .scale = scale}};
+        std::vector<HapticGenerator::HapticScale> hapticScales = {
+                {.id = id,
+                 .scale = scale,
+                 .scaleFactor = scaleFactor,
+                 .adaptiveScaleFactor = adaptiveScaleFactor}};
         setHg.set<HapticGenerator::hapticScales>(hapticScales);
         mTags.push_back({HapticGenerator::hapticScales, setHg});
     }
@@ -160,13 +175,16 @@ class HapticGeneratorParamTest : public ::testing::TestWithParam<HapticGenerator
 };
 
 TEST_P(HapticGeneratorParamTest, SetAndGetHapticScale) {
-    EXPECT_NO_FATAL_FAILURE(addHapticScaleParam(mParamHapticScaleId, mParamVibratorScale));
+    EXPECT_NO_FATAL_FAILURE(addHapticScaleParam(mParamHapticScaleId, mParamVibratorScale,
+                                                mParamScaleFactor, mParamAdaptiveScaleFactor));
     SetAndGetHapticGeneratorParameters();
 }
 
 TEST_P(HapticGeneratorParamTest, SetAndGetMultipleHapticScales) {
-    EXPECT_NO_FATAL_FAILURE(addHapticScaleParam(mParamHapticScaleId, mParamVibratorScale));
-    EXPECT_NO_FATAL_FAILURE(addHapticScaleParam(mParamHapticScaleId, mParamVibratorScale));
+    EXPECT_NO_FATAL_FAILURE(addHapticScaleParam(mParamHapticScaleId, mParamVibratorScale,
+                                                mParamScaleFactor, mParamAdaptiveScaleFactor));
+    EXPECT_NO_FATAL_FAILURE(addHapticScaleParam(mParamHapticScaleId, mParamVibratorScale,
+                                                mParamScaleFactor, mParamAdaptiveScaleFactor));
     SetAndGetHapticGeneratorParameters();
 }
 
@@ -182,6 +200,8 @@ INSTANTIATE_TEST_SUITE_P(
                                    IFactory::descriptor, getEffectTypeUuidHapticGenerator())),
                            testing::ValuesIn(kHapticScaleIdValues),
                            testing::ValuesIn(kVibratorScaleValues),
+                           testing::ValuesIn(kScaleFactorValues),
+                           testing::ValuesIn(kAdaptiveScaleFactorValues),
                            testing::ValuesIn(kResonantFrequencyValues),
                            testing::ValuesIn(kQFactorValues), testing::ValuesIn(kMaxAmplitude)),
         [](const testing::TestParamInfo<HapticGeneratorParamTest::ParamType>& info) {
@@ -189,6 +209,10 @@ INSTANTIATE_TEST_SUITE_P(
             std::string hapticScaleID = std::to_string(std::get<PARAM_HAPTIC_SCALE_ID>(info.param));
             std::string hapticScaleVibScale = std::to_string(
                     static_cast<int>(std::get<PARAM_HAPTIC_SCALE_VIBRATOR_SCALE>(info.param)));
+            std::string hapticScaleFactor =
+                    std::to_string(std::get<PARAM_HAPTIC_SCALE_SCALE_FACTOR>(info.param));
+            std::string hapticAdaptiveScaleFactor =
+                    std::to_string(std::get<PARAM_HAPTIC_SCALE_ADAPTIVE_SCALE_FACTOR>(info.param));
             std::string resonantFrequency = std::to_string(
                     std::get<PARAM_VIBRATION_INFORMATION_RESONANT_FREQUENCY>(info.param));
             std::string qFactor =
@@ -196,7 +220,9 @@ INSTANTIATE_TEST_SUITE_P(
             std::string maxAmplitude =
                     std::to_string(std::get<PARAM_VIBRATION_INFORMATION_MAX_AMPLITUDE>(info.param));
             std::string name = getPrefix(descriptor) + "_hapticScaleId" + hapticScaleID +
-                               "_hapticScaleVibScale" + hapticScaleVibScale + "_resonantFrequency" +
+                               "_hapticScaleVibScale" + hapticScaleVibScale + "_hapticScaleFactor" +
+                               hapticScaleFactor + "_hapticAdaptiveScaleFactor" +
+                               hapticAdaptiveScaleFactor + "_resonantFrequency" +
                                resonantFrequency + "_qFactor" + qFactor + "_maxAmplitude" +
                                maxAmplitude;
             std::replace_if(
@@ -210,6 +236,8 @@ INSTANTIATE_TEST_SUITE_P(
                                    IFactory::descriptor, getEffectTypeUuidHapticGenerator())),
                            testing::Values(MIN_ID),
                            testing::Values(HapticGenerator::VibratorScale::NONE),
+                           testing::Values(HapticGenerator::HapticScale::UNDEFINED_SCALE_FACTOR),
+                           testing::Values(HapticGenerator::HapticScale::UNDEFINED_SCALE_FACTOR),
                            testing::Values(MIN_FLOAT), testing::Values(MIN_FLOAT),
                            testing::Values(MIN_FLOAT)),
         [](const testing::TestParamInfo<HapticGeneratorParamTest::ParamType>& info) {
@@ -217,6 +245,10 @@ INSTANTIATE_TEST_SUITE_P(
             std::string hapticScaleID = std::to_string(std::get<PARAM_HAPTIC_SCALE_ID>(info.param));
             std::string hapticScaleVibScale = std::to_string(
                     static_cast<int>(std::get<PARAM_HAPTIC_SCALE_VIBRATOR_SCALE>(info.param)));
+            std::string hapticScaleFactor =
+                    std::to_string(std::get<PARAM_HAPTIC_SCALE_SCALE_FACTOR>(info.param));
+            std::string hapticAdaptiveScaleFactor =
+                    std::to_string(std::get<PARAM_HAPTIC_SCALE_ADAPTIVE_SCALE_FACTOR>(info.param));
             std::string resonantFrequency = std::to_string(
                     std::get<PARAM_VIBRATION_INFORMATION_RESONANT_FREQUENCY>(info.param));
             std::string qFactor =
@@ -227,6 +259,8 @@ INSTANTIATE_TEST_SUITE_P(
                                descriptor.common.name + "_UUID_" +
                                toString(descriptor.common.id.uuid) + "_hapticScaleId" +
                                hapticScaleID + "_hapticScaleVibScale" + hapticScaleVibScale +
+                               "_hapticScaleFactor" + hapticScaleFactor +
+                               "_hapticAdaptiveScaleFactor" + hapticAdaptiveScaleFactor +
                                "_resonantFrequency" + resonantFrequency + "_qFactor" + qFactor +
                                "_maxAmplitude" + maxAmplitude;
             std::replace_if(
