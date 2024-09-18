@@ -59,6 +59,11 @@ interface IVibrator {
   android.hardware.vibrator.Braking[] getSupportedBraking();
   void composePwle(in android.hardware.vibrator.PrimitivePwle[] composite, in android.hardware.vibrator.IVibratorCallback callback);
   void performVendorEffect(in android.hardware.vibrator.VendorEffect vendorEffect, in android.hardware.vibrator.IVibratorCallback callback);
+  List<android.hardware.vibrator.PwleV2OutputMapEntry> getPwleV2FrequencyToOutputAccelerationMap();
+  int getPwleV2PrimitiveDurationMaxMillis();
+  int getPwleV2CompositionSizeMax();
+  int getPwleV2PrimitiveDurationMinMillis();
+  void composePwleV2(in android.hardware.vibrator.PwleV2Primitive[] composite, in android.hardware.vibrator.IVibratorCallback callback);
   const int CAP_ON_CALLBACK = (1 << 0) /* 1 */;
   const int CAP_PERFORM_CALLBACK = (1 << 1) /* 2 */;
   const int CAP_AMPLITUDE_CONTROL = (1 << 2) /* 4 */;
@@ -71,4 +76,5 @@ interface IVibrator {
   const int CAP_FREQUENCY_CONTROL = (1 << 9) /* 512 */;
   const int CAP_COMPOSE_PWLE_EFFECTS = (1 << 10) /* 1024 */;
   const int CAP_PERFORM_VENDOR_EFFECTS = (1 << 11) /* 2048 */;
+  const int CAP_COMPOSE_PWLE_EFFECTS_V2 = (1 << 12) /* 4096 */;
 }

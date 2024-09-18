@@ -276,6 +276,7 @@ DumpResult GRPCVehicleHardware::dump(const std::vector<std::string>& options) {
     return {
             .callerShouldDumpState = protoDumpResult.caller_should_dump_state(),
             .buffer = protoDumpResult.buffer(),
+            .refreshPropertyConfigs = protoDumpResult.refresh_property_configs(),
     };
 }
 

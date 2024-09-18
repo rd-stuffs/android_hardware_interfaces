@@ -17,6 +17,7 @@
 #pragma once
 
 #include <aidl/android/hardware/vibrator/BnVibrator.h>
+#include <android-base/thread_annotations.h>
 
 namespace aidl {
 namespace android {
@@ -57,7 +58,18 @@ class Vibrator : public BnVibrator {
     ndk::ScopedAStatus getSupportedBraking(std::vector<Braking>* supported) override;
     ndk::ScopedAStatus composePwle(const std::vector<PrimitivePwle> &composite,
                                    const std::shared_ptr<IVibratorCallback> &callback) override;
+    ndk::ScopedAStatus getPwleV2FrequencyToOutputAccelerationMap(
+            std::vector<PwleV2OutputMapEntry>* _aidl_return) override;
+    ndk::ScopedAStatus getPwleV2PrimitiveDurationMaxMillis(int32_t* maxDurationMs) override;
+    ndk::ScopedAStatus getPwleV2PrimitiveDurationMinMillis(int32_t* minDurationMs) override;
+    ndk::ScopedAStatus getPwleV2CompositionSizeMax(int32_t* maxSize) override;
+    ndk::ScopedAStatus composePwleV2(const std::vector<PwleV2Primitive>& composite,
+                                     const std::shared_ptr<IVibratorCallback>& callback) override;
 
+  private:
+    mutable std::mutex mMutex;
+    int32_t mVersion GUARDED_BY(mMutex) = 0;  // current Hal version
+    int32_t mCapabilities GUARDED_BY(mMutex) = 0;
 };
 
 }  // namespace vibrator
