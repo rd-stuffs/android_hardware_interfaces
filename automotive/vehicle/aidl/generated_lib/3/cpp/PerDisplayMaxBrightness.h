@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
+#pragma once
 
-cc_defaults {
-    name: "VehicleHalInterfaceDefaults",
-    static_libs: [
-        "android.hardware.automotive.vehicle-V3-ndk",
-        "android.hardware.automotive.vehicle.property-V4-ndk",
-    ],
-}
+#include <aidl/android/hardware/automotive/vehicle/VehicleProperty.h>
 
-rust_defaults {
-    name: "VehicleHalInterfaceRustDefaults",
-    rustlibs: [
-        "android.hardware.automotive.vehicle-V3-rust",
-        "android.hardware.automotive.vehicle.property-V4-rust",
-    ],
-}
+namespace aidl::android::hardware::automotive::vehicle {
+
+// Same as VehicleProperty::PER_DISPLAY_MAX_BRIGHTNESS as defined in v4.
+static constexpr VehicleProperty PER_DISPLAY_MAX_BRIGHTNESS = (VehicleProperty)0x11410F4E;
+
+}  // namespace aidl::android::hardware::automotive::vehicle
