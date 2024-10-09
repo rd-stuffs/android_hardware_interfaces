@@ -157,6 +157,13 @@ void BluetoothAudioSession::ReportAudioConfigChanged(
                   << toString(session_type_);
         return;
       }
+    } else if (session_type_ == SessionType::HFP_SOFTWARE_DECODING_DATAPATH ||
+               session_type_ == SessionType::HFP_SOFTWARE_ENCODING_DATAPATH) {
+      if (audio_config.getTag() != AudioConfiguration::pcmConfig) {
+        LOG(ERROR) << __func__ << " invalid audio config type for SessionType ="
+                   << toString(session_type_);
+        return;
+      }
     } else {
       LOG(ERROR) << __func__ << " invalid SessionType ="
                  << toString(session_type_);
@@ -176,6 +183,13 @@ void BluetoothAudioSession::ReportAudioConfigChanged(
       if (audio_config.getTag() != AudioConfiguration::hfpConfig) {
         LOG(ERROR) << __func__ << " invalid audio config type for SessionType ="
                   << toString(session_type_);
+        return;
+      }
+    } else if (session_type_ == SessionType::HFP_SOFTWARE_DECODING_DATAPATH ||
+               session_type_ == SessionType::HFP_SOFTWARE_ENCODING_DATAPATH) {
+      if (audio_config.getTag() != AudioConfiguration::pcmConfig) {
+        LOG(ERROR) << __func__ << " invalid audio config type for SessionType ="
+                   << toString(session_type_);
         return;
       }
     } else {
@@ -666,7 +680,9 @@ bool BluetoothAudioSession::UpdateSourceMetadata(
   if (session_type_ == SessionType::A2DP_SOFTWARE_ENCODING_DATAPATH ||
       session_type_ == SessionType::A2DP_HARDWARE_OFFLOAD_ENCODING_DATAPATH ||
       session_type_ == SessionType::A2DP_SOFTWARE_DECODING_DATAPATH ||
-      session_type_ == SessionType::A2DP_HARDWARE_OFFLOAD_DECODING_DATAPATH) {
+      session_type_ == SessionType::A2DP_HARDWARE_OFFLOAD_DECODING_DATAPATH ||
+      session_type_ == SessionType::HFP_SOFTWARE_ENCODING_DATAPATH ||
+      session_type_ == SessionType::HFP_SOFTWARE_DECODING_DATAPATH) {
     return false;
   }
 
@@ -691,7 +707,9 @@ bool BluetoothAudioSession::UpdateSinkMetadata(
   if (session_type_ == SessionType::A2DP_SOFTWARE_ENCODING_DATAPATH ||
       session_type_ == SessionType::A2DP_HARDWARE_OFFLOAD_ENCODING_DATAPATH ||
       session_type_ == SessionType::A2DP_SOFTWARE_DECODING_DATAPATH ||
-      session_type_ == SessionType::A2DP_HARDWARE_OFFLOAD_DECODING_DATAPATH) {
+      session_type_ == SessionType::A2DP_HARDWARE_OFFLOAD_DECODING_DATAPATH ||
+      session_type_ == SessionType::HFP_SOFTWARE_ENCODING_DATAPATH ||
+      session_type_ == SessionType::HFP_SOFTWARE_DECODING_DATAPATH) {
     return false;
   }
 
