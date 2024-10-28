@@ -17,7 +17,7 @@
 package android.hardware.vibrator;
 
 @VintfStability
-parcelable PwleV2OutputMapEntry {
+parcelable FrequencyAccelerationMapEntry {
     /**
      * Absolute frequency point in the units of hertz
      *
