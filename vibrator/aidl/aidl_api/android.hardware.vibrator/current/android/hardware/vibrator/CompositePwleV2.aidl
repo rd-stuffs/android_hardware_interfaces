@@ -33,7 +33,6 @@
 
 package android.hardware.vibrator;
 @VintfStability
-parcelable PwleV2OutputMapEntry {
-  float frequencyHz;
-  float maxOutputAccelerationGs;
+parcelable CompositePwleV2 {
+  android.hardware.vibrator.PwleV2Primitive[] pwlePrimitives;
 }
