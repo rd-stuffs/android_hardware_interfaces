@@ -38,6 +38,9 @@ parcelable ImsSmsMessage {
   android.hardware.radio.RadioTechnologyFamily tech;
   boolean retry;
   int messageRef;
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   android.hardware.radio.messaging.CdmaSmsMessage[] cdmaMessage;
   android.hardware.radio.messaging.GsmSmsMessage[] gsmMessage;
 }

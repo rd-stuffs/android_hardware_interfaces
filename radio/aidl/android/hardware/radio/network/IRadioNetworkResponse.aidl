@@ -136,6 +136,7 @@ oneway interface IRadioNetworkResponse {
      *   RadioError:NO_RESOURCES
      *   RadioError:CANCELLED
      *   RadioError:SIM_ABSENT
+     * @deprecated Legacy CDMA is unsupported.
      */
     void getCdmaRoamingPreferenceResponse(in RadioResponseInfo info, in CdmaRoamingType type);
 
@@ -372,6 +373,7 @@ oneway interface IRadioNetworkResponse {
      *   RadioError:NO_RESOURCES
      *   RadioError:CANCELLED
      *   RadioError:SIM_ABSENT
+     * @deprecated Legacy CDMA is unsupported.
      */
     void setCdmaRoamingPreferenceResponse(in RadioResponseInfo info);
 
