@@ -36,4 +36,6 @@ package android.hardware.power;
 enum SessionMode {
   POWER_EFFICIENCY,
   GRAPHICS_PIPELINE,
+  AUTO_CPU,
+  AUTO_GPU,
 }

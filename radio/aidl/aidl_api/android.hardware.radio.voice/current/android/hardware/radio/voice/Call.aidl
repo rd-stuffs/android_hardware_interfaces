@@ -51,7 +51,7 @@ parcelable Call {
   String name;
   int namePresentation;
   android.hardware.radio.voice.UusInfo[] uusInfo;
-  android.hardware.radio.voice.AudioQuality audioQuality;
+  android.hardware.radio.voice.AudioQuality audioQuality = android.hardware.radio.voice.AudioQuality.UNSPECIFIED;
   String forwardedNumber;
   const int PRESENTATION_ALLOWED = 0;
   const int PRESENTATION_RESTRICTED = 1;

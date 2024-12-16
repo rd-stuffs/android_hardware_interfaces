@@ -33,7 +33,7 @@
 
 package android.hardware.radio.voice;
 /* @hide */
-@JavaDerive(toString=true) @VintfStability
+@JavaDerive(toString=true) @SuppressWarnings(value={"redundant-name"}) @VintfStability
 parcelable CdmaInformationRecord {
   /**
    * @deprecated Legacy CDMA is unsupported.
