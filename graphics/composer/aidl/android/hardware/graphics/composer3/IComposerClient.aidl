@@ -93,6 +93,18 @@ interface IComposerClient {
      * Seamless requirements cannot be met Exception
      */
     const int EX_SEAMLESS_NOT_POSSIBLE = 10;
+    /**
+     * Proposed configuration failed for undisclosed reasons
+     */
+    const int EX_CONFIG_FAILED = 11;
+
+    /**
+     * The number of per-layer picture profiles in use is larger than the number of layer-specific
+     * picture-processing pipelines, as-defined by getMaxLayerPictureProfiles.
+     *
+     * @see LayerCommand.pictureProfileId
+     */
+    const int EX_PICTURE_PROFILE_MAX_EXCEEDED = 12;
 
     /**
      * Integer.MAX_VALUE is reserved for the invalid configuration.
@@ -558,6 +570,7 @@ interface IComposerClient {
      * @exception EX_BAD_DISPLAY when an invalid display handle was passed in.
      * @exception EX_BAD_CONFIG when the configuration handle passed in is not valid
      *                    for this display.
+     * @exception EX_CONFIG_FAILED when the config failed for undisclosed reasons.
      */
     void setActiveConfig(long display, int config);
 
@@ -583,6 +596,7 @@ interface IComposerClient {
      * achieve the vsync period change without a noticeable visual artifact. When the conditions
      * change and it may be possible to change the vsync period seamlessly, onSeamlessPossible
      * callback must be called to indicate that caller should retry.
+     * @exception EX_CONFIG_FAILED when the config failed for undisclosed reasons.
      *
      * @return is the timeline for the vsync period change.
      */
@@ -913,4 +927,15 @@ interface IComposerClient {
      */
     oneway void notifyExpectedPresent(
             long display, in ClockMonotonicTimestamp expectedPresentTime, int frameIntervalNs);
+
+    /*
+     * Returns the number of layer-specific picture-processing profiles that can be referenced from
+     * multiple LayerCommand.pictureProfileId. If the client passes in more pictureProfileIds whose
+     * values are larger than zero (indicating none) then the implementation can support, it should
+     * return EX_PICTURE_PROFILE_MAX_EXCEEDED.
+     *
+     * If the implementation only supports one display-wide picture-processing
+     * pipeline, a value of zero should be returned here.
+     */
+    int getMaxLayerPictureProfiles(long display);
 }

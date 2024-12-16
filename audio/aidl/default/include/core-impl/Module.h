@@ -148,8 +148,10 @@ class Module : public BnModule {
     struct VendorDebug {
         static const std::string kForceTransientBurstName;
         static const std::string kForceSynchronousDrainName;
+        static const std::string kForceDrainToDrainingName;
         bool forceTransientBurst = false;
         bool forceSynchronousDrain = false;
+        bool forceDrainToDraining = false;
     };
     // ids of device ports created at runtime via 'connectExternalDevice'.
     // Also stores a list of ids of mix ports with dynamic profiles that were populated from
@@ -241,6 +243,8 @@ class Module : public BnModule {
     std::vector<AudioRoute*> getAudioRoutesForAudioPortImpl(int32_t portId);
     Configuration& getConfig();
     const ConnectedDevicePorts& getConnectedDevicePorts() const { return mConnectedDevicePorts; }
+    std::vector<::aidl::android::media::audio::common::AudioDevice>
+    getDevicesFromDevicePortConfigIds(const std::set<int32_t>& devicePortConfigIds);
     bool getMasterMute() const { return mMasterMute; }
     bool getMasterVolume() const { return mMasterVolume; }
     bool getMicMute() const { return mMicMute; }

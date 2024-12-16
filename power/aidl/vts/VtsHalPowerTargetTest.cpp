@@ -30,6 +30,8 @@
 #include <unistd.h>
 #include <cstdint>
 #include "aidl/android/hardware/common/fmq/SynchronizedReadWrite.h"
+#include "aidl/android/hardware/power/CpuHeadroomParams.h"
+#include "aidl/android/hardware/power/GpuHeadroomParams.h"
 
 namespace aidl::android::hardware::power {
 namespace {
@@ -40,11 +42,14 @@ using ::android::hardware::EventFlag;
 using android::hardware::power::Boost;
 using android::hardware::power::ChannelConfig;
 using android::hardware::power::ChannelMessage;
+using android::hardware::power::CpuHeadroomParams;
+using android::hardware::power::GpuHeadroomParams;
 using android::hardware::power::IPower;
 using android::hardware::power::IPowerHintSession;
 using android::hardware::power::Mode;
 using android::hardware::power::SessionHint;
 using android::hardware::power::SessionMode;
+using android::hardware::power::SupportInfo;
 using android::hardware::power::WorkDuration;
 using ChannelMessageContents = ChannelMessage::ChannelMessageContents;
 using ModeSetter = ChannelMessage::ChannelMessageContents::SessionModeSetter;
@@ -82,6 +87,16 @@ const std::vector<SessionMode> kInvalidSessionModes = {
         static_cast<SessionMode>(static_cast<int32_t>(kSessionModes.front()) - 1),
         static_cast<SessionMode>(static_cast<int32_t>(kSessionModes.back()) + 1),
 };
+
+template <class T>
+constexpr size_t enum_size() {
+    return static_cast<size_t>(*(ndk::enum_range<T>().end() - 1)) + 1;
+}
+
+template <class E>
+bool supportFromBitset(int64_t& supportInt, E type) {
+    return (supportInt >> static_cast<int>(type)) % 2;
+}
 
 class DurationWrapper : public WorkDuration {
   public:
@@ -280,12 +295,64 @@ TEST_P(PowerAidl, createHintSessionWithConfig) {
     ASSERT_NE(nullptr, session);
 }
 
+TEST_P(PowerAidl, getCpuHeadroom) {
+    if (mServiceVersion < 6) {
+        GTEST_SKIP() << "DEVICE not launching with Power V6 and beyond.";
+    }
+    CpuHeadroomParams params;
+    std::vector<float> headroom;
+    auto ret = power->getCpuHeadroom(params, &headroom);
+    if (ret.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "power->getCpuHeadroom is not supported";
+    }
+    ASSERT_TRUE(ret.isOk());
+    int64_t minIntervalMillis;
+    ASSERT_TRUE(power->getCpuHeadroomMinIntervalMillis(&minIntervalMillis).isOk());
+    ASSERT_GE(minIntervalMillis, 0);
+    ASSERT_GE(headroom.size(), 1);
+    ASSERT_GE(headroom[0], 0.0f);
+    ASSERT_LE(headroom[0], 100.00f);
+}
+
+TEST_P(PowerAidl, getGpuHeadroom) {
+    if (mServiceVersion < 6) {
+        GTEST_SKIP() << "DEVICE not launching with Power V6 and beyond.";
+    }
+    GpuHeadroomParams params;
+    float headroom;
+    auto ret = power->getGpuHeadroom(params, &headroom);
+    if (ret.getExceptionCode() == EX_UNSUPPORTED_OPERATION) {
+        GTEST_SKIP() << "power->getGpuHeadroom is not supported";
+    }
+    ASSERT_TRUE(ret.isOk());
+    int64_t minIntervalMillis;
+    ASSERT_TRUE(power->getGpuHeadroomMinIntervalMillis(&minIntervalMillis).isOk());
+    ASSERT_GE(minIntervalMillis, 0);
+    ASSERT_GE(headroom, 0.0f);
+    ASSERT_LE(headroom, 100.00f);
+}
+
 // FIXED_PERFORMANCE mode is required for all devices which ship on Android 11
 // or later
 TEST_P(PowerAidl, hasFixedPerformance) {
     bool supported;
     ASSERT_TRUE(power->isModeSupported(Mode::FIXED_PERFORMANCE, &supported).isOk());
     ASSERT_TRUE(supported);
+}
+
+TEST_P(PowerAidl, hasSupportInfo) {
+    SupportInfo config;
+    ASSERT_TRUE(power->getSupportInfo(&config).isOk());
+    for (Mode mode : kModes) {
+        bool supported;
+        power->isModeSupported(mode, &supported);
+        ASSERT_EQ(supported, supportFromBitset(config.modes, mode));
+    }
+    for (Boost boost : kBoosts) {
+        bool supported;
+        power->isBoostSupported(boost, &supported);
+        ASSERT_EQ(supported, supportFromBitset(config.boosts, boost));
+    }
 }
 
 TEST_P(HintSessionAidl, createAndCloseHintSession) {

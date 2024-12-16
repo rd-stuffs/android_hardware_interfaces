@@ -18,10 +18,13 @@ package android.hardware.power;
 
 import android.hardware.power.Boost;
 import android.hardware.power.ChannelConfig;
+import android.hardware.power.CpuHeadroomParams;
+import android.hardware.power.GpuHeadroomParams;
 import android.hardware.power.IPowerHintSession;
 import android.hardware.power.Mode;
 import android.hardware.power.SessionConfig;
 import android.hardware.power.SessionTag;
+import android.hardware.power.SupportInfo;
 
 @VintfStability
 interface IPower {
@@ -144,4 +147,57 @@ interface IPower {
      * @param   uid The UID to be associated with this channel.
      */
     oneway void closeSessionChannel(in int tgid, in int uid);
+
+    /**
+     * Called to get detailed information on the support status of various PowerHAL
+     * features, such as hint sessions and specific boosts.
+     *
+     * @return  a SupportInfo giving detailed support information, or
+     *          EX_UNSUPPORTED_OPERATION if detailed support checking is itself
+     *          not supported.
+     */
+    SupportInfo getSupportInfo();
+
+    /**
+     * Provides an estimate of available CPU headroom the device based on past history.
+     * <p>
+     * @param params params to customize the CPU headroom calculation
+     * @return a single value or an array of values depending on selection type of params.
+     *         Each value is ranged from [0, 100], and 0 indicates no CPU resources were left
+     *         during the calculation interval and the app may expect low resources to be granted.
+     * @throws EX_UNSUPPORTED_OPERATION if the API is unsupported or the request params can't be
+     *         served.
+     */
+    float[] getCpuHeadroom(in CpuHeadroomParams params);
+
+    /**
+     * Provides an estimate of available GPU headroom the device based on past history.
+     * <p>
+     * @param params params to customize the GPU headroom calculation
+     * @return Value is ranged from [0, 100], and 0 indicates no GPU resources were left
+     *         during the calculation interval and the app may expect low resources to be granted.
+     * @throws EX_UNSUPPORTED_OPERATION if the API is unsupported or the request params can't be
+     *         served.
+     */
+    float getGpuHeadroom(in GpuHeadroomParams params);
+
+    /**
+     * Minimum polling interval for calling getCpuHeadroom in milliseconds.
+     *
+     * The getCpuHeadroom API may return cached result if called more frequent
+     * than the interval.
+     *
+     * @throws EX_UNSUPPORTED_OPERATION if the API is unsupported.
+     */
+    long getCpuHeadroomMinIntervalMillis();
+
+    /**
+     * Minimum polling interval for calling getGpuHeadroom in milliseconds.
+     *
+     * The getGpuHeadroom API may return cached result if called more frequent
+     * than the interval.
+     *
+     * @throws EX_UNSUPPORTED_OPERATION if the API is unsupported.
+     */
+    long getGpuHeadroomMinIntervalMillis();
 }
