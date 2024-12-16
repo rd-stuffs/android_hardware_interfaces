@@ -33,6 +33,8 @@ using namespace std::chrono_literals;
 using ::aidl::android::hardware::common::fmq::MQDescriptor;
 using ::aidl::android::hardware::common::fmq::SynchronizedReadWrite;
 using ::aidl::android::hardware::power::ChannelMessage;
+using ::aidl::android::hardware::power::CompositionData;
+using ::aidl::android::hardware::power::CompositionUpdate;
 using ::android::AidlMessageQueue;
 
 using ndk::ScopedAStatus;
@@ -69,25 +71,12 @@ ScopedAStatus Power::isBoostSupported(Boost type, bool* _aidl_return) {
     return ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus Power::getCpuHeadroom(const CpuHeadroomParams& _,
-                                         std::vector<float>* _aidl_return) {
-    *_aidl_return = {0.5f};
-    return ndk::ScopedAStatus::ok();
+ndk::ScopedAStatus Power::getCpuHeadroom(const CpuHeadroomParams&, CpuHeadroomResult*) {
+    return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
 }
 
-ndk::ScopedAStatus Power::getGpuHeadroom(const GpuHeadroomParams& _, float* _aidl_return) {
-    *_aidl_return = 0.5f;
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus Power::getCpuHeadroomMinIntervalMillis(int64_t* _aidl_return) {
-    *_aidl_return = 1000;
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus Power::getGpuHeadroomMinIntervalMillis(int64_t* _aidl_return) {
-    *_aidl_return = 1000;
-    return ndk::ScopedAStatus::ok();
+ndk::ScopedAStatus Power::getGpuHeadroom(const GpuHeadroomParams&, GpuHeadroomResult*) {
+    return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
 }
 
 ScopedAStatus Power::createHintSession(int32_t, int32_t, const std::vector<int32_t>& tids, int64_t,
@@ -142,16 +131,36 @@ int64_t bitsForEnum() {
 }
 
 ndk::ScopedAStatus Power::getSupportInfo(SupportInfo* _aidl_return) {
-    static SupportInfo supportInfo = {
-            .usesSessions = false,
-            .modes = bitsForEnum<Mode>(),
-            .boosts = bitsForEnum<Boost>(),
-            .sessionHints = 0,
-            .sessionModes = 0,
-            .sessionTags = 0,
-    };
+    static SupportInfo supportInfo = {.usesSessions = false,
+                                      .modes = bitsForEnum<Mode>(),
+                                      .boosts = bitsForEnum<Boost>(),
+                                      .sessionHints = 0,
+                                      .sessionModes = 0,
+                                      .sessionTags = 0,
+                                      .compositionData = {
+                                              .isSupported = false,
+                                              .disableGpuFences = false,
+                                              .maxBatchSize = 1,
+                                              .alwaysBatch = false,
+                                      },
+                                      .headroom = {
+                                              .isCpuSupported = false,
+                                              .isGpuSupported = false,
+                                              .cpuMinIntervalMillis = 0,
+                                              .gpuMinIntervalMillis = 0,
+                                      }};
     // Copy the support object into the binder
     *_aidl_return = supportInfo;
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Power::sendCompositionData(const std::vector<CompositionData>&) {
+    LOG(INFO) << "Composition data received!";
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Power::sendCompositionUpdate(const CompositionUpdate&) {
+    LOG(INFO) << "Composition update received!";
     return ndk::ScopedAStatus::ok();
 }
 

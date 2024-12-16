@@ -17,7 +17,6 @@
 package android.hardware.wifi;
 
 import android.hardware.wifi.AfcChannelAllowance;
-import android.hardware.wifi.ApIfaceParams;
 import android.hardware.wifi.IWifiApIface;
 import android.hardware.wifi.IWifiChipEventCallback;
 import android.hardware.wifi.IWifiNanIface;
@@ -92,6 +91,14 @@ interface IWifiChip {
          * Chip supports Wi-Fi 7 MLO SoftAp.
          */
         MLO_SAP = 1 << 10,
+        /**
+         * Chip supports multiple Wi-Fi 7 multi-link devices (MLD) on SoftAp.
+         * When this feature flag is enabled, it is an indication that the chip can
+         * support Bridged-SoftAp in 11be with separate MLD MAC addresses.
+         * When this feature is disabled, then only one MLD address can be used in 11be mode
+         * (if supported), this includes use of MLO if MLO_SAP flag is set to True.
+         */
+        MULTIPLE_MLD_ON_SAP = 1 << 11,
     }
 
     /**
@@ -1220,6 +1227,26 @@ interface IWifiChip {
      *         |WifiStatusCode.ERROR_UNKNOWN|
      */
     void setVoipMode(in VoipMode mode);
+
+    /**
+     * Parameters for setting up access point (AP) interfaces.
+     */
+    @VintfStability
+    parcelable ApIfaceParams {
+        /**
+         * IfaceConcurrencyType to be created. Takes one of
+         * |IfaceConcurrencyType.AP| or |IfaceConcurrencyType.AP_BRIDGED|
+         */
+        IfaceConcurrencyType ifaceType;
+        /**
+         * Whether the current iface will be operated on Multi-links on the one MLD device (MLO).
+         */
+        boolean usesMlo;
+        /**
+         * Optional vendor-specific configuration parameters.
+         */
+        @nullable OuiKeyedData[] vendorData;
+    }
 
     /**
      * Create an AP or bridged AP iface on the chip based on ApIfaceParamss.

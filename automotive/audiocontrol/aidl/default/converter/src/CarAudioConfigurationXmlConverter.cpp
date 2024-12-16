@@ -645,11 +645,9 @@ bool parseVolumeActivationType(const xsd::ActivationType& xsdType,
 bool parseVolumeGroupActivationEntry(const xsd::ActivationVolumeConfigEntryType& xsdEntry,
                                      api::VolumeActivationConfigurationEntry& entry) {
     if (!xsdEntry.hasInvocationType()) {
-        LOG(ERROR) << __func__ << " Activation config entry missing invocation type";
-        return false;
-    }
-
-    if (!parseVolumeActivationType(xsdEntry.getInvocationType(), entry.type)) {
+        // Legacy file had default invocation type as on playback changed
+        entry.type = api::VolumeInvocationType::ON_PLAYBACK_CHANGED;
+    } else if (!parseVolumeActivationType(xsdEntry.getInvocationType(), entry.type)) {
         LOG(ERROR) << __func__ << " Could not parse configuration entry type";
         return false;
     }

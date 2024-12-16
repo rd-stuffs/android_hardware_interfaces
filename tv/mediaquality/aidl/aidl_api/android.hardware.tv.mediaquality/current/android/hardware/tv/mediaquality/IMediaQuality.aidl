@@ -38,4 +38,23 @@ interface IMediaQuality {
   void setAmbientBacklightDetector(in android.hardware.tv.mediaquality.AmbientBacklightSettings settings);
   void setAmbientBacklightDetectionEnabled(in boolean enabled);
   boolean getAmbientBacklightDetectionEnabled();
+  boolean isAutoPqSupported();
+  boolean getAutoPqEnabled();
+  void setAutoPqEnabled(boolean enable);
+  boolean isAutoSrSupported();
+  boolean getAutoSrEnabled();
+  void setAutoSrEnabled(boolean enable);
+  boolean isAutoAqSupported();
+  boolean getAutoAqEnabled();
+  void setAutoAqEnabled(boolean enable);
+  android.hardware.tv.mediaquality.IPictureProfileChangedListener getPictureProfileListener();
+  void setPictureProfileAdjustmentListener(android.hardware.tv.mediaquality.IPictureProfileAdjustmentListener listener);
+  void sendDefaultPictureParameters(in android.hardware.tv.mediaquality.PictureParameters pictureParameters);
+  android.hardware.tv.mediaquality.ISoundProfileChangedListener getSoundProfileListener();
+  void setSoundProfileAdjustmentListener(android.hardware.tv.mediaquality.ISoundProfileAdjustmentListener listener);
+  void sendDefaultSoundParameters(in android.hardware.tv.mediaquality.SoundParameters soundParameters);
+  void getParamCaps(in android.hardware.tv.mediaquality.ParameterName[] paramNames, out android.hardware.tv.mediaquality.ParamCapability[] caps);
+  void getVendorParamCaps(in android.hardware.tv.mediaquality.VendorParameterIdentifier[] names, out android.hardware.tv.mediaquality.VendorParamCapability[] caps);
+  void setPictureParametersCallback(android.hardware.tv.mediaquality.IPictureParametersCallback callback);
+  void setSoundParametersCallback(android.hardware.tv.mediaquality.ISoundParametersCallback callback);
 }
