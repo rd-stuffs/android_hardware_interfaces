@@ -31,8 +31,11 @@
 // with such a backward incompatible change, it has a high risk of breaking
 // later when a module using the interface is updated, e.g., Mainline modules.
 
-package android.hardware.tv.mediaquality;
-@VintfStability
-interface IPictureParametersCallback {
-  android.hardware.tv.mediaquality.PictureParameters getPictureParameters(long pictureProfileId);
+package android.hardware.radio.config;
+/* @hide */
+@Backing(type="int") @JavaDerive(toString=true) @VintfStability
+enum SimType {
+  UNKNOWN = 0,
+  PHYSICAL = (1 << 0) /* 1 */,
+  ESIM = (1 << 1) /* 2 */,
 }

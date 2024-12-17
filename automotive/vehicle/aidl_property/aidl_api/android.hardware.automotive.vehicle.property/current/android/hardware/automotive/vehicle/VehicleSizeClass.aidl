@@ -32,9 +32,41 @@
 // later when a module using the interface is updated, e.g., Mainline modules.
 
 package android.hardware.automotive.vehicle;
-@JavaDerive(equals=true, toString=true) @RustDerive(Clone=true) @VintfStability
-parcelable ValueRange {
-  @nullable android.hardware.automotive.vehicle.RawPropValues minValue;
-  @nullable android.hardware.automotive.vehicle.RawPropValues maxValue;
-  @nullable List<android.hardware.automotive.vehicle.RawPropValues> supportedValues;
+@Backing(type="int") @VintfStability
+enum VehicleSizeClass {
+  EPA_TWO_SEATER = 0x100,
+  EPA_MINICOMPACT = 0x101,
+  EPA_SUBCOMPACT = 0x102,
+  EPA_COMPACT = 0x103,
+  EPA_MIDSIZE = 0x104,
+  EPA_LARGE = 0x105,
+  EPA_SMALL_STATION_WAGON = 0x106,
+  EPA_MIDSIZE_STATION_WAGON = 0x107,
+  EPA_LARGE_STATION_WAGON = 0x108,
+  EPA_SMALL_PICKUP_TRUCK = 0x109,
+  EPA_STANDARD_PICKUP_TRUCK = 0x10A,
+  EPA_VAN = 0x10B,
+  EPA_MINIVAN = 0x10C,
+  EPA_SMALL_SUV = 0x10D,
+  EPA_STANDARD_SUV = 0x10E,
+  EU_A_SEGMENT = 0x200,
+  EU_B_SEGMENT = 0x201,
+  EU_C_SEGMENT = 0x202,
+  EU_D_SEGMENT = 0x203,
+  EU_E_SEGMENT = 0x204,
+  EU_F_SEGMENT = 0x205,
+  EU_J_SEGMENT = 0x206,
+  EU_M_SEGMENT = 0x207,
+  EU_S_SEGMENT = 0x208,
+  JPN_KEI = 0x300,
+  JPN_SMALL_SIZE = 0x301,
+  JPN_NORMAL_SIZE = 0x302,
+  US_GVWR_CLASS_1_CV = 0x400,
+  US_GVWR_CLASS_2_CV = 0x401,
+  US_GVWR_CLASS_3_CV = 0x402,
+  US_GVWR_CLASS_4_CV = 0x403,
+  US_GVWR_CLASS_5_CV = 0x404,
+  US_GVWR_CLASS_6_CV = 0x405,
+  US_GVWR_CLASS_7_CV = 0x406,
+  US_GVWR_CLASS_8_CV = 0x407,
 }

@@ -31,8 +31,8 @@
 // with such a backward incompatible change, it has a high risk of breaking
 // later when a module using the interface is updated, e.g., Mainline modules.
 
-package android.hardware.tv.mediaquality;
+package android.hardware.virtualization.capabilities;
 @VintfStability
-interface ISoundParametersCallback {
-  android.hardware.tv.mediaquality.SoundParameters getSoundParameters(long SoundProfileId);
+interface IVmCapabilitiesService {
+  void grantAccessToVendorTeeServices(in ParcelFileDescriptor vmFd, in String[] vendorTeeServices);
 }

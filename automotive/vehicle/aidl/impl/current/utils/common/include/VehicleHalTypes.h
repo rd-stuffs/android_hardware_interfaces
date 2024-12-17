@@ -93,6 +93,7 @@
 #include <aidl/android/hardware/automotive/vehicle/VehiclePropertyStatus.h>
 #include <aidl/android/hardware/automotive/vehicle/VehiclePropertyType.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleSeatOccupancyState.h>
+#include <aidl/android/hardware/automotive/vehicle/VehicleSizeClass.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleTurnSignal.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleUnit.h>
 #include <aidl/android/hardware/automotive/vehicle/VehicleVendorPermission.h>

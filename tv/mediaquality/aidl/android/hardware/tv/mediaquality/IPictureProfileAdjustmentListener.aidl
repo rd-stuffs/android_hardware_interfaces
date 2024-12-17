@@ -39,11 +39,25 @@ oneway interface IPictureProfileAdjustmentListener {
     void onParamCapabilityChanged(long pictureProfileId, in ParamCapability[] caps);
 
     /**
-     * Notifies Media Quality Manager when venfor parameter capabilities changed.
+     * Notifies Media Quality Manager when vendor parameter capabilities changed.
+     *
+     * <p>This should be also called when the listener is registered to let the client know
+     * what vendor parameters are supported.
      *
      * @param pictureProfileId the ID of the profile used by the media content. -1 if there
      *                         is no associated profile.
      * @param caps the updated vendor capabilities.
      */
     void onVendorParamCapabilityChanged(long pictureProfileId, in VendorParamCapability[] caps);
+
+    /**
+     * Request the picture parameters by picture profile id. Check PictureParameters for its detail.
+     * This is called from the HAL to media quality framework.
+     *
+     * The requested picture parameters will get from IMediaQuality::sendPictureParameters called
+     * by the framework.
+     *
+     * @param pictureProfileId The PictureProfile id that associate with the PictureProfile.
+     */
+    void onRequestPictureParameters(long pictureProfileId);
 }

@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-package android.hardware.tv.mediaquality;
+package android.hardware.radio.config;
 
-import android.hardware.tv.mediaquality.SoundParameters;
+import android.hardware.radio.config.SimType;
 
+/** @hide */
 @VintfStability
-interface ISoundParametersCallback {
+@JavaDerive(toString=true)
+parcelable SimTypeInfo {
     /**
-     * Get the Sound parameters by SoundProfile id. Check SoundParameters for its' detail.
-     * This is called from the HAL to media quality framework.
-     *
-     * @param SoundProfileId The SoundProfile id that associate with the SoundProfile.
-     * @return SoundParameters with all the pre-defined parameters and vendor defined parameters.
-     */
-    SoundParameters getSoundParameters(long SoundProfileId);
+     * Current SimType on the physical slot id.
+     **/
+    SimType currentSimType = SimType.UNKNOWN;
+    /**
+     * Bitmask of the sim types supported by the physical slot id. Physical slot can support more
+     * than one SimType.
+     * Example:
+     * if the physical slot id supports either pSIM/eSIM and currently pSIM is active,
+     * currentSimType will be SimType::PHYSICAL and supportedSimTypes will be
+     * SimType::PHYSICAL | SimType::ESIM.
+     **/
+    int supportedSimTypes;
 }

@@ -30,8 +30,6 @@ use android_hardware_tv_mediaquality::aidl::android::hardware::tv::mediaquality:
     SoundParameters::SoundParameters,
     VendorParamCapability::VendorParamCapability,
     VendorParameterIdentifier::VendorParameterIdentifier,
-    IPictureParametersCallback::IPictureParametersCallback,
-    ISoundParametersCallback::ISoundParametersCallback,
 };
 use binder::{Interface, Strong};
 use std::sync::{Arc, Mutex};
@@ -54,8 +52,6 @@ pub struct MediaQualityService {
             Arc<Mutex<Option<Strong<dyn ISoundProfileAdjustmentListener>>>>,
     picture_profile_changed_listener: Arc<Mutex<Option<Strong<dyn IPictureProfileChangedListener>>>>,
     sound_profile_changed_listener: Arc<Mutex<Option<Strong<dyn ISoundProfileChangedListener>>>>,
-    picture_parameters_callback: Arc<Mutex<Option<Strong<dyn IPictureParametersCallback>>>>,
-    sound_parameters_callback: Arc<Mutex<Option<Strong<dyn ISoundParametersCallback>>>>,
 }
 
 impl MediaQualityService {
@@ -77,8 +73,6 @@ impl MediaQualityService {
             sound_profile_adjustment_listener: Arc::new(Mutex::new(None)),
             picture_profile_changed_listener: Arc::new(Mutex::new(None)),
             sound_profile_changed_listener: Arc::new(Mutex::new(None)),
-            picture_parameters_callback: Arc::new(Mutex::new(None)),
-            sound_parameters_callback: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -272,21 +266,13 @@ impl IMediaQuality for MediaQualityService {
         Ok(())
     }
 
-    fn setPictureParametersCallback(
-        &self,
-        callback: &Strong<dyn IPictureParametersCallback>
-    ) -> binder::Result<()> {
-        let mut cb = self.picture_parameters_callback.lock().unwrap();
-        *cb = Some(callback.clone());
+    fn sendPictureParameters(&self, _picture_parameters: &PictureParameters) -> binder::Result<()>{
+        println!("Received picture parameters");
         Ok(())
     }
 
-    fn setSoundParametersCallback(
-        &self,
-        callback: &Strong<dyn ISoundParametersCallback>
-    ) -> binder::Result<()> {
-        let mut cb = self.sound_parameters_callback.lock().unwrap();
-        *cb = Some(callback.clone());
+    fn sendSoundParameters(&self, _sound_parameters: &SoundParameters) -> binder::Result<()>{
+        println!("Received sound parameters");
         Ok(())
     }
 }

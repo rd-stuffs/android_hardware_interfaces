@@ -123,4 +123,5 @@ rust_protobuf {
     proto_flags: [
         "-I external/protobuf/src",
     ],
+    min_sdk_version: "35",
 }

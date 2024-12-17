@@ -32,6 +32,6 @@ cc_library_headers {
     vendor_available: true,
     local_include_dirs: ["."],
     export_include_dirs: ["."],
-    defaults: ["VehicleHalInterfaceDefaults"],
+    defaults: ["VehicleHalInterfaceDefaults-V3"],
     host_supported: true,
 }

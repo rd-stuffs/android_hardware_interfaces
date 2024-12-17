@@ -18,14 +18,15 @@ package android.hardware.tv.mediaquality;
 
 import android.hardware.tv.mediaquality.ParameterDefaultValue;
 import android.hardware.tv.mediaquality.ParameterRange;
+import android.hardware.tv.mediaquality.VendorParameterIdentifier;
 
 /**
  * Capability of vendor parameters.
  */
 @VintfStability
 parcelable VendorParamCapability {
-    /** Name of the parameter **/
-    ParcelableHolder name;
+    /** Identifier of the parameter **/
+    VendorParameterIdentifier identifier;
 
     /** true if this parameter is supported **/
     boolean isSupported;
