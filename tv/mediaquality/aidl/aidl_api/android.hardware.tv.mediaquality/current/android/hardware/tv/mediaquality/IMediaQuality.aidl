@@ -55,6 +55,6 @@ interface IMediaQuality {
   void sendDefaultSoundParameters(in android.hardware.tv.mediaquality.SoundParameters soundParameters);
   void getParamCaps(in android.hardware.tv.mediaquality.ParameterName[] paramNames, out android.hardware.tv.mediaquality.ParamCapability[] caps);
   void getVendorParamCaps(in android.hardware.tv.mediaquality.VendorParameterIdentifier[] names, out android.hardware.tv.mediaquality.VendorParamCapability[] caps);
-  void setPictureParametersCallback(android.hardware.tv.mediaquality.IPictureParametersCallback callback);
-  void setSoundParametersCallback(android.hardware.tv.mediaquality.ISoundParametersCallback callback);
+  void sendPictureParameters(in android.hardware.tv.mediaquality.PictureParameters pictureParameters);
+  void sendSoundParameters(in android.hardware.tv.mediaquality.SoundParameters soundParameters);
 }

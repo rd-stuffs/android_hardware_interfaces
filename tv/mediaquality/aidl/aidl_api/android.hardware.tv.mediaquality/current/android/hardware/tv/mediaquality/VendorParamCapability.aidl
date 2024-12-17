@@ -34,7 +34,7 @@
 package android.hardware.tv.mediaquality;
 @VintfStability
 parcelable VendorParamCapability {
-  ParcelableHolder name;
+  android.hardware.tv.mediaquality.VendorParameterIdentifier identifier;
   boolean isSupported;
   @nullable android.hardware.tv.mediaquality.ParameterDefaultValue defaultValue;
   @nullable android.hardware.tv.mediaquality.ParameterRange range;

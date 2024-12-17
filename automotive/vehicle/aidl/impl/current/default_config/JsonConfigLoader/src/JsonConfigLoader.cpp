@@ -84,6 +84,7 @@ using ::aidl::android::hardware::automotive::vehicle::VehicleProperty;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropertyAccess;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropertyChangeMode;
 using ::aidl::android::hardware::automotive::vehicle::VehicleSeatOccupancyState;
+using ::aidl::android::hardware::automotive::vehicle::VehicleSizeClass;
 using ::aidl::android::hardware::automotive::vehicle::VehicleTurnSignal;
 using ::aidl::android::hardware::automotive::vehicle::VehicleUnit;
 using ::aidl::android::hardware::automotive::vehicle::VehicleVendorPermission;
@@ -261,6 +262,8 @@ JsonValueParser::JsonValueParser() {
             std::make_unique<ConstantParser<VehicleAirbagLocation>>();
     mConstantParsersByType["ImpactSensorLocation"] =
             std::make_unique<ConstantParser<ImpactSensorLocation>>();
+    mConstantParsersByType["VehicleSizeClass"] =
+            std::make_unique<ConstantParser<VehicleSizeClass>>();
     mConstantParsersByType["EmergencyLaneKeepAssistState"] =
             std::make_unique<ConstantParser<EmergencyLaneKeepAssistState>>();
     mConstantParsersByType["CameraServiceState"] =

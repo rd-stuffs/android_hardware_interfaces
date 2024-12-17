@@ -100,6 +100,21 @@
             }
         },
         {
+            "property": "VehicleProperty::INFO_MODEL_TRIM",
+            "defaultValue": {
+                "stringValue": "Sport"
+            }
+        },
+        {
+            "property": "VehicleProperty::INFO_VEHICLE_SIZE_CLASS",
+            "defaultValue": {
+                "int32Values": [
+                    "VehicleSizeClass::EU_A_SEGMENT",
+                    "VehicleSizeClass::JPN_KEI"
+                ]
+            }
+        },
+        {
             "property": "VehicleProperty::PERF_VEHICLE_SPEED",
             "defaultValue": {
                 "floatValues": [
@@ -1465,6 +1480,26 @@
             "minSampleRate": 1.0
         },
         {
+            "property": "VehicleProperty::INSTANTANEOUS_FUEL_ECONOMY",
+            "defaultValue": {
+                "floatValues": [
+                    0.0
+                ]
+            },
+            "maxSampleRate": 10.0,
+            "minSampleRate": 1.0
+        },
+        {
+            "property": "VehicleProperty::INSTANTANEOUS_EV_EFFICIENCY",
+            "defaultValue": {
+                "floatValues": [
+                    0.0
+                ]
+            },
+            "maxSampleRate": 10.0,
+            "minSampleRate": 1.0
+        },
+        {
             "property": "VehicleProperty::ENGINE_RPM",
             "defaultValue": {
                 "floatValues": [
@@ -1707,6 +1742,118 @@
                     "areaId": "Constants::WHEEL_REAR_LEFT"
                 }
             ]
+        },
+        {
+            "property": "VehicleProperty::ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE",
+            "defaultValue": {
+                "floatValues": [
+                    0.0
+                ]
+            },
+            "maxSampleRate": 10.0,
+            "minSampleRate": 1.0
+        },
+        {
+            "property": "VehicleProperty::BRAKE_PEDAL_COMPRESSION_PERCENTAGE",
+            "defaultValue": {
+                "floatValues": [
+                    0.0
+                ]
+            },
+            "maxSampleRate": 10.0,
+            "minSampleRate": 1.0
+        },
+        {
+            "property": "VehicleProperty::BRAKE_PAD_WEAR_PERCENTAGE",
+            "areas": [
+                {
+                    "areaId": "Constants::WHEEL_FRONT_LEFT",
+                    "defaultValue": {
+                        "floatValues": [
+                            0.0
+                        ]
+                    }
+                },
+                {
+                    "areaId": "Constants::WHEEL_FRONT_RIGHT",
+                    "defaultValue": {
+                        "floatValues": [
+                            0.0
+                        ]
+                    }
+                },
+                {
+                    "areaId": "Constants::WHEEL_REAR_LEFT",
+                    "defaultValue": {
+                        "floatValues": [
+                            0.0
+                        ]
+                    }
+                },
+                {
+                    "areaId": "Constants::WHEEL_REAR_RIGHT",
+                    "defaultValue": {
+                        "floatValues": [
+                            0.0
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "property": "VehicleProperty::BRAKE_FLUID_LEVEL_LOW",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            }
+        },
+        {
+            "property": "VehicleProperty::VEHICLE_PASSIVE_SUSPENSION_HEIGHT",
+            "areas": [
+                {
+                    "defaultValue": {
+                        "int32Values": [
+                            0
+                        ]
+                    },
+                    "areaId": "Constants::WHEEL_FRONT_LEFT",
+                    "minInt32Value": -100,
+                    "maxInt32Value": 100
+                },
+                {
+                    "defaultValue": {
+                        "int32Values": [
+                            0
+                        ]
+                    },
+                    "areaId": "Constants::WHEEL_FRONT_RIGHT",
+                    "minInt32Value": -100,
+                    "maxInt32Value": 100
+                },
+                {
+                    "defaultValue": {
+                        "int32Values": [
+                            0
+                        ]
+                    },
+                    "areaId": "Constants::WHEEL_REAR_RIGHT",
+                    "minInt32Value": -100,
+                    "maxInt32Value": 100
+                },
+                {
+                    "defaultValue": {
+                        "int32Values": [
+                            0
+                        ]
+                    },
+                    "areaId": "Constants::WHEEL_REAR_LEFT",
+                    "minInt32Value": -100,
+                    "maxInt32Value": 100
+                }
+            ],
+            "maxSampleRate": 10.0,
+            "minSampleRate": 1.0
         },
         {
             "property": "VehicleProperty::TIRE_PRESSURE_DISPLAY_UNITS",
@@ -2521,7 +2668,15 @@
             ]
         },
         {
-            "property": "VehicleProperty::TURN_SIGNAL_STATE",
+            "property": "VehicleProperty::TURN_SIGNAL_LIGHT_STATE",
+            "defaultValue": {
+                "int32Values": [
+                    "VehicleTurnSignal::NONE"
+                ]
+            }
+        },
+        {
+            "property": "VehicleProperty::TURN_SIGNAL_SWITCH",
             "defaultValue": {
                 "int32Values": [
                     "VehicleTurnSignal::NONE"
@@ -2592,6 +2747,14 @@
                     ]
                 }
             ]
+        },
+        {
+            "property": "VehicleProperty::VEHICLE_HORN_ENGAGED",
+            "defaultValue": {
+                "int32Values": [
+                    0
+                ]
+            }
         },
         {
             "property": "VehicleProperty::DOOR_LOCK",
@@ -4743,6 +4906,14 @@
         },
         {
             "property": "VehicleProperty::VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL",
+            "defaultValue": {
+                "int32Values": [
+                    "VehicleAutonomousState::LEVEL_0"
+                ]
+            }
+        },
+        {
+            "property": "VehicleProperty::VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL",
             "defaultValue": {
                 "int32Values": [
                     "VehicleAutonomousState::LEVEL_0"

@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package android.hardware.tv.mediaquality;
+package android.hardware.virtualization.capabilities;
 
-import android.hardware.tv.mediaquality.PictureParameters;
-
+/**
+ * Encapsulates vendor-specific capabilities that can be granted to VMs.
+ */
 @VintfStability
-interface IPictureParametersCallback {
+interface IVmCapabilitiesService {
     /**
-     * Get the picture parameters by PictureProfile id. Check PictureParameters for its' detail.
-     * This is called from the HAL to media quality framework.
-     *
-     * @param pictureProfileId The PictureProfile id that associate with the PictureProfile.
-     * @return PictureParameters with all the pre-defined parameters and vendor defined parameters.
+     * Grant access for the VM represented by the given vm_fd to the given vendor-owned tee
+     * services. The names in |vendorTeeServices| must match the ones defined in the
+     * tee_service_contexts files.
+     * TODO(ioffe): link to the integration doc for custom smc filtering feature once
+     * it's ready.
      */
-    PictureParameters getPictureParameters(long pictureProfileId);
+    void grantAccessToVendorTeeServices(
+            in ParcelFileDescriptor vmFd, in String[] vendorTeeServices);
 }

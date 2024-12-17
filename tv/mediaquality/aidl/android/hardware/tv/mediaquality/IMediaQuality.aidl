@@ -18,10 +18,8 @@ package android.hardware.tv.mediaquality;
 
 import android.hardware.tv.mediaquality.AmbientBacklightSettings;
 import android.hardware.tv.mediaquality.IMediaQualityCallback;
-import android.hardware.tv.mediaquality.IPictureParametersCallback;
 import android.hardware.tv.mediaquality.IPictureProfileAdjustmentListener;
 import android.hardware.tv.mediaquality.IPictureProfileChangedListener;
-import android.hardware.tv.mediaquality.ISoundParametersCallback;
 import android.hardware.tv.mediaquality.ISoundProfileAdjustmentListener;
 import android.hardware.tv.mediaquality.ISoundProfileChangedListener;
 import android.hardware.tv.mediaquality.ParamCapability;
@@ -151,7 +149,14 @@ interface IMediaQuality {
     /**
      * Sets the listener for picture adjustment from the HAL.
      *
-     * @param IPictureProfileAdjustmentListener listener object to pass picture profile.
+     * When the same client registers this listener multiple times, only the most recent
+     * registration will be active. The previous listener will be overwritten.
+     *
+     * When different client registers this listener, it will overwrite the previous registered
+     * client. Only one listener can be active.
+     *
+     * @param IPictureProfileAdjustmentListener listener object to pass picture profile, profile
+     *        id and hardware capability.
      */
     void setPictureProfileAdjustmentListener(IPictureProfileAdjustmentListener listener);
 
@@ -174,7 +179,14 @@ interface IMediaQuality {
     /**
      * Sets the listener for sound adjustment from the HAL.
      *
-     * @param ISoundProfileAdjustmentListener listener object to pass sound profile.
+     * When the same client registers this listener multiple times, only the most recent
+     * registration will be active. The previous listener will be overwritten.
+     *
+     * When different client registers this listener, it will overwrite the previous registered
+     * client. Only one listener can be active.
+     *
+     * @param ISoundProfileAdjustmentListener listener object to pass sound profile, profile id
+     *        and hardware capability.
      */
     void setSoundProfileAdjustmentListener(ISoundProfileAdjustmentListener listener);
 
@@ -197,28 +209,18 @@ interface IMediaQuality {
     void getVendorParamCaps(in VendorParameterIdentifier[] names, out VendorParamCapability[] caps);
 
     /**
-     * Sets picture parameters callback to get the picture parameters send by the client.
+     * When HAL request picture parameters by picture profile id, the framework will use this to
+     * send the picture parameters associate with the profile id.
      *
-     * When the same client registers this callback multiple times, only the most recent
-     * registration will be active. The previous callback will be overwritten.
-     *
-     * When different client registers this callback, it will overwrite the previous registered
-     * client. Only one callback can be active.
-     *
-     * @param callback Callback object to pass PictureParameters.
+     * @param pictureParameters pictureParameters that associate with the profile id HAL provided.
      */
-    void setPictureParametersCallback(IPictureParametersCallback callback);
+    void sendPictureParameters(in PictureParameters pictureParameters);
 
     /**
-     * Sets sound parameters callback to get the sound parameters send by the client.
+     * When HAL request sound parameters by sound profile id, the framework will use this to
+     * send the sound parameters associate with the profile id.
      *
-     * When the same client registers this callback multiple times, only the most recent
-     * registration will be active. The previous callback will be overwritten.
-     *
-     * When different client registers this callback, it will overwrite the previous registered
-     * client. Only one callback can be active.
-     *
-     * @param callback Callback object to pass SoundParameters.
+     * @param soundParameters soundParameters that associate with the profile id HAL provided.
      */
-    void setSoundParametersCallback(ISoundParametersCallback callback);
+    void sendSoundParameters(in SoundParameters soundParameters);
 }
