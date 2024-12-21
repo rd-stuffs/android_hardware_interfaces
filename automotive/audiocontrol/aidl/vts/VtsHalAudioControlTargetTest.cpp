@@ -26,6 +26,7 @@
 #include <android/hardware/automotive/audiocontrol/BnModuleChangeCallback.h>
 #include <android/hardware/automotive/audiocontrol/IAudioControl.h>
 #include <android/log.h>
+#include <android/media/audio/common/AudioHalProductStrategy.h>
 #include <binder/IServiceManager.h>
 #include <binder/ProcessState.h>
 #include <include/AudioControlTestUtils.h>
@@ -63,6 +64,8 @@ using android::hardware::automotive::audiocontrol::VolumeActivationConfiguration
         DEFAULT_MAX_ACTIVATION_VALUE;
 using android::hardware::automotive::audiocontrol::VolumeActivationConfigurationEntry::
         DEFAULT_MIN_ACTIVATION_VALUE;
+using android::media::audio::common::AudioHalProductStrategy;
+
 using ::testing::AnyOf;
 using ::testing::Eq;
 
@@ -199,7 +202,7 @@ bool hadValidAudioFadeConfiguration(const AudioFadeConfiguration& fadeConfigurat
 void validateVolumeGroupInfo(const AudioZoneConfig& audioZoneConfig,
                              const VolumeGroupConfig& volumeGroupConfig,
                              const AudioDeviceConfiguration& deviceConfig,
-                             std::set<std::string>& groupDevices) {
+                             std::set<std::string>& groupDevices, std::set<int>& groupIds) {
     std::string zoneConfigName = testutils::toAlphaNumeric(ToString(audioZoneConfig.name));
     std::string volumeGroupName = testutils::toAlphaNumeric(ToString(volumeGroupConfig.name));
     std::string volumeGroupInfo =
@@ -211,6 +214,10 @@ void validateVolumeGroupInfo(const AudioZoneConfig& audioZoneConfig,
     if (deviceConfig.routingConfig == CONFIGURABLE_AUDIO_ENGINE_ROUTING) {
         EXPECT_FALSE(volumeGroupConfig.name.empty())
                 << volumeGroupInfo << " must have a non-empty volume name";
+    }
+    if (volumeGroupConfig.id != VolumeGroupConfig::UNASSIGNED_ID) {
+        EXPECT_TRUE(groupIds.insert(volumeGroupConfig.id).second)
+                << volumeGroupInfo << " repeats volume group id " << volumeGroupConfig.id;
     }
     for (const auto& audioRoute : volumeGroupConfig.carAudioRoutes) {
         std::string routeMessage;
@@ -257,6 +264,7 @@ void validateAudioZoneConfiguration(const AudioZone& carAudioZone,
     EXPECT_FALSE(audioZoneConfig.volumeGroups.empty())
             << "Volume groups for zone config " << zoneConfigName.c_str();
     std::set<std::string> groupDevices;
+    std::set<int> groupIds;
     for (const auto& volumeGroup : audioZoneConfig.volumeGroups) {
         ALOGI("Zone config name %s volume group test %s", zoneConfigName.c_str(),
               ToString(volumeGroup.name).c_str());
@@ -271,7 +279,7 @@ void validateAudioZoneConfiguration(const AudioZone& carAudioZone,
         if (deviceConfig.routingConfig == CONFIGURABLE_AUDIO_ENGINE_ROUTING) {
             groupDevices.clear();
         }
-        validateVolumeGroupInfo(audioZoneConfig, volumeGroup, deviceConfig, groupDevices);
+        validateVolumeGroupInfo(audioZoneConfig, volumeGroup, deviceConfig, groupDevices, groupIds);
     }
     const auto& audioZoneContexts = carAudioZone.audioZoneContext.audioContextInfos;
     std::map<std::string, AudioZoneContextInfo> infoNameToInfo;
@@ -623,7 +631,7 @@ TEST_P(AudioControlWithAudioZoneInfo, AudioZonesRequirements) {
     std::set<android::String16> zoneNames;
     std::set<std::string> deviceAddresses;
     for (const auto& zone : audioZones) {
-        if (zone.id == AudioZone::PRIMARY_AUDIO_ZONE) {
+        if (zone.id == static_cast<int>(AudioHalProductStrategy::ZoneId::DEFAULT)) {
             EXPECT_FALSE(primaryZoneFound) << "There can only be one primary zone";
             primaryZoneFound = true;
         }
