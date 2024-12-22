@@ -15,6 +15,7 @@
  */
 
 #include "contexthub-impl/ContextHub.h"
+#include "aidl/android/hardware/contexthub/IContextHubCallback.h"
 
 #ifndef LOG_TAG
 #define LOG_TAG "CHRE"
@@ -22,6 +23,8 @@
 
 #include <inttypes.h>
 #include <log/log.h>
+#include <optional>
+#include <thread>
 
 using ::ndk::ScopedAStatus;
 
@@ -61,6 +64,9 @@ const EndpointInfo kMockEndpointInfos[kMockEndpointCount] = {
                 .version = 2,
         },
 };
+
+//! Mutex used to ensure callbacks are called after the initial function returns.
+std::mutex gCallbackMutex;
 
 }  // anonymous namespace
 
@@ -239,7 +245,7 @@ ScopedAStatus ContextHub::getEndpoints(std::vector<EndpointInfo>* _aidl_return) 
 
     Service echoService;
     echoService.format = Service::RpcFormat::CUSTOM;
-    echoService.serviceDescriptor = "ECHO";
+    echoService.serviceDescriptor = "android.hardware.contexthub.test.EchoService";
     echoService.majorVersion = 1;
     echoService.minorVersion = 0;
 
@@ -286,7 +292,7 @@ ScopedAStatus ContextHub::registerEndpointCallback(
 };
 
 ScopedAStatus ContextHub::requestSessionIdRange(int32_t in_size,
-                                                std::vector<int32_t>* _aidl_return) {
+                                                std::array<int32_t, 2>* _aidl_return) {
     constexpr int32_t kMaxSize = 1024;
     if (in_size > kMaxSize || _aidl_return == nullptr) {
         return ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
@@ -297,8 +303,8 @@ ScopedAStatus ContextHub::requestSessionIdRange(int32_t in_size,
         mMaxValidSessionId = in_size;
     }
 
-    _aidl_return->push_back(0);
-    _aidl_return->push_back(in_size);
+    (*_aidl_return)[0] = 0;
+    (*_aidl_return)[1] = in_size;
     return ScopedAStatus::ok();
 };
 
@@ -308,7 +314,7 @@ ScopedAStatus ContextHub::openEndpointSession(
     // We are not calling onCloseEndpointSession on failure because the remote endpoints (our
     // mock endpoints) always accept the session.
 
-    std::shared_ptr<IEndpointCallback> callback = nullptr;
+    std::weak_ptr<IEndpointCallback> callback;
     {
         std::unique_lock<std::mutex> lock(mEndpointMutex);
         if (in_sessionId > mMaxValidSessionId) {
@@ -355,23 +361,27 @@ ScopedAStatus ContextHub::openEndpointSession(
                 .serviceDescriptor = in_serviceDescriptor,
         });
 
-        if (mEndpointCallback != nullptr) {
-            callback = mEndpointCallback;
+        if (mEndpointCallback == nullptr) {
+            return ScopedAStatus::ok();
         }
+        callback = mEndpointCallback;
     }
 
-    if (callback != nullptr) {
-        callback->onEndpointSessionOpenComplete(in_sessionId);
-    }
+    std::unique_lock<std::mutex> lock(gCallbackMutex);
+    std::thread{[callback, in_sessionId]() {
+        std::unique_lock<std::mutex> lock(gCallbackMutex);
+        if (auto cb = callback.lock(); cb != nullptr) {
+            cb->onEndpointSessionOpenComplete(in_sessionId);
+        }
+    }}.detach();
     return ScopedAStatus::ok();
 };
 
 ScopedAStatus ContextHub::sendMessageToEndpoint(int32_t in_sessionId, const Message& in_msg) {
-    bool foundSession = false;
-    std::shared_ptr<IEndpointCallback> callback = nullptr;
+    std::weak_ptr<IEndpointCallback> callback;
     {
         std::unique_lock<std::mutex> lock(mEndpointMutex);
-
+        bool foundSession = false;
         for (const EndpointSession& session : mEndpointSessions) {
             if (session.sessionId == in_sessionId) {
                 foundSession = true;
@@ -379,27 +389,38 @@ ScopedAStatus ContextHub::sendMessageToEndpoint(int32_t in_sessionId, const Mess
             }
         }
 
-        if (mEndpointCallback != nullptr) {
-            callback = mEndpointCallback;
-        }
-    }
-
-    if (!foundSession) {
-        ALOGE("sendMessageToEndpoint: session ID %" PRId32 " is invalid", in_sessionId);
-        return ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
-    }
-
-    if (callback != nullptr) {
-        if (in_msg.flags & Message::FLAG_REQUIRES_DELIVERY_STATUS) {
-            MessageDeliveryStatus msgStatus = {};
-            msgStatus.messageSequenceNumber = in_msg.sequenceNumber;
-            msgStatus.errorCode = ErrorCode::OK;
-            callback->onMessageDeliveryStatusReceived(in_sessionId, msgStatus);
+        if (!foundSession) {
+            ALOGE("sendMessageToEndpoint: session ID %" PRId32 " is invalid", in_sessionId);
+            return ScopedAStatus::fromExceptionCode(EX_ILLEGAL_ARGUMENT);
         }
 
-        // Echo the message back
-        callback->onMessageReceived(in_sessionId, in_msg);
+        if (mEndpointCallback == nullptr) {
+            return ScopedAStatus::ok();
+        }
+        callback = mEndpointCallback;
     }
+
+    std::unique_lock<std::mutex> lock(gCallbackMutex);
+    if ((in_msg.flags & Message::FLAG_REQUIRES_DELIVERY_STATUS) != 0) {
+        MessageDeliveryStatus msgStatus = {};
+        msgStatus.messageSequenceNumber = in_msg.sequenceNumber;
+        msgStatus.errorCode = ErrorCode::OK;
+
+        std::thread{[callback, in_sessionId, msgStatus]() {
+            std::unique_lock<std::mutex> lock(gCallbackMutex);
+            if (auto cb = callback.lock(); cb != nullptr) {
+                cb->onMessageDeliveryStatusReceived(in_sessionId, msgStatus);
+            }
+        }}.detach();
+    }
+
+    // Echo the message back
+    std::thread{[callback, in_sessionId, in_msg]() {
+        std::unique_lock<std::mutex> lock(gCallbackMutex);
+        if (auto cb = callback.lock(); cb != nullptr) {
+            cb->onMessageReceived(in_sessionId, in_msg);
+        }
+    }}.detach();
     return ScopedAStatus::ok();
 };
 

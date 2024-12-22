@@ -49,6 +49,7 @@ using aidl::android::media::audio::common::AudioDevice;
 using aidl::android::media::audio::common::AudioDeviceAddress;
 using aidl::android::media::audio::common::AudioDeviceDescription;
 using aidl::android::media::audio::common::AudioDeviceType;
+using aidl::android::media::audio::common::AudioHalProductStrategy;
 using aidl::android::media::audio::common::AudioPort;
 using aidl::android::media::audio::common::AudioPortDeviceExt;
 using aidl::android::media::audio::common::AudioPortExt;
@@ -537,6 +538,7 @@ void parseInputDevices(const xsd::InputDevicesType* xsdInputDevices,
 
 bool parseAudioZone(const xsd::ZoneType& zone, const ActivationMap& activations,
                     const FadeConfigurationMap& fadeConfigurations, api::AudioZone& audioZone) {
+    static int kPrimaryZoneId = static_cast<int>(AudioHalProductStrategy::ZoneId::DEFAULT);
     if (zone.hasName()) {
         audioZone.name = zone.getName();
     }
@@ -558,7 +560,7 @@ bool parseAudioZone(const xsd::ZoneType& zone, const ActivationMap& activations,
     bool isPrimary = zone.hasIsPrimary() && zone.getIsPrimary();
 
     if (isPrimary) {
-        audioZone.id = api::AudioZone::PRIMARY_AUDIO_ZONE;
+        audioZone.id = kPrimaryZoneId;
     }
 
     // ID not required in XML for primary zone
@@ -569,10 +571,10 @@ bool parseAudioZone(const xsd::ZoneType& zone, const ActivationMap& activations,
         return false;
     }
 
-    if (isPrimary && audioZone.id != api::AudioZone::PRIMARY_AUDIO_ZONE) {
+    if (isPrimary && audioZone.id != kPrimaryZoneId) {
         LOG(ERROR) << __func__ << " Audio zone is primary but has zone id "
                    << std::to_string(audioZone.id) << " instead of primary zone id "
-                   << std::to_string(api::AudioZone::PRIMARY_AUDIO_ZONE);
+                   << std::to_string(kPrimaryZoneId);
         return false;
     }
 
