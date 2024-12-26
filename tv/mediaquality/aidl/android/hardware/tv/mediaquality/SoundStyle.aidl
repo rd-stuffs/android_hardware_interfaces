@@ -16,14 +16,15 @@
 
 package android.hardware.tv.mediaquality;
 
-import android.hardware.tv.mediaquality.PictureProfile;
-
 @VintfStability
-oneway interface IPictureProfileChangedListener {
-    /**
-     * Notifies the service that the picture profile has changed.
-     *
-     * @param pictureProfile Picture profile that should be cached by the service.
-     */
-    void onPictureProfileChanged(in PictureProfile pictureProfile);
+enum SoundStyle {
+    /* User custom style is the default value for sound style */
+    USER,
+    STANDARD,
+    VIVID,
+    SPORTS,
+    MOVIE,
+    MUSIC,
+    NEWS,
+    AUTO,
 }

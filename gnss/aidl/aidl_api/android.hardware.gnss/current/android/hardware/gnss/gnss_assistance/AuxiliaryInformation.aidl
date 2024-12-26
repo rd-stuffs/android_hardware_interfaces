@@ -31,12 +31,19 @@
 // with such a backward incompatible change, it has a high risk of breaking
 // later when a module using the interface is updated, e.g., Mainline modules.
 
-package android.hardware.tv.mediaquality;
+package android.hardware.gnss.gnss_assistance;
+/* @hide */
 @VintfStability
-interface IPictureProfileAdjustmentListener {
-  oneway void onPictureProfileAdjusted(in android.hardware.tv.mediaquality.PictureProfile pictureProfile);
-  oneway void onParamCapabilityChanged(long pictureProfileId, in android.hardware.tv.mediaquality.ParamCapability[] caps);
-  oneway void onVendorParamCapabilityChanged(long pictureProfileId, in android.hardware.tv.mediaquality.VendorParamCapability[] caps);
-  oneway void requestPictureParameters(long pictureProfileId);
-  oneway void onStreamStatusChanged(long pictureProfileId, android.hardware.tv.mediaquality.StreamStatus status);
+parcelable AuxiliaryInformation {
+  int svid;
+  android.hardware.gnss.GnssSignalType[] availableSignalTypes;
+  int frequencyChannelNumber;
+  android.hardware.gnss.gnss_assistance.AuxiliaryInformation.BeidouB1CSatelliteOrbitType satType;
+  @Backing(type="int") @VintfStability
+  enum BeidouB1CSatelliteOrbitType {
+    UNDEFINED = 0,
+    GEO = 1,
+    IGSO = 2,
+    MEO = 3,
+  }
 }
