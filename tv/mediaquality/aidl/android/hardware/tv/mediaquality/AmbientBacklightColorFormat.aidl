@@ -16,14 +16,10 @@
 
 package android.hardware.tv.mediaquality;
 
-import android.hardware.tv.mediaquality.PictureProfile;
-
 @VintfStability
-oneway interface IPictureProfileChangedListener {
+union AmbientBacklightColorFormat {
     /**
-     * Notifies the service that the picture profile has changed.
-     *
-     * @param pictureProfile Picture profile that should be cached by the service.
+     * The color format is RGB888.
      */
-    void onPictureProfileChanged(in PictureProfile pictureProfile);
+    int RGB888;
 }

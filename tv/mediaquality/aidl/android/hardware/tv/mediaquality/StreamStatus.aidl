@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,23 @@
 
 package android.hardware.tv.mediaquality;
 
-import android.hardware.tv.mediaquality.PictureProfile;
-
 @VintfStability
-oneway interface IPictureProfileChangedListener {
-    /**
-     * Notifies the service that the picture profile has changed.
-     *
-     * @param pictureProfile Picture profile that should be cached by the service.
-     */
-    void onPictureProfileChanged(in PictureProfile pictureProfile);
+enum StreamStatus {
+    SDR,
+    DOLBYVISION,
+    HDR10,
+    TCH,
+    HLG,
+    HDR10PLUS,
+    HDRVIVID,
+    IMAXSDR,
+    IMAXHDR10,
+    IMAXHDR10PLUS,
+    FMMSDR,
+    FMMHDR10,
+    FMMHDR10PLUS,
+    FMMHLG,
+    FMMDOLBY,
+    FMMTCH,
+    FMMHDRVIVID,
 }

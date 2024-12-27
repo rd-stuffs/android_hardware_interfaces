@@ -33,10 +33,13 @@
 
 package android.hardware.tv.mediaquality;
 @VintfStability
-interface IPictureProfileAdjustmentListener {
-  oneway void onPictureProfileAdjusted(in android.hardware.tv.mediaquality.PictureProfile pictureProfile);
-  oneway void onParamCapabilityChanged(long pictureProfileId, in android.hardware.tv.mediaquality.ParamCapability[] caps);
-  oneway void onVendorParamCapabilityChanged(long pictureProfileId, in android.hardware.tv.mediaquality.VendorParamCapability[] caps);
-  oneway void requestPictureParameters(long pictureProfileId);
-  oneway void onStreamStatusChanged(long pictureProfileId, android.hardware.tv.mediaquality.StreamStatus status);
+enum PictureQualityEventType {
+  NONE,
+  BBD_RESULT,
+  VIDEO_DELAY_CHANGE,
+  CAPTUREPOINT_INFO_CHANGE,
+  VIDEOPATH_CHANGE,
+  EXTRA_FRAME_CHANGE,
+  DOLBY_IQ_CHANGE,
+  DOLBY_APO_CHANGE,
 }
