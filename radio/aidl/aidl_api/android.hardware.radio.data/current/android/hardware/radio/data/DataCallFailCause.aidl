@@ -33,7 +33,7 @@
 
 package android.hardware.radio.data;
 /* @hide */
-@Backing(type="int") @JavaDerive(toString=true) @VintfStability
+@Backing(type="int") @JavaDerive(toString=true) @SuppressWarnings(value={"redundant-name"}) @VintfStability
 enum DataCallFailCause {
   NONE = 0,
   OPERATOR_BARRED = 0x08,
@@ -169,6 +169,9 @@ enum DataCallFailCause {
   MAX_PPP_INACTIVITY_TIMER_EXPIRED = 0x7FE,
   IPV6_ADDRESS_TRANSFER_FAILED = 0x7FF,
   TRAT_SWAP_FAILED = 0x800,
+  /**
+   * @deprecated Legacy CDMA is unsupported.
+   */
   EHRPD_TO_HRPD_FALLBACK = 0x801,
   MIP_CONFIG_FAILURE = 0x802,
   PDN_INACTIVITY_TIMER_EXPIRED = 0x803,

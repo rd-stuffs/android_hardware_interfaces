@@ -20,6 +20,7 @@ package android.hardware.radio.data;
 @VintfStability
 @Backing(type="int")
 @JavaDerive(toString=true)
+@SuppressWarnings(value={"redundant-name"})
 enum DataCallFailCause {
     /**
      * An integer cause code defined in TS 24.008 section 6.1.3.1.3 or TS 24.301 Release 8+ Annex B.
@@ -420,6 +421,7 @@ enum DataCallFailCause {
     TRAT_SWAP_FAILED = 0x800,
     /**
      * Device falls back from eHRPD to HRPD.
+     * @deprecated Legacy CDMA is unsupported.
      */
     EHRPD_TO_HRPD_FALLBACK = 0x801,
     /**
