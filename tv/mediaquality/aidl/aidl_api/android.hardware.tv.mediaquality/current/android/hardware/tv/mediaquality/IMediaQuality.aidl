@@ -34,7 +34,7 @@
 package android.hardware.tv.mediaquality;
 @VintfStability
 interface IMediaQuality {
-  void setCallback(in android.hardware.tv.mediaquality.IMediaQualityCallback callback);
+  void setAmbientBacklightCallback(in android.hardware.tv.mediaquality.IMediaQualityCallback callback);
   void setAmbientBacklightDetector(in android.hardware.tv.mediaquality.AmbientBacklightSettings settings);
   void setAmbientBacklightDetectionEnabled(in boolean enabled);
   boolean getAmbientBacklightDetectionEnabled();
@@ -55,6 +55,4 @@ interface IMediaQuality {
   void sendDefaultSoundParameters(in android.hardware.tv.mediaquality.SoundParameters soundParameters);
   void getParamCaps(in android.hardware.tv.mediaquality.ParameterName[] paramNames, out android.hardware.tv.mediaquality.ParamCapability[] caps);
   void getVendorParamCaps(in android.hardware.tv.mediaquality.VendorParameterIdentifier[] names, out android.hardware.tv.mediaquality.VendorParamCapability[] caps);
-  void sendPictureParameters(in android.hardware.tv.mediaquality.PictureParameters pictureParameters);
-  void sendSoundParameters(in android.hardware.tv.mediaquality.SoundParameters soundParameters);
 }
