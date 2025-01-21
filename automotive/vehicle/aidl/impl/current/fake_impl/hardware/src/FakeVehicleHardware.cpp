@@ -62,15 +62,18 @@ using ::aidl::android::hardware::automotive::vehicle::DriverDrowsinessAttentionW
 using ::aidl::android::hardware::automotive::vehicle::ErrorState;
 using ::aidl::android::hardware::automotive::vehicle::GetValueRequest;
 using ::aidl::android::hardware::automotive::vehicle::GetValueResult;
+using ::aidl::android::hardware::automotive::vehicle::MinMaxSupportedValueResult;
 using ::aidl::android::hardware::automotive::vehicle::RawPropValues;
 using ::aidl::android::hardware::automotive::vehicle::SetValueRequest;
 using ::aidl::android::hardware::automotive::vehicle::SetValueResult;
 using ::aidl::android::hardware::automotive::vehicle::StatusCode;
 using ::aidl::android::hardware::automotive::vehicle::SubscribeOptions;
+using ::aidl::android::hardware::automotive::vehicle::SupportedValuesListResult;
 using ::aidl::android::hardware::automotive::vehicle::toString;
 using ::aidl::android::hardware::automotive::vehicle::VehicleApPowerStateReport;
 using ::aidl::android::hardware::automotive::vehicle::VehicleApPowerStateReq;
 using ::aidl::android::hardware::automotive::vehicle::VehicleArea;
+using ::aidl::android::hardware::automotive::vehicle::VehicleAreaConfig;
 using ::aidl::android::hardware::automotive::vehicle::VehicleHwKeyInputAction;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropConfig;
 using ::aidl::android::hardware::automotive::vehicle::VehicleProperty;
@@ -1370,6 +1373,10 @@ DumpResult FakeVehicleHardware::dump(const std::vector<std::string>& options) {
         result.buffer = "successfully restored vendor configs";
     } else if (EqualsIgnoreCase(option, "--dumpSub")) {
         result.buffer = dumpSubscriptions();
+    } else if (EqualsIgnoreCase(option, "--set-minmaxvalue")) {
+        result.buffer = dumpSetMinMaxValue(options);
+    } else if (EqualsIgnoreCase(option, "--set-supportedvalues")) {
+        result.buffer = dumpSetSupportedValues(options);
     } else {
         result.buffer = StringPrintf("Invalid option: %s\n", option.c_str());
     }
@@ -1792,6 +1799,88 @@ std::string FakeVehicleHardware::dumpSubscriptions() {
     return result;
 }
 
+std::string FakeVehicleHardware::dumpSetMinMaxValue(const std::vector<std::string>& options) {
+    if (auto result = checkArgumentsSize(options, /*minSize=*/3); !result.ok()) {
+        return getErrorMsg(result);
+    }
+    int testPropId = toInt(TestVendorProperty::VENDOR_EXTENSION_INT_PROPERTY);
+    auto configResult = mServerSidePropStore->getPropConfig(testPropId);
+    if (!configResult.ok()) {
+        return "Failed to set min/max supported value: VENDOR_EXTENSION_INT_PROPERTY not supported";
+    }
+    int32_t values[2];
+    for (size_t i = 1; i < 3; i++) {
+        auto int32Result = safelyParseInt<int32_t>(i, options[i]);
+        if (!int32Result.ok()) {
+            return StringPrintf(
+                    "Failed to set min/max supported value: Value: \"%s\" is not a valid int: %s\n",
+                    options[i].c_str(), getErrorMsg(int32Result).c_str());
+        }
+        values[i - 1] = int32Result.value();
+    }
+    int32_t minValue = values[0];
+    int32_t maxValue = values[1];
+    if (minValue > maxValue) {
+        return StringPrintf("Failed to set min/max supported value: MinValue: %" PRId32
+                            " must not > MaxValue: %" PRId32,
+                            minValue, maxValue);
+    }
+    {
+        std::scoped_lock<std::mutex> lockGuard(mLock);
+        mMinSupportedValueForTestIntProp = minValue;
+        mMaxSupportedValueForTestIntProp = maxValue;
+    }
+    triggerSupportedValueChange(configResult.value());
+    return "Min/Max supported value for VENDOR_EXTENSION_INT_PROPERTY set";
+}
+
+std::string FakeVehicleHardware::dumpSetSupportedValues(const std::vector<std::string>& options) {
+    if (auto result = checkArgumentsSize(options, /*minSize=*/2); !result.ok()) {
+        return getErrorMsg(result);
+    }
+    int testPropId = toInt(TestVendorProperty::VENDOR_EXTENSION_INT_PROPERTY);
+    auto configResult = mServerSidePropStore->getPropConfig(testPropId);
+    if (!configResult.ok()) {
+        return "Failed to set min/max supported value: VENDOR_EXTENSION_INT_PROPERTY not supported";
+    }
+    std::vector<int32_t> values;
+    for (size_t i = 1; i < options.size(); i++) {
+        auto int32Result = safelyParseInt<int32_t>(i, options[i]);
+        if (!int32Result.ok()) {
+            return StringPrintf(
+                    "Failed to set supported values: Value: \"%s\" is not a valid int: %s\n",
+                    options[i].c_str(), getErrorMsg(int32Result).c_str());
+        }
+        values.push_back(int32Result.value());
+    }
+
+    {
+        std::scoped_lock<std::mutex> lockGuard(mLock);
+        mSupportedValuesListForTestIntProp = values;
+    }
+    triggerSupportedValueChange(configResult.value());
+    return "Supported values list for VENDOR_EXTENSION_INT_PROPERTY set";
+}
+
+// Triggers supported value change for all areaIds that specify hasSupportedValueInfo.
+void FakeVehicleHardware::triggerSupportedValueChange(const VehiclePropConfig& config) {
+    if (mOnSupportedValueChangeCallback == nullptr) {
+        ALOGE("onSupportedValueChangeCallback is not registered, ignore event");
+        return;
+    }
+
+    std::vector<PropIdAreaId> propIdAreaIds;
+    for (const VehicleAreaConfig& areaConfig : config.areaConfigs) {
+        if (areaConfig.hasSupportedValueInfo != std::nullopt) {
+            propIdAreaIds.push_back({
+                    .propId = config.prop,
+                    .areaId = areaConfig.areaId,
+            });
+        }
+    }
+    (*mOnSupportedValueChangeCallback)(std::move(propIdAreaIds));
+}
+
 std::string FakeVehicleHardware::dumpHelp() {
     return "Usage: \n\n"
            "[no args]: dumps (id and value) all supported properties \n"
@@ -1803,6 +1892,10 @@ std::string FakeVehicleHardware::dumpHelp() {
            "The value arguments constructs a VehiclePropValue used in the getValue request. \n"
            "--set <PROP_ID> [ValueArguments]: sets the value of property PROP_ID, the value "
            "arguments constructs a VehiclePropValue used in the setValue request. \n"
+           "--set-minmaxvalue <MIN_VALUE(int)> <MAX_VALUE(int)>: sets the min max supported value "
+           "for VENDOR_EXTENSION_INT_PROPERTY\n"
+           "--set-supportedvalues <VALUE_1(int)> [VALUE_2(int) ...]: sets the supported values list"
+           "for VENDOR_EXTENSION_INT_PROPERTY\n"
            "--save-prop <PROP_ID> [-a AREA_ID]: saves the current value for PROP_ID, integration "
            "tests that modify prop value must call this before test and restore-prop after test. \n"
            "--restore-prop <PROP_ID> [-a AREA_ID]: restores a previously saved property value. \n"
@@ -2278,6 +2371,15 @@ void FakeVehicleHardware::registerOnPropertySetErrorEvent(
     mOnPropertySetErrorCallback = std::move(callback);
 }
 
+void FakeVehicleHardware::registerSupportedValueChangeCallback(
+        std::unique_ptr<const SupportedValueChangeCallback> callback) {
+    if (mOnSupportedValueChangeCallback != nullptr) {
+        ALOGE("registerOnPropertyChangeEvent must only be called once");
+        return;
+    }
+    mOnSupportedValueChangeCallback = std::move(callback);
+}
+
 StatusCode FakeVehicleHardware::subscribe(SubscribeOptions options) {
     int32_t propId = options.propId;
 
@@ -2297,6 +2399,61 @@ StatusCode FakeVehicleHardware::subscribe(SubscribeOptions options) {
         }
     }
     return StatusCode::OK;
+}
+
+std::vector<MinMaxSupportedValueResult> FakeVehicleHardware::getMinMaxSupportedValues(
+        const std::vector<PropIdAreaId>& propIdAreaIds) {
+    std::scoped_lock<std::mutex> lockGuard(mLock);
+    std::vector<MinMaxSupportedValueResult> results;
+    // We only support VENDOR_EXTENSION_INT_PROPERTY
+    for (const auto& propIdAreaId : propIdAreaIds) {
+        int propId = propIdAreaId.propId;
+        int areaId = propIdAreaId.areaId;
+        if (propId != toInt(TestVendorProperty::VENDOR_EXTENSION_INT_PROPERTY)) {
+            results.push_back(MinMaxSupportedValueResult{
+                    .status = StatusCode::INVALID_ARG,
+            });
+            continue;
+        }
+        results.push_back(MinMaxSupportedValueResult{
+                .status = StatusCode::OK,
+                .minSupportedValue =
+                        RawPropValues{
+                                .int32Values = {mMinSupportedValueForTestIntProp},
+                        },
+                .maxSupportedValue =
+                        RawPropValues{
+                                .int32Values = {mMaxSupportedValueForTestIntProp},
+                        },
+        });
+    }
+    return results;
+}
+
+std::vector<SupportedValuesListResult> FakeVehicleHardware::getSupportedValuesLists(
+        const std::vector<PropIdAreaId>& propIdAreaIds) {
+    std::scoped_lock<std::mutex> lockGuard(mLock);
+    std::vector<SupportedValuesListResult> results;
+    // We only support VENDOR_EXTENSION_INT_PROPERTY
+    for (const auto& propIdAreaId : propIdAreaIds) {
+        int propId = propIdAreaId.propId;
+        int areaId = propIdAreaId.areaId;
+        if (propId != toInt(TestVendorProperty::VENDOR_EXTENSION_INT_PROPERTY)) {
+            results.push_back(SupportedValuesListResult{
+                    .status = StatusCode::INVALID_ARG,
+            });
+            continue;
+        }
+        std::vector<std::optional<RawPropValues>> supportedValuesList;
+        for (int32_t value : mSupportedValuesListForTestIntProp) {
+            supportedValuesList.push_back(RawPropValues{.int32Values = {value}});
+        }
+        results.push_back(SupportedValuesListResult{
+                .status = StatusCode::OK,
+                .supportedValuesList = supportedValuesList,
+        });
+    }
+    return results;
 }
 
 bool FakeVehicleHardware::isVariableUpdateRateSupported(const VehiclePropConfig& vehiclePropConfig,

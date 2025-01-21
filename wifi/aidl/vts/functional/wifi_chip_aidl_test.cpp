@@ -30,6 +30,9 @@
 
 #include "wifi_aidl_test_utils.h"
 
+using aidl::android::hardware::wifi::AfcChannelAllowance;
+using aidl::android::hardware::wifi::AvailableAfcChannelInfo;
+using aidl::android::hardware::wifi::AvailableAfcFrequencyInfo;
 using aidl::android::hardware::wifi::BnWifiChipEventCallback;
 using aidl::android::hardware::wifi::IfaceType;
 using aidl::android::hardware::wifi::IWifiApIface;
@@ -38,6 +41,7 @@ using aidl::android::hardware::wifi::IWifiNanIface;
 using aidl::android::hardware::wifi::IWifiP2pIface;
 using aidl::android::hardware::wifi::IWifiRttController;
 using aidl::android::hardware::wifi::WifiBand;
+using aidl::android::hardware::wifi::WifiChipCapabilities;
 using aidl::android::hardware::wifi::WifiDebugHostWakeReasonStats;
 using aidl::android::hardware::wifi::WifiDebugRingBufferStatus;
 using aidl::android::hardware::wifi::WifiDebugRingBufferVerboseLevel;
@@ -267,6 +271,23 @@ TEST_P(WifiChipAidlTest, SetCountryCode) {
     configureChipForConcurrencyType(IfaceConcurrencyType::STA);
     std::array<uint8_t, 2> country_code = {0x55, 0x53};
     EXPECT_TRUE(wifi_chip_->setCountryCode(country_code).isOk());
+}
+
+/*
+ * Tests the setAfcChannelAllowance() API.
+ */
+TEST_P(WifiChipAidlTest, SetAfcChannelAllowance) {
+    configureChipForConcurrencyType(IfaceConcurrencyType::STA);
+    int32_t features = getChipFeatureSet(wifi_chip_);
+    AfcChannelAllowance allowance;
+    allowance.availableAfcChannelInfos = std::vector<AvailableAfcChannelInfo>();
+    allowance.availableAfcFrequencyInfos = std::vector<AvailableAfcFrequencyInfo>();
+    auto status = wifi_chip_->setAfcChannelAllowance(allowance);
+    if (features & static_cast<int32_t>(IWifiChip::FeatureSetMask::SET_AFC_CHANNEL_ALLOWANCE)) {
+        EXPECT_TRUE(status.isOk());
+    } else {
+        EXPECT_TRUE(checkStatusCode(&status, WifiStatusCode::ERROR_NOT_SUPPORTED));
+    }
 }
 
 /*
@@ -985,6 +1006,29 @@ TEST_P(WifiChipAidlTest, CreateApOrBridgedApIfaceWithParams_mlo_bridged_ap) {
     EXPECT_TRUE(wifi_ap_iface->usesMlo(&uses_mlo).isOk());
     EXPECT_TRUE(uses_mlo);
     EXPECT_EQ(instances.size(), 2);
+}
+
+/*
+ * GetWifiChipCapabilities
+ */
+TEST_P(WifiChipAidlTest, GetWifiChipCapabilities) {
+    WifiChipCapabilities chipCapabilities;
+    auto status = wifi_chip_->getWifiChipCapabilities(&chipCapabilities);
+    if (checkStatusCode(&status, WifiStatusCode::ERROR_NOT_SUPPORTED)) {
+        GTEST_SKIP() << "getWifiChipCapabilities() is not supported by vendor.";
+    }
+    EXPECT_TRUE(status.isOk());
+}
+
+/*
+ * SetMloMode
+ */
+TEST_P(WifiChipAidlTest, SetMloMode) {
+    auto status = wifi_chip_->setMloMode(IWifiChip::ChipMloMode::LOW_LATENCY);
+    if (checkStatusCode(&status, WifiStatusCode::ERROR_NOT_SUPPORTED)) {
+        GTEST_SKIP() << "setMloMode() is not supported by vendor.";
+    }
+    EXPECT_TRUE(status.isOk());
 }
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(WifiChipAidlTest);

@@ -82,9 +82,6 @@ using ::ndk::ScopedFileDescriptor;
 
 using VhalPropIdAreaId = ::aidl::android::hardware::automotive::vehicle::PropIdAreaId;
 
-#define propIdtoString(PROP_ID) \
-    aidl::android::hardware::automotive::vehicle::toString(static_cast<VehicleProperty>(PROP_ID))
-
 std::string toString(const std::unordered_set<int64_t>& values) {
     std::string str = "";
     for (auto it = values.begin(); it != values.end(); it++) {
@@ -163,6 +160,11 @@ DefaultVehicleHal::DefaultVehicleHal(std::unique_ptr<IVehicleHardware> vehicleHa
                     [subscriptionManagerCopy](std::vector<SetValueErrorEvent> errorEvents) {
                         onPropertySetErrorEvent(subscriptionManagerCopy, errorEvents);
                     }));
+    mVehicleHardware->registerSupportedValueChangeCallback(
+            std::make_unique<IVehicleHardware::SupportedValueChangeCallback>(
+                    [subscriptionManagerCopy](std::vector<PropIdAreaId> propIdAreaIds) {
+                        onSupportedValueChange(subscriptionManagerCopy, propIdAreaIds);
+                    }));
 
     // Register heartbeat event.
     mRecurrentAction = std::make_shared<std::function<void()>>(
@@ -210,7 +212,8 @@ void DefaultVehicleHal::batchPropertyChangeEvent(
         std::vector<VehiclePropValue>&& updatedValues) {
     auto batchedEventQueueStrong = batchedEventQueue.lock();
     if (batchedEventQueueStrong == nullptr) {
-        ALOGW("the batched property events queue is destroyed, DefaultVehicleHal is ending");
+        ALOGW("%s: the batched property events queue is destroyed, DefaultVehicleHal is ending",
+              __func__);
         return;
     }
     batchedEventQueueStrong->push(std::move(updatedValues));
@@ -226,7 +229,7 @@ void DefaultVehicleHal::onPropertyChangeEvent(
     ATRACE_CALL();
     auto manager = subscriptionManager.lock();
     if (manager == nullptr) {
-        ALOGW("the SubscriptionManager is destroyed, DefaultVehicleHal is ending");
+        ALOGW("%s: the SubscriptionManager is destroyed, DefaultVehicleHal is ending", __func__);
         return;
     }
     auto updatedValuesByClients = manager->getSubscribedClients(std::move(updatedValues));
@@ -240,12 +243,27 @@ void DefaultVehicleHal::onPropertySetErrorEvent(
         const std::vector<SetValueErrorEvent>& errorEvents) {
     auto manager = subscriptionManager.lock();
     if (manager == nullptr) {
-        ALOGW("the SubscriptionManager is destroyed, DefaultVehicleHal is ending");
+        ALOGW("%s: the SubscriptionManager is destroyed, DefaultVehicleHal is ending", __func__);
         return;
     }
     auto vehiclePropErrorsByClient = manager->getSubscribedClientsForErrorEvents(errorEvents);
     for (auto& [callback, vehiclePropErrors] : vehiclePropErrorsByClient) {
         SubscriptionClient::sendPropertySetErrors(callback, std::move(vehiclePropErrors));
+    }
+}
+
+void DefaultVehicleHal::onSupportedValueChange(
+        const std::weak_ptr<SubscriptionManager>& subscriptionManager,
+        const std::vector<PropIdAreaId>& propIdAreaIds) {
+    auto manager = subscriptionManager.lock();
+    if (manager == nullptr) {
+        ALOGW("%s: the SubscriptionManager is destroyed, DefaultVehicleHal is ending", __func__);
+        return;
+    }
+    auto updatedPropIdAreaIdsByClient =
+            manager->getSubscribedClientsForSupportedValueChange(propIdAreaIds);
+    for (auto& [callback, updatedPropIdAreaIds] : updatedPropIdAreaIdsByClient) {
+        SubscriptionClient::sendSupportedValueChangeEvents(callback, updatedPropIdAreaIds);
     }
 }
 
@@ -934,7 +952,9 @@ ScopedAStatus DefaultVehicleHal::subscribe(const CallbackType& callback,
     }
 
     {
-        // Lock to make sure onBinderDied would not be called concurrently.
+        // Lock to make sure onBinderDied would not be called concurrently
+        // (before subscribe). Without this, we may create a new subscription for an already dead
+        // client which will never be unsubscribed.
         std::scoped_lock lockGuard(mLock);
         if (!monitorBinderLifeCycleLocked(callback->asBinder().get())) {
             return ScopedAStatus::fromExceptionCodeWithMessage(EX_TRANSACTION_FAILED,
@@ -972,25 +992,25 @@ ScopedAStatus DefaultVehicleHal::returnSharedMemory(const CallbackType&, int64_t
     return ScopedAStatus::ok();
 }
 
-Result<const VehicleAreaConfig*> DefaultVehicleHal::getAreaConfigForPropIdAreaId(
-        int32_t propId, int32_t areaId) const {
+Result<VehicleAreaConfig> DefaultVehicleHal::getAreaConfigForPropIdAreaId(int32_t propId,
+                                                                          int32_t areaId) const {
     auto result = getConfig(propId);
     if (!result.ok()) {
-        return Error() << "Failed to get property config for propertyId: " << propIdtoString(propId)
+        return Error() << "Failed to get property config for propertyId: " << propIdToString(propId)
                        << ", error: " << result.error();
     }
     const VehiclePropConfig& config = result.value();
     const VehicleAreaConfig* areaConfig = getAreaConfig(propId, areaId, config);
     if (areaConfig == nullptr) {
-        return Error() << "AreaId config not found for propertyId: " << propIdtoString(propId)
+        return Error() << "AreaId config not found for propertyId: " << propIdToString(propId)
                        << ", areaId: " << areaId;
     }
-    return areaConfig;
+    return *areaConfig;
 }
 
-Result<const HasSupportedValueInfo*> DefaultVehicleHal::getHasSupportedValueInfo(
-        int32_t propId, int32_t areaId) const {
-    Result<const VehicleAreaConfig*> propIdAreaIdConfigResult =
+Result<HasSupportedValueInfo> DefaultVehicleHal::getHasSupportedValueInfo(int32_t propId,
+                                                                          int32_t areaId) const {
+    Result<VehicleAreaConfig> propIdAreaIdConfigResult =
             getAreaConfigForPropIdAreaId(propId, areaId);
     if (!isGlobalProp(propId) && !propIdAreaIdConfigResult.ok()) {
         // For global property, it is possible that no config exists.
@@ -998,11 +1018,11 @@ Result<const HasSupportedValueInfo*> DefaultVehicleHal::getHasSupportedValueInfo
     }
     if (propIdAreaIdConfigResult.has_value()) {
         auto areaConfig = propIdAreaIdConfigResult.value();
-        if (areaConfig->hasSupportedValueInfo.has_value()) {
-            return &(areaConfig->hasSupportedValueInfo.value());
+        if (areaConfig.hasSupportedValueInfo.has_value()) {
+            return areaConfig.hasSupportedValueInfo.value();
         }
     }
-    return Error() << "property: " << propIdtoString(propId) << ", areaId: " << areaId
+    return Error() << "property: " << propIdToString(propId) << ", areaId: " << areaId
                    << " does not support this operation because hasSupportedValueInfo is null";
 }
 
@@ -1026,7 +1046,7 @@ ScopedAStatus DefaultVehicleHal::getSupportedValuesLists(
             continue;
         }
 
-        const auto& hasSupportedValueInfo = *(hasSupportedValueInfoResult.value());
+        const auto& hasSupportedValueInfo = hasSupportedValueInfoResult.value();
         if (hasSupportedValueInfo.hasSupportedValuesList) {
             toHardwarePropIdAreaIds.push_back(PropIdAreaId{.propId = propId, .areaId = areaId});
             toHardwareRequestCounters.push_back(requestCounter);
@@ -1087,7 +1107,7 @@ ScopedAStatus DefaultVehicleHal::getMinMaxSupportedValue(
             continue;
         }
 
-        const auto& hasSupportedValueInfo = *(hasSupportedValueInfoResult.value());
+        const auto& hasSupportedValueInfo = hasSupportedValueInfoResult.value();
         if (hasSupportedValueInfo.hasMinSupportedValue ||
             hasSupportedValueInfo.hasMaxSupportedValue) {
             toHardwarePropIdAreaIds.push_back(PropIdAreaId{.propId = propId, .areaId = areaId});
@@ -1130,15 +1150,75 @@ ScopedAStatus DefaultVehicleHal::getMinMaxSupportedValue(
 }
 
 ScopedAStatus DefaultVehicleHal::registerSupportedValueChangeCallback(
-        const std::shared_ptr<IVehicleCallback>&, const std::vector<VhalPropIdAreaId>&) {
-    // TODO(b/381020465): Add relevant implementation.
-    return ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
+        const std::shared_ptr<IVehicleCallback>& callback,
+        const std::vector<VhalPropIdAreaId>& vhalPropIdAreaIds) {
+    std::vector<PropIdAreaId> propIdAreaIdsToSubscribe;
+    for (size_t i = 0; i < vhalPropIdAreaIds.size(); i++) {
+        const auto& vhalPropIdAreaId = vhalPropIdAreaIds.at(i);
+        int32_t propId = vhalPropIdAreaId.propId;
+        int32_t areaId = vhalPropIdAreaId.areaId;
+        auto hasSupportedValueInfoResult = getHasSupportedValueInfo(propId, areaId);
+        if (!hasSupportedValueInfoResult.ok()) {
+            ALOGE("registerSupportedValueChangeCallback not supported: %s",
+                  hasSupportedValueInfoResult.error().message().c_str());
+            return toScopedAStatus(hasSupportedValueInfoResult, StatusCode::INVALID_ARG);
+        }
+        const auto& hasSupportedValueInfo = hasSupportedValueInfoResult.value();
+        if (!hasSupportedValueInfo.hasMinSupportedValue &&
+            !hasSupportedValueInfo.hasMaxSupportedValue &&
+            !hasSupportedValueInfo.hasSupportedValuesList) {
+            ALOGW("registerSupportedValueChangeCallback: do nothing for property: %s, "
+                  "areaId: %" PRId32
+                  ", no min/max supported values or supported values list"
+                  " specified",
+                  propIdToString(propId).c_str(), areaId);
+            continue;
+        }
+        propIdAreaIdsToSubscribe.push_back(PropIdAreaId{.propId = propId, .areaId = areaId});
+    }
+    if (propIdAreaIdsToSubscribe.empty()) {
+        return ScopedAStatus::ok();
+    }
+    {
+        // Lock to make sure onBinderDied would not be called concurrently
+        // (before subscribeSupportedValueChange). Without this, we may create a new subscription
+        // for an already dead client which will never be unsubscribed.
+        std::scoped_lock lockGuard(mLock);
+        if (!monitorBinderLifeCycleLocked(callback->asBinder().get())) {
+            return ScopedAStatus::fromExceptionCodeWithMessage(EX_TRANSACTION_FAILED,
+                                                               "client died");
+        }
+        auto result = mSubscriptionManager->subscribeSupportedValueChange(callback,
+                                                                          propIdAreaIdsToSubscribe);
+        if (!result.ok()) {
+            ALOGW("registerSupportedValueChangeCallback: failed to subscribe supported value change"
+                  " for %s, error: %s",
+                  fmt::format("{}", propIdAreaIdsToSubscribe).c_str(),
+                  result.error().message().c_str());
+            return toScopedAStatus(result);
+        }
+    }
+    return ScopedAStatus::ok();
 }
 
 ScopedAStatus DefaultVehicleHal::unregisterSupportedValueChangeCallback(
-        const std::shared_ptr<IVehicleCallback>&, const std::vector<VhalPropIdAreaId>&) {
-    // TODO(b/381020465): Add relevant implementation.
-    return ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
+        const std::shared_ptr<IVehicleCallback>& callback,
+        const std::vector<VhalPropIdAreaId>& vhalPropIdAreaIds) {
+    std::vector<PropIdAreaId> propIdAreaIds;
+    for (const auto& vhalPropIdAreaId : vhalPropIdAreaIds) {
+        propIdAreaIds.push_back(
+                PropIdAreaId{.propId = vhalPropIdAreaId.propId, .areaId = vhalPropIdAreaId.areaId});
+    }
+
+    auto result = mSubscriptionManager->unsubscribeSupportedValueChange(callback->asBinder().get(),
+                                                                        propIdAreaIds);
+    if (!result.ok()) {
+        ALOGW("unregisterSupportedValueChangeCallback: failed to unsubscribe supported value change"
+              " for %s, error: %s",
+              fmt::format("{}", propIdAreaIds).c_str(), result.error().message().c_str());
+        return toScopedAStatus(result);
+    }
+    return ScopedAStatus::ok();
 }
 
 IVehicleHardware* DefaultVehicleHal::getHardware() {
@@ -1255,13 +1335,19 @@ binder_status_t DefaultVehicleHal::dump(int fd, const char** args, uint32_t numA
         dprintf(fd, "Containing %zu property configs\n", configsByPropIdCopy.size());
         dprintf(fd, "Currently have %zu getValues clients\n", mGetValuesClients.size());
         dprintf(fd, "Currently have %zu setValues clients\n", mSetValuesClients.size());
-        dprintf(fd, "Currently have %zu subscribe clients\n", countSubscribeClients());
+        dprintf(fd, "Currently have %zu subscribe clients\n",
+                mSubscriptionManager->countPropertyChangeClients());
+        dprintf(fd, "Currently have %zu supported values change subscribe clients\n",
+                mSubscriptionManager->countSupportedValueChangeClients());
     }
     return STATUS_OK;
 }
 
-size_t DefaultVehicleHal::countSubscribeClients() {
-    return mSubscriptionManager->countClients();
+size_t DefaultVehicleHal::countClients() {
+    std::scoped_lock<std::mutex> lockGuard(mLock);
+    return mGetValuesClients.size() + mSetValuesClients.size() +
+           mSubscriptionManager->countPropertyChangeClients() +
+           mSubscriptionManager->countSupportedValueChangeClients();
 }
 
 }  // namespace vehicle
