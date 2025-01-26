@@ -38,4 +38,5 @@ interface IPictureProfileAdjustmentListener {
   oneway void onParamCapabilityChanged(long pictureProfileId, in android.hardware.tv.mediaquality.ParamCapability[] caps);
   oneway void onVendorParamCapabilityChanged(long pictureProfileId, in android.hardware.tv.mediaquality.VendorParamCapability[] caps);
   oneway void requestPictureParameters(long pictureProfileId);
+  oneway void onStreamStatusChanged(long pictureProfileId, android.hardware.tv.mediaquality.StreamStatus status);
 }
