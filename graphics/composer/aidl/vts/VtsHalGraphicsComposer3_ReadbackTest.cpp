@@ -20,19 +20,22 @@
 #include <aidl/Vintf.h>
 #include <aidl/android/hardware/graphics/common/BufferUsage.h>
 #include <aidl/android/hardware/graphics/composer3/IComposer.h>
+#include <cutils/ashmem.h>
 #include <gtest/gtest.h>
 #include <ui/DisplayId.h>
 #include <ui/DisplayIdentification.h>
 #include <ui/GraphicBuffer.h>
 #include <ui/PixelFormat.h>
 #include <ui/Rect.h>
+#include "ComposerClientWrapper.h"
 #include "GraphicsComposerCallback.h"
-#include "ReadbackVts.h"
-#include "RenderEngineVts.h"
-#include "VtsComposerClient.h"
+#include "Readback.h"
+#include "RenderEngine.h"
 
 namespace aidl::android::hardware::graphics::composer3::vts {
 namespace {
+
+using namespace ::aidl::android::hardware::graphics::composer3::libhwc_aidl_test;
 
 using ::android::Rect;
 using common::Dataspace;
@@ -41,7 +44,7 @@ using common::PixelFormat;
 class GraphicsCompositionTestBase : public ::testing::Test {
   protected:
     void SetUpBase(const std::string& name) {
-        mComposerClient = std::make_shared<VtsComposerClient>(name);
+        mComposerClient = std::make_shared<ComposerClientWrapper>(name);
         ASSERT_TRUE(mComposerClient->createClient().isOk());
 
         const auto& [status, displays] = mComposerClient->getDisplays();
@@ -96,7 +99,7 @@ class GraphicsCompositionTestBase : public ::testing::Test {
         ASSERT_TRUE(mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty());
     }
 
-    const VtsDisplay& getPrimaryDisplay() const { return mDisplays[0]; }
+    const DisplayWrapper& getPrimaryDisplay() const { return mDisplays[0]; }
 
     int64_t getPrimaryDisplayId() const { return getPrimaryDisplay().getDisplayId(); }
 
@@ -157,8 +160,8 @@ class GraphicsCompositionTestBase : public ::testing::Test {
         return false;
     }
 
-    std::shared_ptr<VtsComposerClient> mComposerClient;
-    std::vector<VtsDisplay> mDisplays;
+    std::shared_ptr<ComposerClientWrapper> mComposerClient;
+    std::vector<DisplayWrapper> mDisplays;
     // use the slot count usually set by SF
     std::vector<ColorMode> mTestColorModes;
     std::unique_ptr<ComposerClientWriter> mWriter;
@@ -225,7 +228,7 @@ TEST_P(GraphicsCompositionTest, SingleSolidColorLayer) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         // if hwc cannot handle and asks for composition change,
         // just succeed the test
@@ -285,7 +288,7 @@ TEST_P(GraphicsCompositionTest, SetLayerBuffer) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
 
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
@@ -346,7 +349,7 @@ TEST_P(GraphicsCompositionTest, SetLayerBufferNoEffect) {
         ASSERT_NO_FATAL_FAILURE(readbackBuffer.setReadbackBuffer());
 
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
 
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
@@ -461,7 +464,7 @@ TEST_P(GraphicsCompositionTest, ClientComposition) {
 
         auto layer = std::make_shared<TestBufferLayer>(
                 mComposerClient, *mTestRenderEngine, getPrimaryDisplayId(), getDisplayWidth(),
-                getDisplayHeight(), PixelFormat::RGBA_FP16, *mWriter);
+                getDisplayHeight(), PixelFormat::RGBA_8888, *mWriter);
         layer->setDisplayFrame({0, 0, getDisplayWidth(), getDisplayHeight()});
         layer->setZOrder(10);
         layer->setDataspace(ReadbackHelper::getDataspaceForColorMode(mode));
@@ -474,7 +477,7 @@ TEST_P(GraphicsCompositionTest, ClientComposition) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
 
         auto changedCompositionTypes = mReader.takeChangedCompositionTypes(getPrimaryDisplayId());
@@ -511,7 +514,7 @@ TEST_P(GraphicsCompositionTest, ClientComposition) {
                                      clientDataspace, std::vector<common::Rect>(1, damage), 1.f);
             layer->setToClientComposition(*mWriter);
             mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                     VtsComposerClient::kNoFrameIntervalNs);
+                                     ComposerClientWrapper::kNoFrameIntervalNs);
             execute();
             changedCompositionTypes = mReader.takeChangedCompositionTypes(getPrimaryDisplayId());
             ASSERT_TRUE(changedCompositionTypes.empty());
@@ -524,6 +527,119 @@ TEST_P(GraphicsCompositionTest, ClientComposition) {
         ASSERT_TRUE(mReader.takeErrors().empty());
 
         ASSERT_NO_FATAL_FAILURE(readbackBuffer.checkReadbackBuffer(expectedColors));
+    }
+}
+
+void generateLuts(Luts* luts, LutProperties::Dimension dimension, int32_t size,
+                  LutProperties::SamplingKey key) {
+    size_t bufferSize = dimension == LutProperties::Dimension::ONE_D
+                                ? static_cast<size_t>(size) * sizeof(float)
+                                : static_cast<size_t>(size * size * size) * sizeof(float);
+    int32_t fd = ashmem_create_region("lut_shared_mem", bufferSize);
+    void* ptr = mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    std::vector<float> buffers(static_cast<size_t>(size), 0.5f);
+    memcpy(ptr, buffers.data(), bufferSize);
+    munmap(ptr, bufferSize);
+    luts->pfd = ndk::ScopedFileDescriptor(fd);
+    luts->offsets = std::vector<int32_t>{0};
+    luts->lutProperties = {LutProperties{dimension, size, {key}}};
+}
+
+// @VsrTest = 4.4-016
+TEST_P(GraphicsCompositionTest, Luts) {
+    ASSERT_TRUE(
+            mComposerClient->setClientTargetSlotCount(getPrimaryDisplayId(), kClientTargetSlotCount)
+                    .isOk());
+    const auto& [status, properties] = mComposerClient->getOverlaySupport();
+    if (!status.isOk() && status.getExceptionCode() == EX_SERVICE_SPECIFIC &&
+        status.getServiceSpecificError() == IComposerClient::EX_UNSUPPORTED) {
+        GTEST_SKIP() << "getOverlaySupport is not supported";
+        return;
+    }
+
+    if (!properties.lutProperties) {
+        GTEST_SKIP() << "lutProperties is not supported";
+        return;
+    }
+
+    for (const auto& lutProperties : *properties.lutProperties) {
+        if (!lutProperties) {
+            continue;
+        }
+        auto& l = *lutProperties;
+
+        for (const auto& key : l.samplingKeys) {
+            for (ColorMode mode : mTestColorModes) {
+                EXPECT_TRUE(mComposerClient
+                                    ->setColorMode(getPrimaryDisplayId(), mode,
+                                                   RenderIntent::COLORIMETRIC)
+                                    .isOk());
+
+                bool isSupported;
+                ASSERT_NO_FATAL_FAILURE(isSupported = getHasReadbackBuffer());
+                if (!isSupported) {
+                    GTEST_SUCCEED()
+                            << "Readback not supported or unsupported pixelFormat/dataspace";
+                    return;
+                }
+
+                common::Rect coloredSquare({0, 0, getDisplayWidth(), getDisplayHeight()});
+
+                // expected color for each pixel
+                std::vector<Color> expectedColors(
+                        static_cast<size_t>(getDisplayWidth() * getDisplayHeight()));
+                ReadbackHelper::fillColorsArea(expectedColors, getDisplayWidth(), coloredSquare,
+                                               WHITE);
+
+                auto layer = std::make_shared<TestBufferLayer>(
+                        mComposerClient, *mTestRenderEngine, getPrimaryDisplayId(),
+                        getDisplayWidth(), getDisplayHeight(), PixelFormat::RGBA_8888, *mWriter);
+                layer->setDisplayFrame(coloredSquare);
+                layer->setZOrder(10);
+                layer->setDataspace(Dataspace::SRGB);
+
+                Luts luts;
+                generateLuts(&luts, l.dimension, l.size, key);
+                layer->setLuts(std::move(luts));
+
+                ASSERT_NO_FATAL_FAILURE(layer->setBuffer(expectedColors));
+
+                std::vector<std::shared_ptr<TestLayer>> layers = {layer};
+
+                ReadbackBuffer readbackBuffer(getPrimaryDisplayId(), mComposerClient,
+                                              getDisplayWidth(), getDisplayHeight(), mPixelFormat,
+                                              mDataspace);
+                ASSERT_NO_FATAL_FAILURE(readbackBuffer.setReadbackBuffer());
+
+                writeLayers(layers);
+                ASSERT_TRUE(mReader.takeErrors().empty());
+                mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
+                                         ComposerClientWrapper::kNoFrameIntervalNs);
+                execute();
+                // if hwc cannot handle and asks for composition change,
+                // just succeed the test
+                if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
+                    GTEST_SUCCEED();
+                    return;
+                }
+
+                auto changedCompositionTypes =
+                        mReader.takeChangedCompositionTypes(getPrimaryDisplayId());
+                ASSERT_TRUE(changedCompositionTypes.empty());
+
+                mWriter->presentDisplay(getPrimaryDisplayId());
+                execute();
+                ASSERT_TRUE(mReader.takeErrors().empty());
+
+                ReadbackHelper::fillColorsArea(expectedColors, getDisplayWidth(), coloredSquare,
+                                               {188.f / 255.f, 188.f / 255.f, 188.f / 255.f, 1.0f});
+
+                ASSERT_NO_FATAL_FAILURE(readbackBuffer.checkReadbackBuffer(expectedColors));
+                mTestRenderEngine->setRenderLayers(layers);
+                ASSERT_NO_FATAL_FAILURE(mTestRenderEngine->drawLayers());
+                ASSERT_NO_FATAL_FAILURE(mTestRenderEngine->checkColorBuffer(expectedColors));
+            }
+        }
     }
 }
 
@@ -589,7 +705,7 @@ TEST_P(GraphicsCompositionTest, MixedColorSpaces) {
         writeLayers({srgbLayer, displayP3Layer});
 
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
 
         auto changedCompositionTypes = mReader.takeChangedCompositionTypes(getPrimaryDisplayId());
@@ -666,7 +782,7 @@ TEST_P(GraphicsCompositionTest, DeviceAndClientComposition) {
         clientLayer->setZOrder(0);
         clientLayer->write(*mWriter);
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
 
         auto changedCompositionTypes = mReader.takeChangedCompositionTypes(getPrimaryDisplayId());
@@ -699,7 +815,7 @@ TEST_P(GraphicsCompositionTest, DeviceAndClientComposition) {
                                  clientDataspace, std::vector<common::Rect>(1, clientFrame), 1.f);
         clientLayer->setToClientComposition(*mWriter);
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         changedCompositionTypes = mReader.takeChangedCompositionTypes(getPrimaryDisplayId());
         ASSERT_TRUE(changedCompositionTypes.empty());
@@ -748,7 +864,7 @@ TEST_P(GraphicsCompositionTest, SetLayerDamage) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -777,7 +893,7 @@ TEST_P(GraphicsCompositionTest, SetLayerDamage) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         ASSERT_TRUE(mReader.takeErrors().empty());
         ASSERT_TRUE(mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty());
@@ -820,7 +936,7 @@ TEST_P(GraphicsCompositionTest, SetLayerPlaneAlpha) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -885,7 +1001,7 @@ TEST_P(GraphicsCompositionTest, SetLayerSourceCrop) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -946,7 +1062,7 @@ TEST_P(GraphicsCompositionTest, SetLayerZOrder) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -969,7 +1085,7 @@ TEST_P(GraphicsCompositionTest, SetLayerZOrder) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         ASSERT_TRUE(mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty());
         ASSERT_TRUE(mReader.takeErrors().empty());
@@ -1035,7 +1151,7 @@ TEST_P(GraphicsCompositionTest, SetLayerBrightnessDims) {
         writeLayers(layers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED()
@@ -1171,7 +1287,7 @@ TEST_P(GraphicsBlendModeCompositionTest, None) {
         writeLayers(mLayers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -1217,7 +1333,7 @@ TEST_P(GraphicsBlendModeCompositionTest, Coverage) {
         writeLayers(mLayers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -1258,7 +1374,7 @@ TEST_P(GraphicsBlendModeCompositionTest, Premultiplied) {
         writeLayers(mLayers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -1343,7 +1459,7 @@ TEST_P(GraphicsTransformCompositionTest, FLIP_H) {
         writeLayers(mLayers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -1390,7 +1506,7 @@ TEST_P(GraphicsTransformCompositionTest, FLIP_V) {
         writeLayers(mLayers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -1437,7 +1553,7 @@ TEST_P(GraphicsTransformCompositionTest, ROT_180) {
         writeLayers(mLayers);
         ASSERT_TRUE(mReader.takeErrors().empty());
         mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                 VtsComposerClient::kNoFrameIntervalNs);
+                                 ComposerClientWrapper::kNoFrameIntervalNs);
         execute();
         if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
             GTEST_SUCCEED();
@@ -1501,6 +1617,7 @@ class GraphicsColorManagementCompositionTest
     std::shared_ptr<TestBufferLayer> mLayer;
 };
 
+// @VsrTest = 4.4-015
 TEST_P(GraphicsColorManagementCompositionTest, ColorConversion) {
     for (ColorMode mode : mTestColorModes) {
         EXPECT_TRUE(mComposerClient
@@ -1531,7 +1648,7 @@ TEST_P(GraphicsColorManagementCompositionTest, ColorConversion) {
 
             ASSERT_TRUE(mReader.takeErrors().empty());
             mWriter->validateDisplay(getPrimaryDisplayId(), ComposerClientWriter::kNoTimestamp,
-                                     VtsComposerClient::kNoFrameIntervalNs);
+                                     ComposerClientWrapper::kNoFrameIntervalNs);
             execute();
             if (!mReader.takeChangedCompositionTypes(getPrimaryDisplayId()).empty()) {
                 continue;

@@ -223,7 +223,8 @@ class FakeVehicleHardwareTest : public ::testing::Test {
             return status;
         }
 
-        const SetValueResult& result = getSetValueResults().back();
+        std::vector<SetValueResult> resultVector = getSetValueResults();
+        const SetValueResult& result = resultVector.back();
 
         if (result.requestId != 0) {
             ALOGE("request ID mismatch, got %" PRId64 ", expect 0", result.requestId);
@@ -245,7 +246,8 @@ class FakeVehicleHardwareTest : public ::testing::Test {
             return unexpected(status);
         }
 
-        const GetValueResult& result = getGetValueResults().back();
+        std::vector<GetValueResult> resultVector = getGetValueResults();
+        const GetValueResult& result = resultVector.back();
         if (result.requestId != 0) {
             ALOGE("request ID mismatch, got %" PRId64 ", expect 0", result.requestId);
             return unexpected(StatusCode::INTERNAL_ERROR);
@@ -277,7 +279,7 @@ class FakeVehicleHardwareTest : public ::testing::Test {
         mCv.notify_all();
     }
 
-    const std::vector<SetValueResult>& getSetValueResults() {
+    std::vector<SetValueResult> getSetValueResults() {
         std::scoped_lock<std::mutex> lockGuard(mLock);
         return mSetValueResults;
     }
@@ -291,7 +293,7 @@ class FakeVehicleHardwareTest : public ::testing::Test {
         mCv.notify_all();
     }
 
-    const std::vector<GetValueResult>& getGetValueResults() {
+    std::vector<GetValueResult> getGetValueResults() {
         std::scoped_lock<std::mutex> lockGuard(mLock);
         return mGetValueResults;
     }
@@ -309,7 +311,7 @@ class FakeVehicleHardwareTest : public ::testing::Test {
         mCv.notify_all();
     }
 
-    const std::vector<VehiclePropValue>& getChangedProperties() {
+    std::vector<VehiclePropValue> getChangedProperties() {
         std::scoped_lock<std::mutex> lockGuard(mLock);
         return mChangedProperties;
     }
@@ -2759,6 +2761,86 @@ TEST_F(FakeVehicleHardwareTest, testDumpFakeUserHal) {
                               "response\nNo SetUserIdentificationAssociation response\n"));
 }
 
+TEST_F(FakeVehicleHardwareTest, testDumpSetMinMaxValue) {
+    std::vector<std::string> options = {"--set-minmaxvalue", "1", "100"};
+    std::vector<PropIdAreaId> changedPropIdAreaIds;
+
+    getHardware()->registerSupportedValueChangeCallback(
+            std::make_unique<IVehicleHardware::SupportedValueChangeCallback>(
+                    [&changedPropIdAreaIds](std::vector<PropIdAreaId> propIdAreaIds) {
+                        changedPropIdAreaIds = propIdAreaIds;
+                    }));
+
+    DumpResult result = getHardware()->dump(options);
+    ASSERT_FALSE(result.callerShouldDumpState);
+    ASSERT_THAT(result.buffer, ContainsRegex("Min/Max supported value .* set"));
+
+    ASSERT_EQ(changedPropIdAreaIds.size(), 1u);
+
+    auto results = getHardware()->getMinMaxSupportedValues({PropIdAreaId{
+            .propId = toInt(TestVendorProperty::VENDOR_EXTENSION_INT_PROPERTY), .areaId = 0}});
+
+    ASSERT_EQ(results.size(), 1u);
+    EXPECT_EQ(results[0].status, StatusCode::OK);
+    EXPECT_EQ(results[0].minSupportedValue.value(), RawPropValues{.int32Values = {1}});
+    EXPECT_EQ(results[0].maxSupportedValue.value(), RawPropValues{.int32Values = {100}});
+}
+
+TEST_F(FakeVehicleHardwareTest, testDumpSetMinMaxValue_invalidInt) {
+    std::vector<std::string> options = {"--set-minmaxvalue", "abc", "100"};
+
+    DumpResult result = getHardware()->dump(options);
+    ASSERT_THAT(result.buffer, ContainsRegex("Failed"));
+
+    options = {"--set-minmaxvalue", "1", "abc"};
+
+    result = getHardware()->dump(options);
+    ASSERT_THAT(result.buffer, ContainsRegex("Failed"));
+}
+
+TEST_F(FakeVehicleHardwareTest, testDumpSetMinMaxValue_minLargerThanMax) {
+    std::vector<std::string> options = {"--set-minmaxvalue", "2", "1"};
+
+    DumpResult result = getHardware()->dump(options);
+    ASSERT_THAT(result.buffer, ContainsRegex("Failed"));
+}
+
+TEST_F(FakeVehicleHardwareTest, testDumpSetSupportedValues) {
+    std::vector<std::string> options = {"--set-supportedvalues", "1", "2", "3"};
+    std::vector<PropIdAreaId> changedPropIdAreaIds;
+
+    getHardware()->registerSupportedValueChangeCallback(
+            std::make_unique<IVehicleHardware::SupportedValueChangeCallback>(
+                    [&changedPropIdAreaIds](std::vector<PropIdAreaId> propIdAreaIds) {
+                        changedPropIdAreaIds = propIdAreaIds;
+                    }));
+
+    DumpResult result = getHardware()->dump(options);
+    ASSERT_FALSE(result.callerShouldDumpState);
+    ASSERT_THAT(result.buffer, ContainsRegex("Supported values list .* set"));
+
+    ASSERT_EQ(changedPropIdAreaIds.size(), 1u);
+
+    auto results = getHardware()->getSupportedValuesLists({PropIdAreaId{
+            .propId = toInt(TestVendorProperty::VENDOR_EXTENSION_INT_PROPERTY), .areaId = 0}});
+
+    ASSERT_EQ(results.size(), 1u);
+    EXPECT_EQ(results[0].status, StatusCode::OK);
+    EXPECT_NE(results[0].supportedValuesList, std::nullopt);
+    EXPECT_EQ(results[0].supportedValuesList.value(), std::vector<std::optional<RawPropValues>>({
+                                                              RawPropValues{.int32Values = {1}},
+                                                              RawPropValues{.int32Values = {2}},
+                                                              RawPropValues{.int32Values = {3}},
+                                                      }));
+}
+
+TEST_F(FakeVehicleHardwareTest, testDumpSetSupportedValues_invalidInt) {
+    std::vector<std::string> options = {"--set-supportedvalues", "1", "2", "ab", "3"};
+
+    DumpResult result = getHardware()->dump(options);
+    ASSERT_THAT(result.buffer, ContainsRegex("Failed"));
+}
+
 struct SetPropTestCase {
     std::string test_name;
     std::vector<std::string> options;
@@ -3882,6 +3964,44 @@ TEST_F(FakeVehicleHardwareTest, testOverrideApPowerStateReqConfig) {
         ASSERT_EQ(config.configArray[0], 0x5);
         break;
     }
+}
+
+TEST_F(FakeVehicleHardwareTest, testGetMinMaxSupportedValues) {
+    auto results = getHardware()->getMinMaxSupportedValues({
+            PropIdAreaId{.propId = toInt(TestVendorProperty::VENDOR_EXTENSION_INT_PROPERTY),
+                         .areaId = 0},
+            PropIdAreaId{.propId = toInt(VehicleProperty::HVAC_TEMPERATURE_SET), .areaId = 0},
+    });
+
+    ASSERT_EQ(results.size(), 2u);
+    EXPECT_EQ(results[0].status, StatusCode::OK);
+    EXPECT_NE(results[0].minSupportedValue, std::nullopt);
+    EXPECT_EQ(results[0].minSupportedValue.value(), RawPropValues{.int32Values = {0}});
+    EXPECT_NE(results[0].maxSupportedValue, std::nullopt);
+    EXPECT_EQ(results[0].maxSupportedValue.value(), RawPropValues{.int32Values = {10}});
+    EXPECT_EQ(results[1].status, StatusCode::INVALID_ARG);
+}
+
+TEST_F(FakeVehicleHardwareTest, testGetSupportedValuesLists) {
+    auto results = getHardware()->getSupportedValuesLists({
+            PropIdAreaId{.propId = toInt(TestVendorProperty::VENDOR_EXTENSION_INT_PROPERTY),
+                         .areaId = 0},
+            PropIdAreaId{.propId = toInt(VehicleProperty::HVAC_TEMPERATURE_SET), .areaId = 0},
+    });
+
+    ASSERT_EQ(results.size(), 2u);
+    EXPECT_EQ(results[0].status, StatusCode::OK);
+    EXPECT_NE(results[0].supportedValuesList, std::nullopt);
+    EXPECT_NE((results[0].supportedValuesList)->size(), 0u);
+    EXPECT_EQ(results[0].supportedValuesList.value(), std::vector<std::optional<RawPropValues>>({
+                                                              RawPropValues{.int32Values = {0}},
+                                                              RawPropValues{.int32Values = {2}},
+                                                              RawPropValues{.int32Values = {4}},
+                                                              RawPropValues{.int32Values = {6}},
+                                                              RawPropValues{.int32Values = {8}},
+                                                              RawPropValues{.int32Values = {10}},
+                                                      }));
+    EXPECT_EQ(results[1].status, StatusCode::INVALID_ARG);
 }
 
 }  // namespace fake
