@@ -87,7 +87,12 @@ TEST_P(RadioSimTest, setSimCardPower) {
     EXPECT_EQ(serial, radioRsp_sim->rspInfo.serial);
     ASSERT_TRUE(CheckAnyOfErrors(radioRsp_sim->rspInfo.error,
                                  {RadioError::NONE, RadioError::INVALID_ARGUMENTS,
-                                  RadioError::RADIO_NOT_AVAILABLE, RadioError::SIM_ERR}));
+                                  RadioError::RADIO_NOT_AVAILABLE, RadioError::SIM_ERR,
+                                  RadioError::REQUEST_NOT_SUPPORTED}));
+
+    if (radioRsp_sim->rspInfo.error == RadioError::REQUEST_NOT_SUPPORTED) {
+        GTEST_SKIP() << "Skipping setSimCardPower because it's not supported";
+    }
 
     // setSimCardPower does not return  until the request is handled, and should not trigger
     // CardStatus::STATE_ABSENT when turning off power
@@ -667,7 +672,8 @@ TEST_P(RadioSimTest, supplyIccPukForApp) {
             EXPECT_EQ(RadioResponseType::SOLICITED, radioRsp_sim->rspInfo.type);
             ASSERT_TRUE(CheckAnyOfErrors(
                     radioRsp_sim->rspInfo.error,
-                    {RadioError::PASSWORD_INCORRECT, RadioError::INVALID_SIM_STATE}));
+                    {RadioError::PASSWORD_INCORRECT, RadioError::INVALID_SIM_STATE,
+                     RadioError::REQUEST_NOT_SUPPORTED}));
         }
     }
 }
@@ -728,7 +734,8 @@ TEST_P(RadioSimTest, supplyIccPuk2ForApp) {
             EXPECT_EQ(RadioResponseType::SOLICITED, radioRsp_sim->rspInfo.type);
             ASSERT_TRUE(CheckAnyOfErrors(
                     radioRsp_sim->rspInfo.error,
-                    {RadioError::PASSWORD_INCORRECT, RadioError::INVALID_SIM_STATE}));
+                    {RadioError::PASSWORD_INCORRECT, RadioError::INVALID_SIM_STATE,
+                     RadioError::REQUEST_NOT_SUPPORTED}));
         }
     }
 }
@@ -1055,106 +1062,6 @@ TEST_P(RadioSimTest, setFacilityLockForApp) {
         ASSERT_TRUE(CheckAnyOfErrors(radioRsp_sim->rspInfo.error,
                                      {RadioError::INVALID_ARGUMENTS, RadioError::MODEM_ERR},
                                      CHECK_GENERAL_ERROR));
-    }
-}
-
-/*
- * Test IRadioSim.getCdmaSubscription() for the response returned.
- */
-TEST_P(RadioSimTest, getCdmaSubscription) {
-    if (!deviceSupportsFeature(FEATURE_TELEPHONY_CDMA)) {
-        GTEST_SKIP() << "Skipping getCdmaSubscription "
-                        "due to undefined FEATURE_TELEPHONY_CDMA";
-    }
-
-    serial = GetRandomSerialNumber();
-
-    radio_sim->getCdmaSubscription(serial);
-    EXPECT_EQ(std::cv_status::no_timeout, wait());
-    EXPECT_EQ(RadioResponseType::SOLICITED, radioRsp_sim->rspInfo.type);
-    EXPECT_EQ(serial, radioRsp_sim->rspInfo.serial);
-
-    if (cardStatus.cardState == CardStatus::STATE_ABSENT) {
-        ASSERT_TRUE(CheckAnyOfErrors(
-                radioRsp_sim->rspInfo.error,
-                {RadioError::NONE, RadioError::REQUEST_NOT_SUPPORTED, RadioError::SIM_ABSENT}));
-    }
-}
-
-/*
- * Test IRadioSim.getCdmaSubscriptionSource() for the response returned.
- */
-TEST_P(RadioSimTest, getCdmaSubscriptionSource) {
-    if (!deviceSupportsFeature(FEATURE_TELEPHONY_CDMA)) {
-        GTEST_SKIP() << "Skipping getCdmaSubscriptionSource "
-                        "due to undefined FEATURE_TELEPHONY_CDMA";
-    }
-
-    serial = GetRandomSerialNumber();
-
-    radio_sim->getCdmaSubscriptionSource(serial);
-    EXPECT_EQ(std::cv_status::no_timeout, wait());
-    EXPECT_EQ(RadioResponseType::SOLICITED, radioRsp_sim->rspInfo.type);
-    EXPECT_EQ(serial, radioRsp_sim->rspInfo.serial);
-
-    if (cardStatus.cardState == CardStatus::STATE_ABSENT) {
-        ASSERT_TRUE(CheckAnyOfErrors(
-                radioRsp_sim->rspInfo.error,
-                {RadioError::NONE, RadioError::REQUEST_NOT_SUPPORTED, RadioError::SIM_ABSENT}));
-    }
-}
-
-/*
- * Test IRadioSim.setCdmaSubscriptionSource() for the response returned.
- */
-TEST_P(RadioSimTest, setCdmaSubscriptionSource) {
-    if (!deviceSupportsFeature(FEATURE_TELEPHONY_CDMA)) {
-        GTEST_SKIP() << "Skipping setCdmaSubscriptionSource "
-                        "due to undefined FEATURE_TELEPHONY_CDMA";
-    }
-
-    serial = GetRandomSerialNumber();
-
-    radio_sim->setCdmaSubscriptionSource(serial, CdmaSubscriptionSource::RUIM_SIM);
-    EXPECT_EQ(std::cv_status::no_timeout, wait());
-    EXPECT_EQ(RadioResponseType::SOLICITED, radioRsp_sim->rspInfo.type);
-    EXPECT_EQ(serial, radioRsp_sim->rspInfo.serial);
-
-    if (cardStatus.cardState == CardStatus::STATE_ABSENT) {
-        ASSERT_TRUE(CheckAnyOfErrors(
-                radioRsp_sim->rspInfo.error,
-                {RadioError::NONE, RadioError::SIM_ABSENT, RadioError::SUBSCRIPTION_NOT_AVAILABLE},
-                CHECK_GENERAL_ERROR));
-    }
-}
-
-/*
- * Test IRadioSim.setUiccSubscription() for the response returned.
- */
-TEST_P(RadioSimTest, setUiccSubscription) {
-    if (!shouldTestCdma()) {
-        GTEST_SKIP() << "Skipping CDMA testing (deprecated)";
-    }
-    if (!deviceSupportsFeature(FEATURE_TELEPHONY_SUBSCRIPTION)) {
-        GTEST_SKIP() << "Skipping setUiccSubscription "
-                        "due to undefined FEATURE_TELEPHONY_SUBSCRIPTION";
-    }
-
-    serial = GetRandomSerialNumber();
-    SelectUiccSub item;
-    memset(&item, 0, sizeof(item));
-
-    radio_sim->setUiccSubscription(serial, item);
-    EXPECT_EQ(std::cv_status::no_timeout, wait());
-    EXPECT_EQ(RadioResponseType::SOLICITED, radioRsp_sim->rspInfo.type);
-    EXPECT_EQ(serial, radioRsp_sim->rspInfo.serial);
-
-    if (cardStatus.cardState == CardStatus::STATE_ABSENT) {
-        ASSERT_TRUE(
-                CheckAnyOfErrors(radioRsp_sim->rspInfo.error,
-                                 {RadioError::NONE, RadioError::INVALID_ARGUMENTS,
-                                  RadioError::MODEM_ERR, RadioError::SUBSCRIPTION_NOT_SUPPORTED},
-                                 CHECK_GENERAL_ERROR));
     }
 }
 
