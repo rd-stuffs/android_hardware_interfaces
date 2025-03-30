@@ -19,11 +19,14 @@
 #include <mutex>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "core-impl/DriverStubImpl.h"
 #include "core-impl/Stream.h"
 
 namespace aidl::android::hardware::audio::core {
+
+namespace offload {
 
 struct DspSimulatorState {
     static constexpr int64_t kSkipBufferNotifyFrames = -1;
@@ -55,9 +58,11 @@ class DspSimulatorWorker
         : ::android::hardware::audio::common::StreamWorker<DspSimulatorLogic>(sharedState) {}
 };
 
+}  // namespace offload
+
 class DriverOffloadStubImpl : public DriverStubImpl {
   public:
-    DriverOffloadStubImpl(const StreamContext& context);
+    explicit DriverOffloadStubImpl(const StreamContext& context);
     ::android::status_t init(DriverCallbackInterface* callback) override;
     ::android::status_t drain(StreamDescriptor::DrainMode drainMode) override;
     ::android::status_t flush() override;
@@ -71,8 +76,8 @@ class DriverOffloadStubImpl : public DriverStubImpl {
     ::android::status_t startWorkerIfNeeded();
 
     const int64_t mBufferNotifyFrames;
-    DspSimulatorState mState;
-    DspSimulatorWorker mDspWorker;
+    offload::DspSimulatorState mState;
+    offload::DspSimulatorWorker mDspWorker;
     bool mDspWorkerStarted = false;
 };
 
