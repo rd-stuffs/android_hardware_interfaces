@@ -106,6 +106,7 @@ std::vector<std::string> getPredefinedApIfaceNames(bool is_bridged) {
     std::vector<std::string> ifnames;
     std::array<char, PROPERTY_VALUE_MAX> buffer;
     buffer.fill(0);
+// QTI_BEGIN: 2024-03-07: WLAN: Wifi: Add support to reuse lohs interface
     property_get("vendor.wifi.lohs.sap.iface.inuse", buffer.data(), "false");
     if (strcmp(buffer.data(),"true") == 0) {
         buffer.fill(0);
@@ -117,6 +118,7 @@ std::vector<std::string> getPredefinedApIfaceNames(bool is_bridged) {
         if (property_get("ro.vendor.wifi.sap.interface", buffer.data(), nullptr) == 0) {
             return ifnames;
         }
+// QTI_END: 2024-03-07: WLAN: Wifi: Add support to reuse lohs interface
     }
     ifnames.push_back(buffer.data());
     if (is_bridged) {

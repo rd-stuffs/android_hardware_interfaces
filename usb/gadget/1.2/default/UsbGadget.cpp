@@ -46,8 +46,10 @@ void currentFunctionsAppliedCallback(bool functionsApplied, void* payload) {
 }
 
 Return<void> UsbGadget::getCurrentUsbFunctions(const sp<V1_0::IUsbGadgetCallback>& callback) {
+// QTI_BEGIN: 2023-02-09: Core: UsbGadgetHal: Add null check in getCurrentUsbFunctions()
     if (!callback) return Void();
 
+// QTI_END: 2023-02-09: Core: UsbGadgetHal: Add null check in getCurrentUsbFunctions()
     Return<void> ret = callback->getCurrentUsbFunctionsCb(
             mCurrentUsbFunctions, mCurrentUsbFunctionsApplied ? Status::FUNCTIONS_APPLIED
                                                               : Status::FUNCTIONS_NOT_APPLIED);

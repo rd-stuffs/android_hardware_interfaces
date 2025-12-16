@@ -18,16 +18,20 @@
 
 #include <android/hardware/power/1.0/IPower.h>
 #include <hidl/LegacySupport.h>
+// QTI_BEGIN: 2018-09-13: Core: Reduce hwbinder buffer size for power HAL
 #ifdef ARCH_ARM_32
 #include <hwbinder/ProcessState.h>
 #endif
+// QTI_END: 2018-09-13: Core: Reduce hwbinder buffer size for power HAL
 
 using android::hardware::power::V1_0::IPower;
 using android::hardware::defaultPassthroughServiceImplementation;
 
 int main() {
+// QTI_BEGIN: 2018-09-13: Core: Reduce hwbinder buffer size for power HAL
     #ifdef ARCH_ARM_32
         android::hardware::ProcessState::initWithMmapSize((size_t)16384);
     #endif
+// QTI_END: 2018-09-13: Core: Reduce hwbinder buffer size for power HAL
     return defaultPassthroughServiceImplementation<IPower>();
 }

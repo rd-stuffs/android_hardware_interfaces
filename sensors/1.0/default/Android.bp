@@ -61,7 +61,9 @@ cc_binary {
     relative_install_path: "hw",
     vendor: true,
     init_rc: ["android.hardware.sensors@1.0-service.rc"],
+// QTI_BEGIN: 2018-09-06: Sensors/Linux: Interfaces: Set binder buffer for sensors HIDL
     defaults: ["hidl_defaults"],
+// QTI_END: 2018-09-06: Sensors/Linux: Interfaces: Set binder buffer for sensors HIDL
     srcs: ["service.cpp"],
 
     shared_libs: [
@@ -72,11 +74,15 @@ cc_binary {
         "libutils",
         "libhidlbase",
         "android.hardware.sensors@1.0",
+// QTI_BEGIN: 2018-09-06: Sensors/Linux: Interfaces: Set binder buffer for sensors HIDL
         "libhwbinder",
+// QTI_END: 2018-09-06: Sensors/Linux: Interfaces: Set binder buffer for sensors HIDL
     ],
+// QTI_BEGIN: 2018-09-06: Sensors/Linux: Interfaces: Set binder buffer for sensors HIDL
     arch: {
         arm: {
             cflags: ["-DARCH_ARM_32"],
         },
     },
+// QTI_END: 2018-09-06: Sensors/Linux: Interfaces: Set binder buffer for sensors HIDL
 }
