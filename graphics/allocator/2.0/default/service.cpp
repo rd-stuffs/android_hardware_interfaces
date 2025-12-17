@@ -19,15 +19,19 @@
 #include <android/hardware/graphics/allocator/2.0/IAllocator.h>
 
 #include <hidl/LegacySupport.h>
+// QTI_BEGIN: 2018-09-13: Core: Tuning of Binder buffer for below HALs
 #include <hwbinder/ProcessState.h>
+// QTI_END: 2018-09-13: Core: Tuning of Binder buffer for below HALs
 
 using android::hardware::defaultPassthroughServiceImplementation;
 using android::hardware::graphics::allocator::V2_0::IAllocator;
 
 int main() {
+// QTI_BEGIN: 2018-09-13: Core: Tuning of Binder buffer for below HALs
 
 #ifdef ARCH_ARM_32
     android::hardware::ProcessState::initWithMmapSize((size_t)(32768));
 #endif
+// QTI_END: 2018-09-13: Core: Tuning of Binder buffer for below HALs
     return defaultPassthroughServiceImplementation<IAllocator>(4);
 }

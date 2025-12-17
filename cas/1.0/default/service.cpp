@@ -27,10 +27,12 @@
 
 #include "MediaCasService.h"
 
+// QTI_BEGIN: 2018-09-13: Core: Reduce hwbinder buffer size for cas HAL
 #ifdef ARCH_ARM_32
 #include <hwbinder/ProcessState.h>
 #endif
 
+// QTI_END: 2018-09-13: Core: Reduce hwbinder buffer size for cas HAL
 using android::hardware::configureRpcThreadpool;
 using android::hardware::joinRpcThreadpool;
 using android::hardware::LazyServiceRegistrar;
@@ -45,7 +47,9 @@ const bool kLazyService = false;
 
 int main() {
     #ifdef ARCH_ARM_32
+// QTI_BEGIN: 2019-09-15: Core: Increase initWithMmapSize to 32k for cas service
         android::hardware::ProcessState::initWithMmapSize((size_t)32768);
+// QTI_END: 2019-09-15: Core: Increase initWithMmapSize to 32k for cas service
     #endif
     configureRpcThreadpool(8, true /* callerWillJoin */);
 

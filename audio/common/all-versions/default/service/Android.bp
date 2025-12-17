@@ -58,7 +58,9 @@ cc_binary {
         "libcutils",
         "libbinder",
         "libbinder_ndk",
+// QTI_BEGIN: 2021-05-07: Audio: enable 64bit compilation
         "libhwbinder",
+// QTI_END: 2021-05-07: Audio: enable 64bit compilation
         "libhidlbase",
         "liblog",
         "libutils",
@@ -73,6 +75,7 @@ cc_binary {
     },
 }
 
+// QTI_BEGIN: 2021-05-07: Audio: enable 64bit compilation
 cc_binary {
     name: "android.hardware.audio.service_64",
 
@@ -91,25 +94,32 @@ cc_binary {
     shared_libs: [
         "libcutils",
         "libbinder",
+// QTI_END: 2021-05-07: Audio: enable 64bit compilation
         "libbinder_ndk",
+// QTI_BEGIN: 2021-05-07: Audio: enable 64bit compilation
         "libhwbinder",
         "libhidlbase",
         "liblog",
         "libutils",
         "libhardware",
     ],
+// QTI_END: 2021-05-07: Audio: enable 64bit compilation
 
     defaults: [
         "android_hardware_audio_config_defaults",
     ],
+// QTI_BEGIN: 2021-05-07: Audio: enable 64bit compilation
 }
 
+// QTI_END: 2021-05-07: Audio: enable 64bit compilation
 // Legacy service name, use android.hardware.audio.service instead
 phony {
     name: "android.hardware.audio@2.0-service",
     required: ["android.hardware.audio.service"],
 }
+// QTI_BEGIN: 2021-05-07: Audio: enable 64bit compilation
 phony {
     name: "android.hardware.audio@2.0-service_64",
     required: ["android.hardware.audio.service_64"],
 }
+// QTI_END: 2021-05-07: Audio: enable 64bit compilation

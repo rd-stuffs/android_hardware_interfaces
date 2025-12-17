@@ -24,7 +24,9 @@
 #include "HandleImporter.h"
 
 #include <android/hardware/camera/device/1.0/ICameraDevice.h>
+// QTI_BEGIN: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
 #include <vendor/qti/hardware/camera/device/1.0/IQCameraDeviceCallback.h>
+// QTI_END: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
 #include <android/hidl/allocator/1.0/IAllocator.h>
 #include <android/hidl/memory/1.0/IMemory.h>
 #include <hidl/MQDescriptor.h>
@@ -45,7 +47,9 @@ using ::android::hardware::camera::common::V1_0::helper::HandleImporter;
 using ::android::hardware::camera::device::V1_0::CameraInfo;
 using ::android::hardware::camera::device::V1_0::CommandType;
 using ::android::hardware::camera::device::V1_0::ICameraDevice;
+// QTI_BEGIN: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
 using ::vendor::qti::hardware::camera::device::V1_0::IQCameraDeviceCallback;
+// QTI_END: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
 using ::android::hardware::camera::device::V1_0::ICameraDeviceCallback;
 using ::android::hardware::camera::device::V1_0::ICameraDevicePreviewCallback;
 using ::android::hardware::camera::device::V1_0::MemoryId;
@@ -166,7 +170,9 @@ private:
     const SortedVector<std::pair<std::string, std::string>>& mCameraDeviceNames;
 
     sp<ICameraDeviceCallback> mDeviceCallback = nullptr;
+// QTI_BEGIN: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
     sp<IQCameraDeviceCallback> mQDeviceCallback = nullptr;
+// QTI_END: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
 
     mutable Mutex mMemoryMapLock; // gating access to mMemoryMap
                                   // must not hold mLock after this lock is acquired

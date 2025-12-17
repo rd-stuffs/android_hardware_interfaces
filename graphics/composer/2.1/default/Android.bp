@@ -34,6 +34,7 @@ cc_binary {
         "libsync",
         "libutils",
     ],
+// QTI_BEGIN: 2018-07-26: Core: graphics: Optimize binder buffer allocation
     arch: {
         arm: {
             cflags: [
@@ -41,4 +42,5 @@ cc_binary {
             ],
         },
     },
+// QTI_END: 2018-07-26: Core: graphics: Optimize binder buffer allocation
 }

@@ -74,8 +74,10 @@ void convertFromHidl(const Stream &src, Camera3Stream* dst) {
     dst->data_space = (android_dataspace_t) src.dataSpace;
     dst->rotation = (int) src.rotation;
     dst->usage = (uint32_t) src.usage;
+// QTI_BEGIN: 2018-06-20: Camera/Camera_Linux: frameworks: Update HIDL overrideFormat from HAL
     dst->reserved[0] = NULL;
     dst->reserved[1] = NULL;
+// QTI_END: 2018-06-20: Camera/Camera_Linux: frameworks: Update HIDL overrideFormat from HAL
     // Fields to be filled by HAL (max_buffers, priv) are initialized to 0
     dst->max_buffers = 0;
     dst->priv = 0;
@@ -98,6 +100,7 @@ void convertToHidl(const Camera3Stream* src, HalStream* dst) {
         ALOGW("%s: Stream type %d is not currently supported!",
                 __FUNCTION__, src->stream_type);
     }
+// QTI_BEGIN: 2018-06-20: Camera/Camera_Linux: frameworks: Update HIDL overrideFormat from HAL
 
     HalStream* halStream = NULL;
     if (src->reserved[0] != NULL) {
@@ -115,6 +118,7 @@ void convertToHidl(const Camera3Stream* src, HalStream* dst) {
             dst->consumerUsage = (BufferUsageFlags)halStream->consumerUsage;
         }
     }
+// QTI_END: 2018-06-20: Camera/Camera_Linux: frameworks: Update HIDL overrideFormat from HAL
 }
 
 void convertToHidl(const camera3_stream_configuration_t& src, HalStreamConfiguration* dst) {

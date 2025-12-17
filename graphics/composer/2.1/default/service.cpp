@@ -23,7 +23,9 @@
 #include <binder/ProcessState.h>
 #include <composer-passthrough/2.1/HwcLoader.h>
 #include <hidl/LegacySupport.h>
+// QTI_BEGIN: 2018-07-26: Core: graphics: Optimize binder buffer allocation
 #include <hwbinder/ProcessState.h>
+// QTI_END: 2018-07-26: Core: graphics: Optimize binder buffer allocation
 
 using android::hardware::graphics::composer::V2_1::IComposer;
 using android::hardware::graphics::composer::V2_1::passthrough::HwcLoader;
@@ -42,10 +44,12 @@ int main() {
         ALOGE("Couldn't set SCHED_FIFO: %d", errno);
     }
 
+// QTI_BEGIN: 2018-07-26: Core: graphics: Optimize binder buffer allocation
 #ifdef ARCH_ARM_32
     android::hardware::ProcessState::initWithMmapSize((size_t)(32768));
 #endif
 
+// QTI_END: 2018-07-26: Core: graphics: Optimize binder buffer allocation
     android::hardware::configureRpcThreadpool(4, true /* will join */);
 
     android::sp<IComposer> composer = HwcLoader::load();
