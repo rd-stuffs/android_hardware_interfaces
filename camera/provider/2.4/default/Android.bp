@@ -16,7 +16,9 @@ cc_library_shared {
     shared_libs: [
         "android.hardware.camera.common@1.0",
         "android.hardware.camera.device@1.0",
+// QTI_BEGIN: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
         "vendor.qti.hardware.camera.device@1.0",
+// QTI_END: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
         "android.hardware.camera.device@3.2",
         "android.hardware.camera.device@3.3",
         "android.hardware.camera.device@3.4",
@@ -150,7 +152,9 @@ cc_defaults {
     shared_libs: [
         "android.hardware.camera.common@1.0",
         "android.hardware.camera.device@1.0",
+// QTI_BEGIN: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
         "vendor.qti.hardware.camera.device@1.0",
+// QTI_END: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
         "android.hardware.camera.device@3.2",
         "android.hardware.camera.device@3.3",
         "android.hardware.camera.device@3.4",

@@ -27,9 +27,11 @@ using ::aidl::android::hardware::bluetooth::audio::
 
 extern "C" __attribute__((visibility("default"))) binder_status_t
 createIBluetoothAudioProviderFactory() {
+// QTI_BEGIN: 2024-02-08: Bluetooth: BT: Reject AOSP HAL-Interface registration
 binder_status_t aidl_status_war = STATUS_UNKNOWN_ERROR;
 ALOGW_IF(aidl_status_war == STATUS_OK, "Could not register AOSP HAL, status=%d", aidl_status_war);
   return aidl_status_war;
+// QTI_END: 2024-02-08: Bluetooth: BT: Reject AOSP HAL-Interface registration
   auto factory = ::ndk::SharedRefBase::make<BluetoothAudioProviderFactory>();
   const std::string instance_name =
       std::string() + BluetoothAudioProviderFactory::descriptor + "/default";
@@ -38,4 +40,6 @@ ALOGW_IF(aidl_status_war == STATUS_OK, "Could not register AOSP HAL, status=%d",
   ALOGW_IF(aidl_status != STATUS_OK, "Could not register %s, status=%d",
            instance_name.c_str(), aidl_status);
   return aidl_status;
+// QTI_BEGIN: 2024-02-08: Bluetooth: BT: Reject AOSP HAL-Interface registration
 }
+// QTI_END: 2024-02-08: Bluetooth: BT: Reject AOSP HAL-Interface registration

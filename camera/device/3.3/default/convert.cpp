@@ -47,6 +47,7 @@ void convertToHidl(const Camera3Stream* src, HalStream* dst) {
         ALOGW("%s: Stream type %d is not currently supported!",
                 __FUNCTION__, src->stream_type);
     }
+// QTI_BEGIN: 2018-06-20: Camera/Camera_Linux: frameworks: Update HIDL overrideFormat from HAL
 
     HalStream* halStream = NULL;
     if (src->reserved[0] != NULL) {
@@ -63,6 +64,7 @@ void convertToHidl(const Camera3Stream* src, HalStream* dst) {
             dst->v3_2.consumerUsage = (BufferUsageFlags)halStream->v3_2.consumerUsage;
         }
     }
+// QTI_END: 2018-06-20: Camera/Camera_Linux: frameworks: Update HIDL overrideFormat from HAL
 }
 
 void convertToHidl(const camera3_stream_configuration_t& src, HalStreamConfiguration* dst) {

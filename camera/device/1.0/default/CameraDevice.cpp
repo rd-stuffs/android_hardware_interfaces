@@ -433,6 +433,7 @@ void CameraDevice::sDataCb(int32_t msg_type, const camera_memory_t *data, unsign
              index, mem->mNumBufs);
         return;
     }
+// QTI_BEGIN: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
     if(object->mQDeviceCallback != nullptr) {
          vendor::qti::hardware::camera::device::V1_0::QCameraFrameMetadata hidlMetadata;
          if (metadata) {
@@ -495,6 +496,7 @@ void CameraDevice::sDataCb(int32_t msg_type, const camera_memory_t *data, unsign
            object->mDeviceCallback->dataCallback(
                    (DataCallbackMsg) msg_type, mem->handle.mId, index, hidlMetadata);
        }
+// QTI_END: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
     }
 }
 
@@ -710,11 +712,13 @@ Return<Status> CameraDevice::open(const sp<ICameraDeviceCallback>& callback) {
 
     initHalPreviewWindow();
     mDeviceCallback = callback;
+// QTI_BEGIN: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
     mQDeviceCallback =
         vendor::qti::hardware::camera::device::V1_0::IQCameraDeviceCallback::castFrom(callback);
     if(mQDeviceCallback == nullptr) {
         ALOGI("could not cast ICameraDeviceCallback to IQCameraDeviceCallback");
     }
+// QTI_END: 2018-04-12: Camera: Camed HAL extension: Added support in HIDL for Extended FD.
 
     if (mDevice->ops->set_callbacks) {
         mDevice->ops->set_callbacks(mDevice,

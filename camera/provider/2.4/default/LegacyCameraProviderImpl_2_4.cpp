@@ -87,9 +87,14 @@ void LegacyCameraProviderImpl_2_4::addDeviceNames(int camera_id, CameraDeviceSta
     if (deviceVersion >= CAMERA_DEVICE_API_VERSION_3_2 &&
             mModule->isOpenLegacyDefined()) {
         // try open_legacy to see if it actually works
+// QTI_BEGIN: 2019-12-11: Camera: camera.chaged default value of ro.config.low_ram to false.
         if ((property_get_bool("ro.config.low_ram", /*default*/ false))) {
+// QTI_END: 2019-12-11: Camera: camera.chaged default value of ro.config.low_ram to false.
+// QTI_BEGIN: 2019-10-31: Camera: camera:Adding devices without openlegacy call based on memory.
            deviceNamePair = std::make_pair(cameraIdStr,
+// QTI_END: 2019-10-31: Camera: camera:Adding devices without openlegacy call based on memory.
                             getHidlDeviceName(cameraIdStr, CAMERA_DEVICE_API_VERSION_1_0));
+// QTI_BEGIN: 2019-10-31: Camera: camera:Adding devices without openlegacy call based on memory.
            mCameraDeviceNames.add(deviceNamePair);
            if (cam_new) {
               mCallbacks->cameraDeviceStatusChange(deviceNamePair.second, status);
@@ -107,12 +112,15 @@ void LegacyCameraProviderImpl_2_4::addDeviceNames(int camera_id, CameraDeviceSta
                  mCallbacks->cameraDeviceStatusChange(deviceNamePair.second, status);
               }
             } else if (ret == -EBUSY || ret == -EUSERS) {
+// QTI_END: 2019-10-31: Camera: camera:Adding devices without openlegacy call based on memory.
             // Looks like this provider instance is not initialized during
             // system startup and there are other camera users already.
             // Not a good sign but not fatal.
+// QTI_BEGIN: 2019-10-31: Camera: camera:Adding devices without openlegacy call based on memory.
               ALOGW("%s: open_legacy try failed!", __FUNCTION__);
             }
          }
+// QTI_END: 2019-10-31: Camera: camera:Adding devices without openlegacy call based on memory.
     }
 }
 

@@ -63,12 +63,16 @@ cc_binary {
         "libhardware",
         "libhidlbase",
         "android.hardware.power@1.0",
+// QTI_BEGIN: 2018-09-13: Core: Reduce hwbinder buffer size for power HAL
         "libhwbinder"
+// QTI_END: 2018-09-13: Core: Reduce hwbinder buffer size for power HAL
     ],
 
+// QTI_BEGIN: 2018-09-13: Core: Reduce hwbinder buffer size for power HAL
     arch: {
         arm: {
             cflags: ["-DARCH_ARM_32"],
         },
     },
+// QTI_END: 2018-09-13: Core: Reduce hwbinder buffer size for power HAL
 }

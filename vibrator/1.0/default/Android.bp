@@ -51,8 +51,11 @@ cc_binary {
         "libutils",
         "libhardware",
         "android.hardware.vibrator@1.0",
+// QTI_BEGIN: 2018-07-10: Core: Tuning of Binder buffer for below HALs
         "libhwbinder",
+// QTI_END: 2018-07-10: Core: Tuning of Binder buffer for below HALs
     ],
+// QTI_BEGIN: 2018-09-26: Core: Tuning of Binder buffer for below HALs on 32-bit
     arch: {
         arm: {
             cflags: [
@@ -60,4 +63,5 @@ cc_binary {
             ],
         },
     },
+// QTI_END: 2018-09-26: Core: Tuning of Binder buffer for below HALs on 32-bit
 }

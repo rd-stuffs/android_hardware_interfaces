@@ -926,8 +926,10 @@ bool CameraDeviceSession::preProcessConfigurationLocked(
                     mStreamMap[id].data_space);
             mCirculatingBuffers.emplace(stream.mId, CirculatingBuffers{});
         } else {
+// QTI_BEGIN: 2018-06-20: Camera/Camera_Linux: frameworks: Update HIDL overrideFormat from HAL
             // width/height must not change, but usage/rotation might need to change
             // format might change and get updated with overrideFormat
+// QTI_END: 2018-06-20: Camera/Camera_Linux: frameworks: Update HIDL overrideFormat from HAL
             if (mStreamMap[id].stream_type !=
                     (int) requestedConfiguration.streams[i].streamType ||
                     mStreamMap[id].width != requestedConfiguration.streams[i].width ||

@@ -1,3 +1,4 @@
+#  QTI_BEGIN: 2021-05-07: Audio: enable 64bit compilation
 service vendor.audio-hal /vendor/bin/hw/android.hardware.audio.service_64
     class hal
     user audioserver
@@ -7,3 +8,4 @@ service vendor.audio-hal /vendor/bin/hw/android.hardware.audio.service_64
     ioprio rt 4
     task_profiles ProcessCapacityHigh HighPerformance
     onrestart restart audioserver
+#  QTI_END: 2021-05-07: Audio: enable 64bit compilation

@@ -4,5 +4,7 @@ service vendor.hwcomposer-2-2 /vendor/bin/hw/android.hardware.graphics.composer@
     group graphics drmrpc
     capabilities SYS_NICE
     onrestart restart surfaceflinger
+#  QTI_BEGIN: 2018-09-20: Display: Interfaces: enable socket pps for android.hardware.graphics.composer@2.2
     socket pps stream 0660 system system
+#  QTI_END: 2018-09-20: Display: Interfaces: enable socket pps for android.hardware.graphics.composer@2.2
     task_profiles ServiceCapacityLow

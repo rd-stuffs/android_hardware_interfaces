@@ -23,8 +23,14 @@ using ::android::hardware::boot::V1_0::IBootControl;
 using android::hardware::defaultPassthroughServiceImplementation;
 
 int main (int /* argc */, char * /* argv */ []) {
+// QTI_BEGIN: 2018-09-26: Core: Tuning of Binder buffer for below HALs on 32-bit
 #ifdef ARCH_ARM_32
+// QTI_END: 2018-09-26: Core: Tuning of Binder buffer for below HALs on 32-bit
+// QTI_BEGIN: 2018-07-10: Core: Tuning of Binder buffer for below HALs
     android::hardware::ProcessState::initWithMmapSize((size_t)8192);
+// QTI_END: 2018-07-10: Core: Tuning of Binder buffer for below HALs
+// QTI_BEGIN: 2018-09-26: Core: Tuning of Binder buffer for below HALs on 32-bit
 #endif
+// QTI_END: 2018-09-26: Core: Tuning of Binder buffer for below HALs on 32-bit
     return defaultPassthroughServiceImplementation<IBootControl>();
 }

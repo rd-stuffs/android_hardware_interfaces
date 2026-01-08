@@ -43,6 +43,7 @@ cc_binary {
         "liblog",
         "libutils",
     ],
+// QTI_BEGIN: 2018-09-13: Core: Tuning of Binder buffer for below HALs
     arch: {
         arm: {
             cflags: [
@@ -50,4 +51,5 @@ cc_binary {
             ],
         },
     },
+// QTI_END: 2018-09-13: Core: Tuning of Binder buffer for below HALs
 }

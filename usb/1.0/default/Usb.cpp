@@ -206,6 +206,7 @@ rescan:
 
 bool canSwitchRoleHelper(const std::string portName, PortRoleType type)  {
     std::string filename = appendRoleNodeHelper(portName, type);
+// QTI_BEGIN: 2018-08-19: Core: usb: hal: default: check for PD_ACTIVE for power/data role
 
     if (type == PortRoleType::DATA_ROLE || type == PortRoleType::POWER_ROLE) {
         std::string pd_filename = "/sys/class/power_supply/usb/pd_active";
@@ -219,6 +220,7 @@ bool canSwitchRoleHelper(const std::string portName, PortRoleType type)  {
         }
     }
 
+// QTI_END: 2018-08-19: Core: usb: hal: default: check for PD_ACTIVE for power/data role
     std::ofstream file(filename);
 
     if (file.is_open()) {
@@ -409,7 +411,9 @@ void* work(void* param) {
 
         for (int n = 0; n < nevents; ++n) {
             if (events[n].data.ptr)
+// QTI_BEGIN: 2018-10-11: Core: USB HAL: default: Fix incorrect function pointer cast
                 (*(void (*)(uint32_t, struct data *payload))events[n].data.ptr)
+// QTI_END: 2018-10-11: Core: USB HAL: default: Fix incorrect function pointer cast
                     (events[n].events, &payload);
         }
     }

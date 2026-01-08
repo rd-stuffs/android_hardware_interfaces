@@ -16,14 +16,18 @@
 
 #include <android/hardware/light/2.0/ILight.h>
 #include <hidl/LegacySupport.h>
+// QTI_BEGIN: 2018-09-13: Core: Tuning of Binder buffer for below HALs
 #include <hwbinder/ProcessState.h>
+// QTI_END: 2018-09-13: Core: Tuning of Binder buffer for below HALs
 
 using android::hardware::light::V2_0::ILight;
 using android::hardware::defaultPassthroughServiceImplementation;
 
 int main() {
+// QTI_BEGIN: 2018-09-13: Core: Tuning of Binder buffer for below HALs
 #ifdef ARCH_ARM_32
     android::hardware::ProcessState::initWithMmapSize((size_t)(32768));
 #endif
+// QTI_END: 2018-09-13: Core: Tuning of Binder buffer for below HALs
     return defaultPassthroughServiceImplementation<ILight>();
 }
