@@ -68,6 +68,8 @@ cc_library {
         "alsa/ModuleAlsa.cpp",
         "alsa/StreamAlsa.cpp",
         "alsa/Utils.cpp",
+        "alsa/StreamAlsaBase.cpp",
+        "alsa/StreamAlsaMonoPipe.cpp",
         "bluetooth/DevicePortProxy.cpp",
         "bluetooth/ModuleBluetooth.cpp",
         "bluetooth/StreamBluetooth.cpp",
